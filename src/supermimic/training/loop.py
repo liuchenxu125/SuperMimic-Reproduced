@@ -11,14 +11,18 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from supermimic.config import TrainConfig
-from supermimic.data.motion_convert import load_g1_model
 from supermimic.envs import SuperMimicEnvCfgArgs, make_env
 from supermimic.envs.mdp.motion_library import discover_npz
-from supermimic.envs.tracking_env_cfg import ANCHOR_BODY, ROOT_BODY, TRACKED_BODIES
 from supermimic.imagination.policy_trainer import PolicyTrainer
 from supermimic.kinematics.g1_fk import G1Kinematics
 from supermimic.policy.nets import Critic, Policy
-from supermimic.training.distributed import allreduce_mean, broadcast_params, finalize, init_distributed, world_size
+from supermimic.robots import get_robot
+from supermimic.training.distributed import (
+    allreduce_mean,
+    broadcast_params,
+    finalize,
+    init_distributed,
+)
 from supermimic.training.schedule import cosine_lr
 from supermimic.world_model.heads import AnalyticHeads
 from supermimic.world_model.wm_trainer import WorldModelTrainer
@@ -28,8 +32,21 @@ from supermimic.world_model.world_model import WorldModel
 class Trainer:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
-        cfg.policy.goal_dim = cfg.env.future_frames * 68 + (9 if cfg.env.anchor_obs else 0)
+        profile = get_robot(cfg.robot)
+        cfg.policy.num_joints = profile.num_joints
+        cfg.world_model.state_spec.num_joints = profile.num_joints
+        if cfg.world_model.state_spec.xi_offset == (0.75,) + (0.0,) * 32:
+            cfg.world_model.state_spec.xi_offset = (0.75,) + (0.0,) * (profile.num_joints + 3)
+        if cfg.world_model.state_spec.xi_scale == (0.45,) + (0.01,) * 29 + (0.05,) * 3:
+            cfg.world_model.state_spec.xi_scale = (
+                (0.45,) + (0.01,) * profile.num_joints + (0.05,) * 3
+            )
+        cfg.policy.goal_dim = cfg.env.future_frames * profile.layout.goal_dim + (
+            9 if cfg.env.anchor_obs else 0
+        )
         cfg.policy_trainer.anchor_obs = cfg.env.anchor_obs
+        cfg.policy_trainer.future_frames = cfg.env.future_frames
+        cfg.policy_trainer.history = cfg.policy.history
         self.rank, local_rank, self.world = init_distributed()
         self.is_main = self.rank == 0
         if self.world > 1:
@@ -43,21 +60,30 @@ class Trainer:
         self.log_dir = Path(cfg.log_root) / cfg.run_name
         self.log_dir.mkdir(parents=True, exist_ok=True)
         if self.is_main:
-            (self.log_dir / "config.json").write_text(json.dumps(asdict(cfg), indent=2, default=str))
+            (self.log_dir / "config.json").write_text(
+                json.dumps(asdict(cfg), indent=2, default=str)
+            )
         self.writer = SummaryWriter(str(self.log_dir / "tb")) if self.is_main else None
 
         if cfg.data.library is not None:
             files = [cfg.data.library]
             cfg.env.compact_library = True
         else:
-            files = discover_npz(cfg.data.npz_dir, limit=cfg.data.limit, names=cfg.data.clips, manifest=cfg.data.manifest)
+            files = discover_npz(
+                cfg.data.npz_dir,
+                limit=cfg.data.limit,
+                names=cfg.data.clips,
+                manifest=cfg.data.manifest,
+            )
         if not files:
             raise FileNotFoundError(f"no clips under {cfg.data.npz_dir}")
         self.env = make_env(
             SuperMimicEnvCfgArgs(
                 npz_files=[str(f) for f in files],
+                robot=cfg.robot,
                 num_envs=cfg.env.num_envs,
                 future_frames=cfg.env.future_frames,
+                history_length=cfg.policy.history,
                 episode_length_s=cfg.env.episode_length_s,
                 action_noise_std=cfg.env.action_noise_std,
                 obs_noise=cfg.env.obs_noise,
@@ -78,18 +104,29 @@ class Trainer:
         self.buffer = self.recorder.buffer
         robot = env.scene["robot"]
 
-        fk = G1Kinematics(load_g1_model(), device=self.device)
-        heads = AnalyticHeads(fk, TRACKED_BODIES, ANCHOR_BODY, ROOT_BODY, robot.data.soft_joint_pos_limits[0].clone(), robot.data.default_joint_pos[0].clone())
+        fk = G1Kinematics(profile.model(), device=self.device)
+        heads = AnalyticHeads(
+            fk,
+            profile.tracked_bodies,
+            profile.anchor_body,
+            profile.root_body,
+            robot.data.soft_joint_pos_limits[0].clone(),
+            robot.data.default_joint_pos[0].clone(),
+        )
         self.wm = WorldModel(cfg.world_model, heads, self.device)
         self.policy = Policy(cfg.policy).to(self.device)
         self.critic = Critic(cfg.critic, pcfg=cfg.policy).to(self.device)
         for m in (self.wm, self.policy, self.critic):
             broadcast_params(m)
         self.wm_trainer = WorldModelTrainer(self.wm, self.lib, cfg.wm_trainer)
-        self.policy_trainer = PolicyTrainer(self.wm, self.policy, self.critic, self.lib, cfg.policy_trainer)
-        n_params = lambda m: sum(p.numel() for p in m.parameters())  # noqa: E731
+        self.policy_trainer = PolicyTrainer(
+            self.wm, self.policy, self.critic, self.lib, cfg.policy_trainer
+        )
+        n_params = lambda m: sum(p.numel() for p in m.parameters())
         if self.is_main:
-            print(f"[INFO] params: world model {n_params(self.wm)/1e6:.2f}M, policy {n_params(self.policy)/1e6:.2f}M, critic {n_params(self.critic)/1e6:.3f}M")
+            print(
+                f"[INFO] params: world model {n_params(self.wm) / 1e6:.2f}M, policy {n_params(self.policy) / 1e6:.2f}M, critic {n_params(self.critic) / 1e6:.3f}M"
+            )
 
         # Episode statistics of the training env (paper's "training return").
         self.ep_reward_sum = torch.zeros(env.num_envs, device=self.device)
@@ -125,6 +162,9 @@ class Trainer:
 
     def load(self, path: Path) -> None:
         ck = torch.load(path, map_location=self.device, weights_only=False)
+        saved_robot = ck["config"].get("robot", "g1")
+        if saved_robot != self.cfg.robot:
+            raise ValueError(f"Checkpoint is for {saved_robot}, current robot is {self.cfg.robot}")
         self.wm.load_state_dict(ck["wm"])
         self.policy.load_state_dict(ck["policy"])
         self.critic.load_state_dict(ck["critic"])
@@ -160,7 +200,7 @@ class Trainer:
             # ---------------- (1) collect one vectorised env step
             t0 = time.perf_counter()
             action = self.act(obs)
-            obs, rew, term, tout, extras = env.step(action)
+            obs, rew, term, tout, _extras = env.step(action)
             self.ep_reward_sum += rew
             self.ep_len += 1
             done = term | tout
@@ -181,7 +221,13 @@ class Trainer:
                 self._utd_acc += sch.updates_per_env_step
                 while self._utd_acc >= 1.0:
                     self._utd_acc -= 1.0
-                    lr = cosine_lr(self.iteration, sch.total_iterations, cfg.wm_trainer.lr, sch.lr_final_ratio, sch.lr_decay_fraction)
+                    lr = cosine_lr(
+                        self.iteration,
+                        sch.total_iterations,
+                        cfg.wm_trainer.lr,
+                        sch.lr_final_ratio,
+                        sch.lr_decay_fraction,
+                    )
                     self.wm_trainer.set_lr(lr)
                     self.policy_trainer.set_lr(lr * cfg.policy_trainer.lr / cfg.wm_trainer.lr)
                     t0 = time.perf_counter()
@@ -210,7 +256,7 @@ class Trainer:
                     tot = allreduce_mean(float(sum(finished_returns))) * self.world
                     cnt = allreduce_mean(float(len(finished_returns))) * self.world
                     finished_returns = [tot / cnt] if cnt > 0 else []
-                    n_finished = int(round(cnt))
+                    n_finished = round(cnt)
                 else:
                     n_finished = len(finished_returns)
                 if not self.is_main:
@@ -225,7 +271,9 @@ class Trainer:
                 elif finished_returns:
                     tr = sum(finished_returns) / len(finished_returns)
                     self.writer.add_scalar("train/episode_norm_return", tr, it)
-                    self.writer.add_scalar("train/episode_len", sum(finished_lens) / max(len(finished_lens), 1), it)
+                    self.writer.add_scalar(
+                        "train/episode_len", sum(finished_lens) / max(len(finished_lens), 1), it
+                    )
                 else:
                     tr = float("nan")
                 with torch.no_grad():
@@ -240,15 +288,19 @@ class Trainer:
                         self.writer.add_scalar(f"time/{k}_s_per_iter", v / sch.log_interval, it)
                     self.writer.add_scalar("time/hours", elapsed / 3600, it)
                     self.writer.add_scalar("time/updates", self.num_updates, it)
-                    self.writer.add_scalar("sampler/entropy", float(self.command.metrics["sampling_entropy"][0]), it)
-                    self.writer.add_scalar("sampler/bin_return_mean", float(self.command.bin_return.mean()), it)
+                    self.writer.add_scalar(
+                        "sampler/entropy", float(self.command.metrics["sampling_entropy"][0]), it
+                    )
+                    self.writer.add_scalar(
+                        "sampler/bin_return_mean", float(self.command.bin_return.mean()), it
+                    )
                     dt_log = time.time() - last_log
                     last_log = time.time()
                     msg = (
-                        f"it {it} | {elapsed/3600:.2f} h | {sch.log_interval / dt_log:.1f} it/s | updates {self.num_updates} | "
+                        f"it {it} | {elapsed / 3600:.2f} h | {sch.log_interval / dt_log:.1f} it/s | updates {self.num_updates} | "
                         f"train_ret {tr:.3f} (n={n_finished}) | "
-                        f"wm nse1 {agg.get('wm/nse_1step', float('nan'))/max(agg_n,1):.4f} nse8 {(float(err[-1]) if err is not None else float('nan')):.4f} | "
-                        f"imag_ret {agg.get('policy/imag_return_undisc', float('nan'))/max(agg_n,1):.3f} surv {agg.get('policy/imag_survival_H', float('nan'))/max(agg_n,1):.3f} | "
+                        f"wm nse1 {agg.get('wm/nse_1step', float('nan')) / max(agg_n, 1):.4f} nse8 {(float(err[-1]) if err is not None else float('nan')):.4f} | "
+                        f"imag_ret {agg.get('policy/imag_return_undisc', float('nan')) / max(agg_n, 1):.3f} surv {agg.get('policy/imag_survival_H', float('nan')) / max(agg_n, 1):.3f} | "
                         f"t sim/wm/pi {timers['sim']:.1f}/{timers['wm']:.1f}/{timers['policy']:.1f}s"
                     )
                     print(msg, flush=True)
@@ -261,7 +313,9 @@ class Trainer:
             if sch.max_hours is not None and self.iteration % sch.log_interval == 0:
                 stop = float((time.time() - t_start) / 3600 > sch.max_hours)
                 if self.world > 1:
-                    stop = allreduce_mean(stop)  # rank 0's clock decides (all ranks agree on the mean > 0)
+                    stop = allreduce_mean(
+                        stop
+                    )  # rank 0's clock decides (all ranks agree on the mean > 0)
                 if stop > 0:
                     if self.is_main:
                         print("[INFO] max_hours reached, stopping")

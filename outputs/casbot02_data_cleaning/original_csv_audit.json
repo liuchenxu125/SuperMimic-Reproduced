@@ -1,0 +1,631 @@
+{
+  "robot": "casbot02",
+  "input_fps": 30.0,
+  "csv_convention": "xyz metres, quaternion xyzw, hinge radians in MJCF joint order",
+  "policy": "preserve all source frames and values; no automatic clipping or trimming",
+  "joint_names": [
+    "leg_l1_joint",
+    "leg_l2_joint",
+    "leg_l3_joint",
+    "leg_l4_joint",
+    "leg_l5_joint",
+    "leg_l6_joint",
+    "leg_r1_joint",
+    "leg_r2_joint",
+    "leg_r3_joint",
+    "leg_r4_joint",
+    "leg_r5_joint",
+    "leg_r6_joint",
+    "waist_yaw_joint",
+    "upper_left_1_joint",
+    "upper_left_2_joint",
+    "upper_left_3_joint",
+    "upper_left_4_joint",
+    "upper_left_5_joint",
+    "upper_left_6_joint",
+    "upper_left_7_joint",
+    "upper_right_1_joint",
+    "upper_right_2_joint",
+    "upper_right_3_joint",
+    "upper_right_4_joint",
+    "upper_right_5_joint",
+    "upper_right_6_joint",
+    "upper_right_7_joint"
+  ],
+  "summary": {
+    "clips": 40,
+    "source_frames": 264704,
+    "frames_outside_joint_limits": 70342,
+    "max_joint_limit_excess_rad": 0.39249999999999985,
+    "clips_first_root_speed_above_5_m_s": 7
+  },
+  "clips": [
+    {
+      "name": "dance1_subject1",
+      "source_frames": 3945,
+      "frames_outside_joint_limits": 869,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 385,
+      "first_root_speed_m_s": 0.009086680536250715,
+      "root_speed_m_s_p99": 2.7359106519188634,
+      "max_root_speed_m_s": 4.605871403616573
+    },
+    {
+      "name": "dance1_subject2",
+      "source_frames": 3945,
+      "frames_outside_joint_limits": 1481,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 1529,
+      "first_root_speed_m_s": 0.38247186478970385,
+      "root_speed_m_s_p99": 1.823092999590664,
+      "max_root_speed_m_s": 2.9070290099684066
+    },
+    {
+      "name": "dance1_subject3",
+      "source_frames": 3945,
+      "frames_outside_joint_limits": 1279,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 195,
+      "first_root_speed_m_s": 0.06996667014163176,
+      "root_speed_m_s_p99": 1.6145791784924974,
+      "max_root_speed_m_s": 2.1256337881527663
+    },
+    {
+      "name": "dance2_subject1",
+      "source_frames": 6771,
+      "frames_outside_joint_limits": 1788,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 1215,
+      "first_root_speed_m_s": 0.05437043576029935,
+      "root_speed_m_s_p99": 2.351143310375161,
+      "max_root_speed_m_s": 3.5312767071583275
+    },
+    {
+      "name": "dance2_subject2",
+      "source_frames": 6771,
+      "frames_outside_joint_limits": 1945,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 1822,
+      "first_root_speed_m_s": 0.014379830655823312,
+      "root_speed_m_s_p99": 1.822762349596746,
+      "max_root_speed_m_s": 5.150333087829797
+    },
+    {
+      "name": "dance2_subject3",
+      "source_frames": 6771,
+      "frames_outside_joint_limits": 1842,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 456,
+      "first_root_speed_m_s": 0.01437729269404282,
+      "root_speed_m_s_p99": 1.5309170725660095,
+      "max_root_speed_m_s": 4.142144963094895
+    },
+    {
+      "name": "dance2_subject4",
+      "source_frames": 6771,
+      "frames_outside_joint_limits": 2800,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 1194,
+      "first_root_speed_m_s": 37.18561009544913,
+      "root_speed_m_s_p99": 1.6933285259592477,
+      "max_root_speed_m_s": 37.18561009544913
+    },
+    {
+      "name": "dance2_subject5",
+      "source_frames": 6771,
+      "frames_outside_joint_limits": 156,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 329,
+      "first_root_speed_m_s": 0.35840625705086243,
+      "root_speed_m_s_p99": 1.9156495032754084,
+      "max_root_speed_m_s": 3.28027208469995
+    },
+    {
+      "name": "fallAndGetUp1_subject1",
+      "source_frames": 5046,
+      "frames_outside_joint_limits": 1161,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 256,
+      "first_root_speed_m_s": 0.34558388409359814,
+      "root_speed_m_s_p99": 3.3747968936285333,
+      "max_root_speed_m_s": 4.283487357975966
+    },
+    {
+      "name": "fallAndGetUp1_subject4",
+      "source_frames": 5047,
+      "frames_outside_joint_limits": 1278,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 219,
+      "first_root_speed_m_s": 0.2958517877066463,
+      "root_speed_m_s_p99": 4.526122594785529,
+      "max_root_speed_m_s": 7.146369843851581
+    },
+    {
+      "name": "fallAndGetUp1_subject5",
+      "source_frames": 5047,
+      "frames_outside_joint_limits": 761,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 270,
+      "first_root_speed_m_s": 0.058007992538482385,
+      "root_speed_m_s_p99": 4.272691735396821,
+      "max_root_speed_m_s": 5.37737787832223
+    },
+    {
+      "name": "fallAndGetUp2_subject2",
+      "source_frames": 4918,
+      "frames_outside_joint_limits": 420,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 211,
+      "first_root_speed_m_s": 0.03476949402482851,
+      "root_speed_m_s_p99": 4.861171839680683,
+      "max_root_speed_m_s": 6.347853482559858
+    },
+    {
+      "name": "fallAndGetUp2_subject3",
+      "source_frames": 4918,
+      "frames_outside_joint_limits": 1026,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 51,
+      "first_root_speed_m_s": 0.0172250871267561,
+      "root_speed_m_s_p99": 1.8492349966732535,
+      "max_root_speed_m_s": 2.8197672418750925
+    },
+    {
+      "name": "fallAndGetUp3_subject1",
+      "source_frames": 3066,
+      "frames_outside_joint_limits": 292,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 137,
+      "first_root_speed_m_s": 0.019346073128364706,
+      "root_speed_m_s_p99": 2.481859631583724,
+      "max_root_speed_m_s": 6.446958332700446
+    },
+    {
+      "name": "fight1_subject2",
+      "source_frames": 7347,
+      "frames_outside_joint_limits": 4177,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 480,
+      "first_root_speed_m_s": 0.023862582452212424,
+      "root_speed_m_s_p99": 3.73927722644787,
+      "max_root_speed_m_s": 4.999668023125126
+    },
+    {
+      "name": "fight1_subject3",
+      "source_frames": 7347,
+      "frames_outside_joint_limits": 3125,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 318,
+      "first_root_speed_m_s": 0.01264970681317467,
+      "root_speed_m_s_p99": 4.073875542390399,
+      "max_root_speed_m_s": 5.56217961584781
+    },
+    {
+      "name": "fight1_subject5",
+      "source_frames": 7347,
+      "frames_outside_joint_limits": 4779,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 310,
+      "first_root_speed_m_s": 0.03721562417029603,
+      "root_speed_m_s_p99": 2.8483866083866882,
+      "max_root_speed_m_s": 4.422017526671351
+    },
+    {
+      "name": "fightAndSports1_subject1",
+      "source_frames": 7355,
+      "frames_outside_joint_limits": 4543,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 292,
+      "first_root_speed_m_s": 0.011936155623473539,
+      "root_speed_m_s_p99": 3.401635981632635,
+      "max_root_speed_m_s": 3.9430413046645847
+    },
+    {
+      "name": "fightAndSports1_subject4",
+      "source_frames": 7355,
+      "frames_outside_joint_limits": 1943,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 494,
+      "first_root_speed_m_s": 0.006973492008678856,
+      "root_speed_m_s_p99": 2.6104466325518643,
+      "max_root_speed_m_s": 4.754533559238905
+    },
+    {
+      "name": "jumps1_subject1",
+      "source_frames": 7334,
+      "frames_outside_joint_limits": 1159,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 214,
+      "first_root_speed_m_s": 0.08975743296399957,
+      "root_speed_m_s_p99": 2.97193564298353,
+      "max_root_speed_m_s": 4.149804361733985
+    },
+    {
+      "name": "jumps1_subject2",
+      "source_frames": 7334,
+      "frames_outside_joint_limits": 1036,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 91,
+      "first_root_speed_m_s": 0.14569244017605454,
+      "root_speed_m_s_p99": 2.948127323312167,
+      "max_root_speed_m_s": 4.156537434761415
+    },
+    {
+      "name": "jumps1_subject5",
+      "source_frames": 7334,
+      "frames_outside_joint_limits": 1717,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 77,
+      "first_root_speed_m_s": 0.0575835125296317,
+      "root_speed_m_s_p99": 2.6056556326432196,
+      "max_root_speed_m_s": 3.6541122779474136
+    },
+    {
+      "name": "run1_subject2",
+      "source_frames": 7135,
+      "frames_outside_joint_limits": 3285,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 171,
+      "first_root_speed_m_s": 0.044761036763718176,
+      "root_speed_m_s_p99": 4.692398005633076,
+      "max_root_speed_m_s": 5.835541577550013
+    },
+    {
+      "name": "run1_subject5",
+      "source_frames": 7135,
+      "frames_outside_joint_limits": 3755,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 189,
+      "first_root_speed_m_s": 0.3148710837184107,
+      "root_speed_m_s_p99": 4.787927969597347,
+      "max_root_speed_m_s": 6.076082271923886
+    },
+    {
+      "name": "run2_subject1",
+      "source_frames": 7345,
+      "frames_outside_joint_limits": 1401,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 325,
+      "first_root_speed_m_s": 45.52980020649266,
+      "root_speed_m_s_p99": 4.617326773874326,
+      "max_root_speed_m_s": 45.52980020649266
+    },
+    {
+      "name": "run2_subject4",
+      "source_frames": 7345,
+      "frames_outside_joint_limits": 1456,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.34834133280000024
+      },
+      "frames_above_motor_velocity_metadata": 444,
+      "first_root_speed_m_s": 0.27856457883778807,
+      "root_speed_m_s_p99": 5.374291147094602,
+      "max_root_speed_m_s": 7.16071555263304
+    },
+    {
+      "name": "sprint1_subject2",
+      "source_frames": 8194,
+      "frames_outside_joint_limits": 1477,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 563,
+      "first_root_speed_m_s": 0.0357075881672477,
+      "root_speed_m_s_p99": 6.0060041504267785,
+      "max_root_speed_m_s": 7.124302415636231
+    },
+    {
+      "name": "sprint1_subject4",
+      "source_frames": 8194,
+      "frames_outside_joint_limits": 472,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 992,
+      "first_root_speed_m_s": 34.91778310353762,
+      "root_speed_m_s_p99": 6.850163570808783,
+      "max_root_speed_m_s": 34.91778310353762
+    },
+    {
+      "name": "walk1_subject1",
+      "source_frames": 7840,
+      "frames_outside_joint_limits": 1288,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 5,
+      "first_root_speed_m_s": 16.97649380816177,
+      "root_speed_m_s_p99": 2.095349130036867,
+      "max_root_speed_m_s": 16.97649380816177
+    },
+    {
+      "name": "walk1_subject2",
+      "source_frames": 7840,
+      "frames_outside_joint_limits": 164,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 18,
+      "first_root_speed_m_s": 5.29431018425773,
+      "root_speed_m_s_p99": 2.254085785906155,
+      "max_root_speed_m_s": 5.29431018425773
+    },
+    {
+      "name": "walk1_subject5",
+      "source_frames": 7840,
+      "frames_outside_joint_limits": 7,
+      "max_joint_limit_excess_rad": 0.058432975300000134,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.058432975300000134
+      },
+      "frames_above_motor_velocity_metadata": 23,
+      "first_root_speed_m_s": 0.16243426545300932,
+      "root_speed_m_s_p99": 2.139218722710296,
+      "max_root_speed_m_s": 2.514963714703132
+    },
+    {
+      "name": "walk2_subject1",
+      "source_frames": 7146,
+      "frames_outside_joint_limits": 1502,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 316,
+      "first_root_speed_m_s": 0.1562129625343015,
+      "root_speed_m_s_p99": 2.778430877256686,
+      "max_root_speed_m_s": 4.03983041313697
+    },
+    {
+      "name": "walk2_subject3",
+      "source_frames": 7146,
+      "frames_outside_joint_limits": 808,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.15275901790000002,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 52,
+      "first_root_speed_m_s": 0.04490718988553128,
+      "root_speed_m_s_p99": 3.119953126953017,
+      "max_root_speed_m_s": 4.386439095458024
+    },
+    {
+      "name": "walk2_subject4",
+      "source_frames": 7146,
+      "frames_outside_joint_limits": 299,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.3374503926999999,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 115,
+      "first_root_speed_m_s": 0.5412351162936918,
+      "root_speed_m_s_p99": 2.604347669962021,
+      "max_root_speed_m_s": 3.6116611537484977
+    },
+    {
+      "name": "walk3_subject1",
+      "source_frames": 7399,
+      "frames_outside_joint_limits": 503,
+      "max_joint_limit_excess_rad": 0.3215771948999999,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.3215771948999999,
+        "upper_right_4_joint": 0.13317464450000016
+      },
+      "frames_above_motor_velocity_metadata": 107,
+      "first_root_speed_m_s": 47.117726042697946,
+      "root_speed_m_s_p99": 1.1669440649658405,
+      "max_root_speed_m_s": 47.117726042697946
+    },
+    {
+      "name": "walk3_subject2",
+      "source_frames": 7399,
+      "frames_outside_joint_limits": 1160,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 53,
+      "first_root_speed_m_s": 2.7703939977467744,
+      "root_speed_m_s_p99": 2.9966640346259923,
+      "max_root_speed_m_s": 3.627165915234706
+    },
+    {
+      "name": "walk3_subject3",
+      "source_frames": 7399,
+      "frames_outside_joint_limits": 1034,
+      "max_joint_limit_excess_rad": 0.22112300930000006,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 2.999659999991522e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.22112300930000006,
+        "upper_right_4_joint": 0.09406865180000001
+      },
+      "frames_above_motor_velocity_metadata": 3,
+      "first_root_speed_m_s": 0.05611829512591578,
+      "root_speed_m_s_p99": 1.0915335588290664,
+      "max_root_speed_m_s": 1.4920695436855593
+    },
+    {
+      "name": "walk3_subject4",
+      "source_frames": 7399,
+      "frames_outside_joint_limits": 763,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "leg_l4_joint": 3.0000000000196536e-05,
+        "leg_r4_joint": 3.0000000000196536e-05,
+        "upper_left_4_joint": 0.3923539406000003,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 139,
+      "first_root_speed_m_s": 17.878093530022024,
+      "root_speed_m_s_p99": 2.366055882622204,
+      "max_root_speed_m_s": 17.878093530022024
+    },
+    {
+      "name": "walk3_subject5",
+      "source_frames": 7399,
+      "frames_outside_joint_limits": 6946,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.2907186424000001
+      },
+      "frames_above_motor_velocity_metadata": 18,
+      "first_root_speed_m_s": 0.43175588484581384,
+      "root_speed_m_s_p99": 2.096300029595548,
+      "max_root_speed_m_s": 2.681234541600424
+    },
+    {
+      "name": "walk4_subject1",
+      "source_frames": 4918,
+      "frames_outside_joint_limits": 4445,
+      "max_joint_limit_excess_rad": 0.39249999999999985,
+      "joint_limit_excess_by_name": {
+        "upper_left_4_joint": 0.39249999999999985,
+        "upper_right_4_joint": 0.39249999999999985
+      },
+      "frames_above_motor_velocity_metadata": 53,
+      "first_root_speed_m_s": 0.025387419865129223,
+      "root_speed_m_s_p99": 1.1201189801924794,
+      "max_root_speed_m_s": 1.4705416695153186
+    }
+  ]
+}

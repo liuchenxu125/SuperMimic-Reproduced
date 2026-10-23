@@ -1,0 +1,29 @@
+{
+  "test_only_random_actor": true,
+  "trained_weights_created": false,
+  "goal_dim": 640,
+  "cpp_frames_checked": 128,
+  "max_abs_errors": {
+    "observation": 0.0,
+    "goal": 0.0,
+    "actor": 1.3969838619232178e-09,
+    "target": 1.4791646796297186e-08
+  },
+  "position_and_global_yaw_invariant": true,
+  "ros": [
+    {
+      "dry_run": true,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 204,
+      "last_status": "FAULT dry_run=true frame=9 inference_ms=0.022241 sensors=Stale sensor timestamp or receipt fault=Sensor timestamps are not synchronized"
+    },
+    {
+      "dry_run": false,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 573,
+      "last_status": "FAULT dry_run=false frame=10 inference_ms=0.032467 sensors=Stale sensor timestamp or receipt fault=Sensor timestamps are not synchronized"
+    }
+  ]
+}

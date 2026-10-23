@@ -29,6 +29,7 @@
 
 | 文件 | 内容 |
 |---|---|
+| [训练流程.md](训练流程.md) | 本机 G1 / Casbot02 的精简指令：数据、训练、续训、评测、play 和 Casbot02 sim2sim |
 | [docs/PAPER_SPEC.md](docs/PAPER_SPEC.md) | 论文全部数值、公式、协议的逐条转录；"未指明"清单 U1–U20 |
 | [docs/REPRODUCTION_PLAN.md](docs/REPRODUCTION_PLAN.md) | 复现计划：目标、环境、设计决策 D1–D20、repo 骨架、分阶段步骤、测试、预算、风险 |
 | [docs/REVIEW_LOG.md](docs/REVIEW_LOG.md) | 计划的自审与两轮对抗审查记录 |
@@ -81,7 +82,39 @@ uv run python scripts/data/build_library.py --help
 
 `data/` 与 `logs/` 不入库。
 
+### 已下载 LAFAN1 CSV 的本地转换
+
+当前公开仓库遗漏了 `src/supermimic/data/` 和 `scripts/data/`。本地已根据现有测试与固定版本
+mjlab 的数据约定重新实现 `motion_convert.py` 和 `csv_to_npz_batch.py`；它们不是找回的作者原文件。
+同时将 `.gitignore` 的 `data/` 改为 `/data/`，只忽略根目录数据，不再忽略源码目录。
+
+对已下载的 **G1 重定向 CSV**（36 列、30 fps、米/弧度、四元数 xyzw），运行：
+
+```bash
+env -u PYTHONPATH uv run python scripts/data/csv_to_npz_batch.py \
+  --input-dir ~/Desktop/UFO/humanoidverse/data/LAFAN1_Retargeting_Dataset/g1 \
+  --output-dir data/npz/lafan1 --input-fps 30 --output-fps 50 --workers 4
+```
+
+转换在 CPU 上运行，无需 CUDA；默认跳过已存在的输出，`--overwrite` 可重新生成。
+用 `--pattern walk1_subject1.csv --workers 1` 可先试一条动作。
+输出包含关节位置/速度、30 个刚体的世界坐标位姿及速度、关节名和刚体名，可供 `MotionLibrary` 读取。
+LAFAN1 直接使用 NPZ，**无需** `filter_bones_seed.py` 或 `build_library.py`；这两个脚本目前仍缺失。
+
+本地另已按现有训练接口重新实现 `replay_buffer.py` 和 `recorder.py`，包含回合隔离的环形存储、
+真实终态记录、世界模型窗口采样与策略历史采样；这些也不是找回的作者原文件。
+实现约定与验证命令见 [docs/LOCAL_DATA_IMPLEMENTATION.md](docs/LOCAL_DATA_IMPLEMENTATION.md)。
+
 ## 训练
+
+Casbot02 27 DOF 已接入，可用 `--robot casbot02`；模型与电机参数复用本机 ProtoMotions。
+数据转换、训练、播放命令及数据质量报告见 [Casbot02 适配说明](docs/CASBOT02.md)。
+Casbot02 已有独立 CPU MuJoCo sim2sim，使用导出的 actor 和可搬移场景包，命令见
+[Casbot02 sim2sim](docs/CASBOT02_SIM2SIM.md)。
+
+Casbot02 清洗副本的制作方法和结果见 [数据清洗报告](outputs/casbot02_data_cleaning/README.md)，
+G1 / Casbot02 的日常指令见 [训练流程](训练流程.md)。实际数据集、权重、生成的运行包及本机独立内网
+`rl_controller` 工程不随本仓库上传；Casbot02 机器人资产、训练/转换/清洗/导出源码和小型验证报告保留在仓库中。
 
 ```bash
 # LAFAN1，论文观测口径，单卡

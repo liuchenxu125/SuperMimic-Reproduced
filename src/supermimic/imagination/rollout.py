@@ -10,7 +10,12 @@ from supermimic.data.replay_buffer import StartBatch
 from supermimic.envs.mdp.motion_library import MotionLibrary
 from supermimic.imagination.compiled import REWARD_TERM_NAMES, ImagStep
 from supermimic.policy.nets import Policy
-from supermimic.world_model.heads import ReferenceFrame, analytic_observation, anchor_relative_obs, flatten_history_term_major
+from supermimic.world_model.heads import (
+    ReferenceFrame,
+    analytic_observation,
+    anchor_relative_obs,
+    flatten_history_term_major,
+)
 from supermimic.world_model.wm_trainer import reference_at
 from supermimic.world_model.world_model import WorldModel
 
@@ -47,7 +52,10 @@ def imagine(
     n = start.state.shape[0]
     q0 = lib.default_joint_pos
     step_fn = step_fn or ImagStep(wm, q0)
-    noise_half = OBS_NOISE_HALF.to(device)
+    nj = wm.spec.layout.num_joints
+    noise_half = torch.tensor(
+        [0.01] * nj + [0.5] * nj + [0.2] * 3 + [0.05] * 3 + [0.0] * nj, device=device
+    )
     anchor_noise_half = ANCHOR_NOISE_HALF.to(device)
     ai = wm.heads.anchor_index
 
@@ -60,13 +68,21 @@ def imagine(
         g = lib.goal_window(frame_t, future_frames)
         if not anchor_obs:
             return g
-        rel = anchor_relative_obs(anchor_pose[..., 0:3], anchor_pose[..., 3:7], ref_t.body_pos_w[..., ai, :], ref_t.body_quat_w[..., ai, :])
+        rel = anchor_relative_obs(
+            anchor_pose[..., 0:3],
+            anchor_pose[..., 3:7],
+            ref_t.body_pos_w[..., ai, :],
+            ref_t.body_quat_w[..., ai, :],
+        )
         if obs_noise:
             rel = rel + (torch.rand_like(rel) * 2 - 1) * anchor_noise_half
         return torch.cat([g, rel], dim=-1)
 
     # Initial observation history from the logged states/actions (noise re-sampled per frame).
-    hist = [add_noise(analytic_observation(start.hist_states[i], start.hist_actions[i], start.xi, q0)) for i in range(start.hist_states.shape[0])]
+    hist = [
+        add_noise(analytic_observation(start.hist_states[i], start.hist_actions[i], start.xi, q0))
+        for i in range(start.hist_states.shape[0])
+    ]
     s = start.state
     frame = start.frame.clone()
     a_prev = start.prev_action
@@ -78,12 +94,21 @@ def imagine(
     # All target frames of the rollout are known up front (frame + t, clamped at the clip end):
     # gather / FK the references for every step in one batched call.
     last = lib.last_frame_of(frame)
-    frames_all = torch.minimum(frame[None, :] + torch.arange(horizon + 1, device=device)[:, None], last[None, :])  # (H+1, n)
+    frames_all = torch.minimum(
+        frame[None, :] + torch.arange(horizon + 1, device=device)[:, None], last[None, :]
+    )  # (H+1, n)
     ref_all = reference_at(lib, frames_all.reshape(-1))
 
     def ref_at(t):
         sl = slice(t * n, (t + 1) * n)
-        return ReferenceFrame(ref_all.body_pos_w[sl], ref_all.body_quat_w[sl], ref_all.body_lin_vel_w[sl], ref_all.body_ang_vel_w[sl], ref_all.root_pos_w[sl], ref_all.root_quat_w[sl])
+        return ReferenceFrame(
+            ref_all.body_pos_w[sl],
+            ref_all.body_quat_w[sl],
+            ref_all.body_lin_vel_w[sl],
+            ref_all.body_ang_vel_w[sl],
+            ref_all.root_pos_w[sl],
+            ref_all.root_quat_w[sl],
+        )
 
     ref = ref_at(0)
     if anchor_obs:

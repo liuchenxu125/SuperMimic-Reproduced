@@ -1,0 +1,594 @@
+{
+  "checkpoint": "logs/casbot02_lafan1/ckpt_latest.pt",
+  "robot": "casbot02",
+  "control_hz": 50,
+  "control_dt_s": 0.02,
+  "simulator_physics_hz": 200,
+  "inputs": {
+    "obs_hist": {
+      "shape": [
+        1,
+        870
+      ],
+      "dtype": "float32",
+      "packing": "term-major; each term oldest to newest",
+      "slices": [
+        {
+          "slice": [
+            0,
+            270
+          ],
+          "term": "joint_pos - default_joint_pos",
+          "history": 10,
+          "per_frame": 27,
+          "units": "rad"
+        },
+        {
+          "slice": [
+            270,
+            540
+          ],
+          "term": "joint_vel",
+          "history": 10,
+          "per_frame": 27,
+          "units": "rad/s"
+        },
+        {
+          "slice": [
+            540,
+            570
+          ],
+          "term": "base_link angular velocity in base_link frame",
+          "history": 10,
+          "per_frame": 3,
+          "units": "rad/s"
+        },
+        {
+          "slice": [
+            570,
+            600
+          ],
+          "term": "R_world_from_base.T @ [0,0,-1]",
+          "history": 10,
+          "per_frame": 3,
+          "units": "unit vector"
+        },
+        {
+          "slice": [
+            600,
+            870
+          ],
+          "term": "previous normalized clean policy action",
+          "history": 10,
+          "per_frame": 27,
+          "units": "dimensionless"
+        }
+      ],
+      "reset": "Repeat first measured frame for all 10 history slots; previous actions zero."
+    },
+    "goal": {
+      "shape": [
+        1,
+        649
+      ],
+      "dtype": "float32",
+      "packing": "10 frame-major reference frames, then 3 relative-position and 6 relative-rotation elements",
+      "reference_offsets_s": [
+        0.0,
+        0.02,
+        0.04,
+        0.06,
+        0.08,
+        0.1,
+        0.12,
+        0.14,
+        0.16,
+        0.18
+      ],
+      "per_reference_frame_64": [
+        {
+          "slice": [
+            0,
+            27
+          ],
+          "term": "reference joint_pos - default_joint_pos",
+          "units": "rad"
+        },
+        {
+          "slice": [
+            27,
+            54
+          ],
+          "term": "reference joint_vel",
+          "units": "rad/s"
+        },
+        {
+          "slice": [
+            54,
+            57
+          ],
+          "term": "reference gravity in reference base frame"
+        },
+        {
+          "slice": [
+            57,
+            60
+          ],
+          "term": "reference angular velocity in reference base frame",
+          "units": "rad/s"
+        },
+        {
+          "slice": [
+            60,
+            63
+          ],
+          "term": "reference linear velocity in reference yaw-only heading frame",
+          "units": "m/s"
+        },
+        {
+          "slice": [
+            63,
+            64
+          ],
+          "term": "reference base_link height",
+          "units": "m"
+        }
+      ],
+      "anchor_slices": [
+        {
+          "slice": [
+            640,
+            643
+          ],
+          "term": "R_robot.T @ (p_reference - p_robot)",
+          "units": "m"
+        },
+        {
+          "slice": [
+            643,
+            649
+          ],
+          "term": "(R_robot.T @ R_reference)[:, :2].reshape(6)",
+          "packing": "R00,R01,R10,R11,R20,R21"
+        }
+      ],
+      "anchor_body": "base_link",
+      "requires_real_base_pose_estimate": true
+    }
+  },
+  "normalization": "Policy contains fixed input scaling buffers. Supply raw values in stated units; do not scale again outside the loaded Policy.",
+  "output": {
+    "shape": [
+      1,
+      27
+    ],
+    "term": "normalized clean actions",
+    "bounded_by_tanh": false,
+    "joint_target": "q_des[i] = default_joint_pos[i] + action_scale[i] * action[i]",
+    "pd_reference": "Kp*(q_des-q) - Kd*qdot, desired velocity zero; simulator uses implicit PD and effort limits.",
+    "deployment_noise": "No synthetic action or observation noise."
+  },
+  "quaternion_convention_in_project": "wxyz, rotation from base frame to world frame",
+  "motor_rows_in_policy_order": [
+    {
+      "index": 0,
+      "joint_name": "leg_l1_joint",
+      "default_joint_pos_rad": -0.245,
+      "action_scale_rad": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.9199,
+        1.5708
+      ]
+    },
+    {
+      "index": 1,
+      "joint_name": "leg_l2_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.13204225352112675,
+      "kp": 284,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -0.17453,
+        1.5708
+      ]
+    },
+    {
+      "index": 2,
+      "joint_name": "leg_l3_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09722222222222222,
+      "kp": 180,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 3,
+      "joint_name": "leg_l4_joint",
+      "default_joint_pos_rad": 0.42,
+      "action_scale_rad": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        0.0,
+        2.5307
+      ]
+    },
+    {
+      "index": 4,
+      "joint_name": "leg_l5_joint",
+      "default_joint_pos_rad": -0.2,
+      "action_scale_rad": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -0.87266,
+        0.50614
+      ]
+    },
+    {
+      "index": 5,
+      "joint_name": "leg_l6_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -0.50614,
+        0.50614
+      ]
+    },
+    {
+      "index": 6,
+      "joint_name": "leg_r1_joint",
+      "default_joint_pos_rad": -0.245,
+      "action_scale_rad": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.9199,
+        1.5708
+      ]
+    },
+    {
+      "index": 7,
+      "joint_name": "leg_r2_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.13204225352112675,
+      "kp": 284,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        0.17453
+      ]
+    },
+    {
+      "index": 8,
+      "joint_name": "leg_r3_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09722222222222222,
+      "kp": 180,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 9,
+      "joint_name": "leg_r4_joint",
+      "default_joint_pos_rad": 0.42,
+      "action_scale_rad": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        0.0,
+        2.5307
+      ]
+    },
+    {
+      "index": 10,
+      "joint_name": "leg_r5_joint",
+      "default_joint_pos_rad": -0.2,
+      "action_scale_rad": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -0.87266,
+        0.50614
+      ]
+    },
+    {
+      "index": 11,
+      "joint_name": "leg_r6_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -0.50614,
+        0.50614
+      ]
+    },
+    {
+      "index": 12,
+      "joint_name": "waist_yaw_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "source_velocity_limit_rad_s": 14,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 13,
+      "joint_name": "upper_left_1_joint",
+      "default_joint_pos_rad": -0.175,
+      "action_scale_rad": 0.1431297709923664,
+      "kp": 131,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -3.1416,
+        1.0472
+      ]
+    },
+    {
+      "index": 14,
+      "joint_name": "upper_left_2_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.13992537313432835,
+      "kp": 134,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -0.3491,
+        3.1416
+      ]
+    },
+    {
+      "index": 15,
+      "joint_name": "upper_left_3_joint",
+      "default_joint_pos_rad": 0.36,
+      "action_scale_rad": 0.09278350515463918,
+      "kp": 97,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 16,
+      "joint_name": "upper_left_4_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.125,
+      "kp": 150,
+      "kd": 10,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -1.8675,
+        0.0
+      ]
+    },
+    {
+      "index": 17,
+      "joint_name": "upper_left_5_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 18,
+      "joint_name": "upper_left_6_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.0472,
+        1.0472
+      ]
+    },
+    {
+      "index": 19,
+      "joint_name": "upper_left_7_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.0472,
+        1.5708
+      ]
+    },
+    {
+      "index": 20,
+      "joint_name": "upper_right_1_joint",
+      "default_joint_pos_rad": -0.175,
+      "action_scale_rad": 0.1431297709923664,
+      "kp": 131,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -3.1416,
+        1.0472
+      ]
+    },
+    {
+      "index": 21,
+      "joint_name": "upper_right_2_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.13992537313432835,
+      "kp": 134,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -3.1416,
+        0.3491
+      ]
+    },
+    {
+      "index": 22,
+      "joint_name": "upper_right_3_joint",
+      "default_joint_pos_rad": -0.36,
+      "action_scale_rad": 0.09278350515463918,
+      "kp": 97,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 23,
+      "joint_name": "upper_right_4_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.125,
+      "kp": 150,
+      "kd": 10,
+      "effort_limit_nm": 75,
+      "source_velocity_limit_rad_s": 12.2,
+      "joint_hard_limits_rad": [
+        -1.8675,
+        0.0
+      ]
+    },
+    {
+      "index": 24,
+      "joint_name": "upper_right_5_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.5708
+      ]
+    },
+    {
+      "index": 25,
+      "joint_name": "upper_right_6_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.0472,
+        1.0472
+      ]
+    },
+    {
+      "index": 26,
+      "joint_name": "upper_right_7_joint",
+      "default_joint_pos_rad": 0.0,
+      "action_scale_rad": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "source_velocity_limit_rad_s": 9.3,
+      "joint_hard_limits_rad": [
+        -1.5708,
+        1.0472
+      ]
+    }
+  ],
+  "joint_obs_order": [
+    "leg_l1_joint",
+    "leg_l2_joint",
+    "leg_l3_joint",
+    "leg_l4_joint",
+    "leg_l5_joint",
+    "leg_l6_joint",
+    "leg_r1_joint",
+    "leg_r2_joint",
+    "leg_r3_joint",
+    "leg_r4_joint",
+    "leg_r5_joint",
+    "leg_r6_joint",
+    "waist_yaw_joint",
+    "upper_left_1_joint",
+    "upper_left_2_joint",
+    "upper_left_3_joint",
+    "upper_left_4_joint",
+    "upper_left_5_joint",
+    "upper_left_6_joint",
+    "upper_left_7_joint",
+    "upper_right_1_joint",
+    "upper_right_2_joint",
+    "upper_right_3_joint",
+    "upper_right_4_joint",
+    "upper_right_5_joint",
+    "upper_right_6_joint",
+    "upper_right_7_joint"
+  ],
+  "warning": "Policy action targets use entity natural joint order; raw MJCF actuator enumeration has waist last and must not be substituted for the policy order.",
+  "excluded_from_actor_inference": [
+    "world model",
+    "critic",
+    "replay buffer",
+    "domain-randomization context xi"
+  ],
+  "validation": {
+    "cpu_shape_check_passed": true,
+    "zero_inputs_used_only_for_shape_check": true,
+    "hardware_deployment_tested": false,
+    "exported_runtime_model": true
+  }
+}

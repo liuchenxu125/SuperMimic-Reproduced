@@ -46,14 +46,24 @@ class MultiClipMotionCommand(CommandTerm):
         self.robot_anchor_body_index = self.robot.body_names.index(cfg.anchor_body_name)
         self.motion_anchor_body_index = cfg.body_names.index(cfg.anchor_body_name)
         self.body_indexes = torch.tensor(
-            self.robot.find_bodies(cfg.body_names, preserve_order=True)[0], dtype=torch.long, device=self.device
+            self.robot.find_bodies(cfg.body_names, preserve_order=True)[0],
+            dtype=torch.long,
+            device=self.device,
         )
         self.robot_root_body_index = self.robot.body_names.index(cfg.root_body_name)
 
         default_joint_pos = self.robot.data.default_joint_pos[0].detach()
         self.library = MotionLibrary(
-            cfg.npz_files, cfg.body_names, default_joint_pos, device=self.device, bin_frames=cfg.bin_frames,
-            compact=cfg.compact_library, store_dtype=torch.float16 if cfg.library_fp16 else torch.float32,
+            cfg.npz_files,
+            cfg.body_names,
+            default_joint_pos,
+            device=self.device,
+            bin_frames=cfg.bin_frames,
+            compact=cfg.compact_library,
+            store_dtype=torch.float16 if cfg.library_fp16 else torch.float32,
+            root_body_name=cfg.root_body_name,
+            robot_name=cfg.robot_name,
+            joint_names=self.robot.joint_names,
         )
         print(f"[INFO] {self.library.summary()}")
         lib = self.library
@@ -69,17 +79,29 @@ class MultiClipMotionCommand(CommandTerm):
         # Return-based reset sampling state.
         self.bin_return = torch.full((lib.num_bins,), cfg.g_max, device=self.device)
         self.bin_memory = torch.full((lib.num_bins,), 1.0 / lib.num_bins, device=self.device)
-        self.max_ep_steps = min(int(math.ceil(env.cfg.episode_length_s / env.step_dt)) + 2, cfg.max_logged_steps)
+        self.max_ep_steps = min(
+            math.ceil(env.cfg.episode_length_s / env.step_dt) + 2, cfg.max_logged_steps
+        )
         # Evaluation hook: when >= 0, the next reset of that env starts exactly at this global frame.
         self.forced_frame = torch.full((n,), -1, dtype=torch.long, device=self.device)
         self.ep_rewards = torch.zeros(n, self.max_ep_steps, device=self.device)
         self.ep_bins = torch.zeros(n, self.max_ep_steps, dtype=torch.long, device=self.device)
         self.ep_len = torch.zeros(n, dtype=torch.long, device=self.device)
-        self._gamma_pow = cfg.gamma ** torch.arange(self.max_ep_steps, device=self.device, dtype=torch.float64)
+        self._gamma_pow = cfg.gamma ** torch.arange(
+            self.max_ep_steps, device=self.device, dtype=torch.float64
+        )
         self.bootstrap_fn = None  # optional: env_ids -> value estimate for truncated episodes
 
-        for k in ("error_anchor_pos", "error_anchor_rot", "error_body_pos", "error_body_rot",
-                  "error_joint_pos", "error_joint_vel", "sampling_entropy", "episode_return_to_go"):
+        for k in (
+            "error_anchor_pos",
+            "error_anchor_rot",
+            "error_body_pos",
+            "error_body_rot",
+            "error_joint_pos",
+            "error_joint_vel",
+            "sampling_entropy",
+            "episode_return_to_go",
+        ):
             self.metrics[k] = torch.zeros(n, device=self.device)
 
     # ------------------------------------------------------------------ reference (mjlab MotionCommand API)
@@ -182,10 +204,18 @@ class MultiClipMotionCommand(CommandTerm):
     # ------------------------------------------------------------------ metrics
 
     def _update_metrics(self):
-        self.metrics["error_anchor_pos"] = torch.norm(self.anchor_pos_w - self.robot_anchor_pos_w, dim=-1)
-        self.metrics["error_anchor_rot"] = quat_error_magnitude(self.anchor_quat_w, self.robot_anchor_quat_w)
-        self.metrics["error_body_pos"] = torch.norm(self.body_pos_relative_w - self.robot_body_pos_w, dim=-1).mean(-1)
-        self.metrics["error_body_rot"] = quat_error_magnitude(self.body_quat_relative_w, self.robot_body_quat_w).mean(-1)
+        self.metrics["error_anchor_pos"] = torch.norm(
+            self.anchor_pos_w - self.robot_anchor_pos_w, dim=-1
+        )
+        self.metrics["error_anchor_rot"] = quat_error_magnitude(
+            self.anchor_quat_w, self.robot_anchor_quat_w
+        )
+        self.metrics["error_body_pos"] = torch.norm(
+            self.body_pos_relative_w - self.robot_body_pos_w, dim=-1
+        ).mean(-1)
+        self.metrics["error_body_rot"] = quat_error_magnitude(
+            self.body_quat_relative_w, self.robot_body_quat_w
+        ).mean(-1)
         self.metrics["error_joint_pos"] = torch.norm(self.joint_pos - self.robot_joint_pos, dim=-1)
         self.metrics["error_joint_vel"] = torch.norm(self.joint_vel - self.robot_joint_vel, dim=-1)
 
@@ -196,13 +226,19 @@ class MultiClipMotionCommand(CommandTerm):
         reward = getattr(self._env, "reward_buf", None)
         if reward is None:
             return
-        ids = torch.arange(self.num_envs, device=self.device) if env_mask is None else env_mask.nonzero().squeeze(-1)
+        ids = (
+            torch.arange(self.num_envs, device=self.device)
+            if env_mask is None
+            else env_mask.nonzero().squeeze(-1)
+        )
         if ids.numel() == 0:
             return
         pos = self.ep_len[ids].clamp_max(self.max_ep_steps - 1)
         self.ep_rewards[ids, pos] = reward[ids]
         self.ep_bins[ids, pos] = self.library.bin_of_frame(self.frame[ids])
-        self.ep_len[ids] = torch.minimum(self.ep_len[ids] + 1, torch.full_like(pos, self.max_ep_steps))
+        self.ep_len[ids] = torch.minimum(
+            self.ep_len[ids] + 1, torch.full_like(pos, self.max_ep_steps)
+        )
 
     def _finalize_episodes(self, env_ids: torch.Tensor) -> None:
         """Fold the finished episodes' discounted returns-to-go into the per-bin estimates."""
@@ -221,13 +257,21 @@ class MultiClipMotionCommand(CommandTerm):
         rtg = torch.flip(torch.cumsum(torch.flip(disc, [1]), 1), [1]) / gp[None, :]
         # Truncated (timed-out) episodes: bootstrap with the critic if available, otherwise
         # drop the steps too close to the truncation point (plan D14).
-        terminated = self._env.termination_manager.terminated[env_ids] if hasattr(self._env, "termination_manager") else torch.ones_like(lens, dtype=torch.bool)
+        terminated = (
+            self._env.termination_manager.terminated[env_ids]
+            if hasattr(self._env, "termination_manager")
+            else torch.ones_like(lens, dtype=torch.bool)
+        )
         truncated = ~terminated & ~self.clip_end[env_ids]
         if truncated.any():
             if self.bootstrap_fn is not None:
                 v = self.bootstrap_fn(env_ids).double()  # (n,)
-                remaining = (lens[:, None] - torch.arange(T, device=self.device)[None, :]).clamp_min(0).double()
-                rtg = rtg + truncated[:, None] * (cfg.gamma ** remaining) * v[:, None]
+                remaining = (
+                    (lens[:, None] - torch.arange(T, device=self.device)[None, :])
+                    .clamp_min(0)
+                    .double()
+                )
+                rtg = rtg + truncated[:, None] * (cfg.gamma**remaining) * v[:, None]
             else:
                 remaining = lens[:, None] - torch.arange(T, device=self.device)[None, :]
                 tmask = tmask & ~(truncated[:, None] & (remaining < cfg.min_remaining_steps))
@@ -237,10 +281,14 @@ class MultiClipMotionCommand(CommandTerm):
         if b.numel() == 0:
             return
         sums = torch.zeros(self.library.num_bins, device=self.device).index_add_(0, b, g)
-        cnts = torch.zeros(self.library.num_bins, device=self.device).index_add_(0, b, torch.ones_like(g))
+        cnts = torch.zeros(self.library.num_bins, device=self.device).index_add_(
+            0, b, torch.ones_like(g)
+        )
         touched = cnts > 0
         mean = sums[touched] / cnts[touched]
-        self.bin_return[touched] = (1 - cfg.ema_alpha) * self.bin_return[touched] + cfg.ema_alpha * mean
+        self.bin_return[touched] = (1 - cfg.ema_alpha) * self.bin_return[
+            touched
+        ] + cfg.ema_alpha * mean
         self.metrics["episode_return_to_go"][env_ids] = rtg[:, 0].float()
         self.ep_len[env_ids] = 0
 
@@ -273,7 +321,9 @@ class MultiClipMotionCommand(CommandTerm):
         self.metrics["sampling_entropy"][:] = ent
         return f
 
-    def _write_reference_state_to_sim(self, env_ids, root_pos, root_ori, root_lin_vel, root_ang_vel, joint_pos, joint_vel):
+    def _write_reference_state_to_sim(
+        self, env_ids, root_pos, root_ori, root_lin_vel, root_ang_vel, joint_pos, joint_vel
+    ):
         soft_limits = self.robot.data.soft_joint_pos_limits[env_ids]
         joint_pos = torch.clip(joint_pos, soft_limits[:, :, 0], soft_limits[:, :, 1])
         self.robot.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
@@ -304,11 +354,15 @@ class MultiClipMotionCommand(CommandTerm):
         joint_vel = r.joint_vel
 
         keys = ["x", "y", "z", "roll", "pitch", "yaw"]
-        ranges = torch.tensor([self.cfg.pose_range.get(k, (0.0, 0.0)) for k in keys], device=self.device)
+        ranges = torch.tensor(
+            [self.cfg.pose_range.get(k, (0.0, 0.0)) for k in keys], device=self.device
+        )
         rs = sample_uniform(ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=self.device)
         root_pos = root_pos + rs[:, 0:3]
         root_ori = quat_mul(quat_from_euler_xyz(rs[:, 3], rs[:, 4], rs[:, 5]), root_ori)
-        ranges = torch.tensor([self.cfg.velocity_range.get(k, (0.0, 0.0)) for k in keys], device=self.device)
+        ranges = torch.tensor(
+            [self.cfg.velocity_range.get(k, (0.0, 0.0)) for k in keys], device=self.device
+        )
         rs = sample_uniform(ranges[:, 0], ranges[:, 1], (len(env_ids), 6), device=self.device)
         root_lin_vel = root_lin_vel + rs[:, :3]
         root_ang_vel = root_ang_vel + rs[:, 3:]
@@ -316,7 +370,9 @@ class MultiClipMotionCommand(CommandTerm):
         if hi > lo:
             joint_pos = joint_pos + sample_uniform(lo, hi, joint_pos.shape, device=self.device)
 
-        self._write_reference_state_to_sim(env_ids, root_pos, root_ori, root_lin_vel, root_ang_vel, joint_pos, joint_vel)
+        self._write_reference_state_to_sim(
+            env_ids, root_pos, root_ori, root_lin_vel, root_ang_vel, joint_pos, joint_vel
+        )
 
     def update_relative_body_poses(self) -> None:
         nb = len(self.cfg.body_names)
@@ -328,7 +384,9 @@ class MultiClipMotionCommand(CommandTerm):
         delta_pos_w[..., 2] = anchor_pos[..., 2]
         delta_ori_w = yaw_quat(quat_mul(robot_anchor_quat, quat_inv(anchor_quat)))
         self.body_quat_relative_w = quat_mul(delta_ori_w, self.body_quat_w)
-        self.body_pos_relative_w = delta_pos_w + quat_apply(delta_ori_w, self.body_pos_w - anchor_pos)
+        self.body_pos_relative_w = delta_pos_w + quat_apply(
+            delta_ori_w, self.body_pos_w - anchor_pos
+        )
 
     def _update_command(self, env_ids: torch.Tensor | None = None):
         # Clip end must be judged against the clip of the *current* frame (frame+1 may already be
@@ -356,7 +414,13 @@ class MultiClipMotionCommand(CommandTerm):
         self.clip_end[env_ids] = False
         r = self.library.ref(frame)
         self._write_reference_state_to_sim(
-            env_ids, r.root_pos_w + self._env.scene.env_origins[env_ids], r.root_quat_w, r.root_lin_vel_w, r.root_ang_vel_w, r.joint_pos, r.joint_vel
+            env_ids,
+            r.root_pos_w + self._env.scene.env_origins[env_ids],
+            r.root_quat_w,
+            r.root_lin_vel_w,
+            r.root_ang_vel_w,
+            r.joint_pos,
+            r.joint_vel,
         )
 
     # ------------------------------------------------------------------ debug visualization (viewer only)
@@ -396,6 +460,7 @@ class MultiClipMotionCommand(CommandTerm):
 
 @dataclass(kw_only=True)
 class MultiClipMotionCommandCfg(CommandTermCfg):
+    robot_name: str = "g1"
     npz_files: list[str]
     anchor_body_name: str
     root_body_name: str = "pelvis"

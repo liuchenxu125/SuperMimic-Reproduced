@@ -50,6 +50,7 @@ def main(
     policy, cfg = load_policy_from_checkpoint(ckpt, device)
     args = SuperMimicEnvCfgArgs(
         npz_files=files,
+        robot=cfg.get("robot", "g1"),
         num_envs=num_envs,
         future_frames=cfg["env"]["future_frames"],
         episode_length_s=1.0e5,
@@ -66,7 +67,11 @@ def main(
     env = RslRlVecEnvWrapper(make_env(args, device=device))
     pol = _DictPolicy(policy)
     if viewer == "auto":
-        viewer = "native" if (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")) else "viser"
+        viewer = (
+            "native"
+            if (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+            else "viser"
+        )
     print(f"[INFO] {len(files)} clip(s), {num_envs} env(s), viewer={viewer}")
     try:
         if viewer == "native":

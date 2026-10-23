@@ -5,7 +5,7 @@ __pycache__/
 build/
 dist/
 logs/
-data/
+/data/
 wandb/
 *.npz
 *.pt
@@ -13,3 +13,20 @@ wandb/
 .pytest_cache/
 .ruff_cache/
 experiments/**/outputs/
+
+# Standalone internal hardware controller / SDK checkout.
+/rl_controller/
+
+# Generated packages, paper translations and scratch outputs stay local.
+# Keep the small Casbot02 audit / verification reports reproducible.
+/outputs/*
+!/outputs/casbot02_data_cleaning/
+!/outputs/casbot02_deployment/
+!/outputs/casbot02_hardware/
+!/outputs/casbot02_sim2sim/
+/outputs/casbot02_hardware/*
+!/outputs/casbot02_hardware/*.json
+/outputs/casbot02_sim2sim/*
+!/outputs/casbot02_sim2sim/*.json
+!/outputs/casbot02_sim2sim/README.md
+!/outputs/casbot02_sim2sim/preview.png

@@ -1,0 +1,22 @@
+{
+  "bundle": "/home/casbot/Desktop/SuperMimic-Reproduced/outputs/casbot02_sim2sim",
+  "runs": [
+    {
+      "clip": "dance1_subject1",
+      "start_frame": 5,
+      "steps": 500,
+      "simulated_seconds": 10.0,
+      "failed": false,
+      "completed_clip": false,
+      "mean_height_error_m": 0.020499108911428268,
+      "mean_tilt_error": 0.006646230481814998,
+      "mean_root_position_error_m": 0.06370238774689409,
+      "mean_joint_rmse_rad": 0.19010790740695743,
+      "max_abs_action": 39.14268493652344,
+      "physics": "native MuJoCo CPU",
+      "actor_runtime": "TorchScript CPU",
+      "root_state_source": "MuJoCo ground truth; not a hardware state estimator",
+      "reset_goal_advance_frames": 1
+    }
+  ]
+}

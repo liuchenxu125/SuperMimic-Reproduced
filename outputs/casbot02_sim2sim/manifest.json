@@ -1,0 +1,502 @@
+{
+  "format": "supermimic-native-mujoco-v1",
+  "robot": "casbot02",
+  "actor_file": "actor.pt",
+  "model_file": "scene/scene.xml",
+  "checkpoint_path": "/home/casbot/Desktop/SuperMimic-Reproduced/logs/casbot02_lafan1/ckpt_latest.pt",
+  "checkpoint_sha256": "81656ac54547d1afbe2cccf6fecda943119625f3c6b2e824d7df85af39b32e3b",
+  "checkpoint_iteration": 42150,
+  "joint_names": [
+    "leg_l1_joint",
+    "leg_l2_joint",
+    "leg_l3_joint",
+    "leg_l4_joint",
+    "leg_l5_joint",
+    "leg_l6_joint",
+    "leg_r1_joint",
+    "leg_r2_joint",
+    "leg_r3_joint",
+    "leg_r4_joint",
+    "leg_r5_joint",
+    "leg_r6_joint",
+    "waist_yaw_joint",
+    "upper_left_1_joint",
+    "upper_left_2_joint",
+    "upper_left_3_joint",
+    "upper_left_4_joint",
+    "upper_left_5_joint",
+    "upper_left_6_joint",
+    "upper_left_7_joint",
+    "upper_right_1_joint",
+    "upper_right_2_joint",
+    "upper_right_3_joint",
+    "upper_right_4_joint",
+    "upper_right_5_joint",
+    "upper_right_6_joint",
+    "upper_right_7_joint"
+  ],
+  "model_joint_names": [
+    "robot/leg_l1_joint",
+    "robot/leg_l2_joint",
+    "robot/leg_l3_joint",
+    "robot/leg_l4_joint",
+    "robot/leg_l5_joint",
+    "robot/leg_l6_joint",
+    "robot/leg_r1_joint",
+    "robot/leg_r2_joint",
+    "robot/leg_r3_joint",
+    "robot/leg_r4_joint",
+    "robot/leg_r5_joint",
+    "robot/leg_r6_joint",
+    "robot/waist_yaw_joint",
+    "robot/upper_left_1_joint",
+    "robot/upper_left_2_joint",
+    "robot/upper_left_3_joint",
+    "robot/upper_left_4_joint",
+    "robot/upper_left_5_joint",
+    "robot/upper_left_6_joint",
+    "robot/upper_left_7_joint",
+    "robot/upper_right_1_joint",
+    "robot/upper_right_2_joint",
+    "robot/upper_right_3_joint",
+    "robot/upper_right_4_joint",
+    "robot/upper_right_5_joint",
+    "robot/upper_right_6_joint",
+    "robot/upper_right_7_joint"
+  ],
+  "root_body_name": "robot/base_link",
+  "foot_geom_names": [
+    "robot/left_foot_collision",
+    "robot/right_foot_collision"
+  ],
+  "motors": [
+    {
+      "name": "leg_l1_joint",
+      "q0": -0.24500000476837158,
+      "scale": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_l2_joint",
+      "q0": 0.0,
+      "scale": 0.13204225352112675,
+      "kp": 284,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_l3_joint",
+      "q0": 0.0,
+      "scale": 0.09722222222222222,
+      "kp": 180,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "leg_l4_joint",
+      "q0": 0.41999998688697815,
+      "scale": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_l5_joint",
+      "q0": -0.20000000298023224,
+      "scale": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "leg_l6_joint",
+      "q0": 0.0,
+      "scale": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "leg_r1_joint",
+      "q0": -0.24500000476837158,
+      "scale": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_r2_joint",
+      "q0": 0.0,
+      "scale": 0.13204225352112675,
+      "kp": 284,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_r3_joint",
+      "q0": 0.0,
+      "scale": 0.09722222222222222,
+      "kp": 180,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "leg_r4_joint",
+      "q0": 0.41999998688697815,
+      "scale": 0.13111888111888112,
+      "kp": 286,
+      "kd": 8,
+      "effort_limit_nm": 150,
+      "armature": 0.07
+    },
+    {
+      "name": "leg_r5_joint",
+      "q0": -0.20000000298023224,
+      "scale": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "leg_r6_joint",
+      "q0": 0.0,
+      "scale": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "waist_yaw_joint",
+      "q0": 0.0,
+      "scale": 0.11666666666666667,
+      "kp": 150,
+      "kd": 6,
+      "effort_limit_nm": 70,
+      "armature": 0.039
+    },
+    {
+      "name": "upper_left_1_joint",
+      "q0": -0.17499999701976776,
+      "scale": 0.1431297709923664,
+      "kp": 131,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_left_2_joint",
+      "q0": 0.0,
+      "scale": 0.13992537313432835,
+      "kp": 134,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_left_3_joint",
+      "q0": 0.36000001430511475,
+      "scale": 0.09278350515463918,
+      "kp": 97,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_left_4_joint",
+      "q0": 0.0,
+      "scale": 0.125,
+      "kp": 150,
+      "kd": 10,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_left_5_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_left_6_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_left_7_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_right_1_joint",
+      "q0": -0.17499999701976776,
+      "scale": 0.1431297709923664,
+      "kp": 131,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_right_2_joint",
+      "q0": 0.0,
+      "scale": 0.13992537313432835,
+      "kp": 134,
+      "kd": 8,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_right_3_joint",
+      "q0": -0.36000001430511475,
+      "scale": 0.09278350515463918,
+      "kp": 97,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_right_4_joint",
+      "q0": 0.0,
+      "scale": 0.125,
+      "kp": 150,
+      "kd": 10,
+      "effort_limit_nm": 75,
+      "armature": 0.033
+    },
+    {
+      "name": "upper_right_5_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_right_6_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    },
+    {
+      "name": "upper_right_7_joint",
+      "q0": 0.0,
+      "scale": 0.09473684210526316,
+      "kp": 95,
+      "kd": 6,
+      "effort_limit_nm": 36,
+      "armature": 0.0245
+    }
+  ],
+  "soft_joint_limits": [
+    [
+      -1.745365,
+      1.396265
+    ],
+    [
+      -0.08726350000000005,
+      1.4835335
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      0.12653500000000006,
+      2.404165
+    ],
+    [
+      -0.80372,
+      0.43720000000000003
+    ],
+    [
+      -0.45552600000000004,
+      0.45552600000000004
+    ],
+    [
+      -1.745365,
+      1.396265
+    ],
+    [
+      -1.4835335,
+      0.08726350000000005
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      0.12653500000000006,
+      2.404165
+    ],
+    [
+      -0.80372,
+      0.43720000000000003
+    ],
+    [
+      -0.45552600000000004,
+      0.45552600000000004
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      -2.93216,
+      0.8377599999999998
+    ],
+    [
+      -0.17456500000000008,
+      2.967065
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      -1.774125,
+      -0.09337499999999999
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      -0.94248,
+      0.94248
+    ],
+    [
+      -0.9162999999999999,
+      1.4399
+    ],
+    [
+      -2.93216,
+      0.8377599999999998
+    ],
+    [
+      -2.967065,
+      0.17456500000000008
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      -1.774125,
+      -0.09337499999999999
+    ],
+    [
+      -1.41372,
+      1.41372
+    ],
+    [
+      -0.94248,
+      0.94248
+    ],
+    [
+      -1.4399,
+      0.9162999999999999
+    ]
+  ],
+  "obs_dim": 870,
+  "goal_dim": 649,
+  "history": 10,
+  "future_frames": 10,
+  "anchor_obs": true,
+  "control_dt": 0.02,
+  "decimation": 4,
+  "mujoco_options": {
+    "timestep": 0.005,
+    "integrator": 3,
+    "impratio": 1.0,
+    "cone": 0,
+    "jacobian": 2,
+    "solver": 2,
+    "iterations": 10,
+    "tolerance": 1e-08,
+    "ls_iterations": 20,
+    "ls_tolerance": 0.01,
+    "ccd_iterations": 50,
+    "gravity": [
+      0.0,
+      0.0,
+      -9.81
+    ],
+    "disableflags": 0,
+    "enableflags": 0
+  },
+  "height_threshold": 0.25,
+  "tilt_threshold": 0.8,
+  "reset_goal_advance": 1,
+  "reference_timing_note": "Current MultiClipMotionCommand advances one frame during reset command compute; state starts at f, first goal at f+1. Kept for checkpoint parity.",
+  "motions": {
+    "walk4_subject1": "motions/walk4_subject1.npz",
+    "walk3_subject5": "motions/walk3_subject5.npz",
+    "dance1_subject1": "motions/dance1_subject1.npz"
+  },
+  "source_motions": {
+    "walk4_subject1": {
+      "path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02/walk4_subject1.npz",
+      "sha256": "54f744d29d84ffb808da0a0e155178d35c63ebed21888c68be6e6b283f0a66c2",
+      "frames": 8196
+    },
+    "walk3_subject5": {
+      "path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02/walk3_subject5.npz",
+      "sha256": "9481f77c01d62ae83fe266cdfb8d9e582b8950237ef9b81f105e3131a5977cba",
+      "frames": 12331
+    },
+    "dance1_subject1": {
+      "path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02/dance1_subject1.npz",
+      "sha256": "691c910894d5d3bfa067dd0280f88ffd7e6e8142912e393a2b783d189d8d8d7d",
+      "frames": 6574
+    }
+  },
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "mujoco": "3.16.0"
+  },
+  "export_validation": {
+    "actor_max_abs_error": 0.0,
+    "batches_checked": [
+      1,
+      4,
+      1
+    ],
+    "model_file_sha256": "6dcf0d594318418ec4a1ef80ddfa9e5e1eeaf7451bf61d608beedf7a300eacee",
+    "actor_sha256": "264449f019b12032d8d3809029cfe838a94f4ce937dfd485276668f5eadd02e3",
+    "runtime_sha256": "28550e6638bbe43749b0485e98c09a35c0cc52de8d8d312fc1b2c7b44c5041b9"
+  },
+  "notes": [
+    "No synthetic sensor/action/reset noise or domain randomization.",
+    "Foot sliding friction fixed to 1.0, matching benchmark.",
+    "No action EMA, acceleration clamp, tanh, or target clipping added: not used in SuperMimic training.",
+    "Native CPU MuJoCo and GPU MuJoCo Warp may have different contact trajectories.",
+    "Root position/orientation read from simulation ground truth, not a hardware estimator."
+  ]
+}

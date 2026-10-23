@@ -17,7 +17,9 @@ class DataCfg:
     clips: list[str] | None = None  # None = all npz in npz_dir
     limit: int | None = None
     manifest: Path | None = None  # csv with name,keep (filter_bones_seed.py output)
-    library: Path | None = None  # packed compact library (.pt from build_library.py); overrides npz_dir
+    library: Path | None = (
+        None  # packed compact library (.pt from build_library.py); overrides npz_dir
+    )
 
 
 @dataclass
@@ -50,6 +52,7 @@ class ScheduleCfg:
 
 @dataclass
 class TrainConfig:
+    robot: str = "g1"
     run_name: str = "debug"
     log_root: Path = Path("logs")
     seed: int = 0

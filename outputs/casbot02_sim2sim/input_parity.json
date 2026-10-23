@@ -1,0 +1,13 @@
+{
+  "clip": "walk4_subject1",
+  "samples": 32,
+  "max_abs_errors": {
+    "observation": 4.76837158203125e-07,
+    "goal": 1.825392246246338e-07,
+    "actor": 0.0,
+    "position_target": 7.294896842147125e-08
+  },
+  "tolerance": 2e-05,
+  "passed": true,
+  "scope": "Same GPU-simulated states through independent deployment input builder and CPU exported actor; not a CPU/GPU dynamics equivalence test."
+}

@@ -41,10 +41,20 @@ def load_policy_from_checkpoint(path: str | Path, device: str) -> tuple[Policy, 
 
 
 @torch.no_grad()
-def run_benchmark(policy: Policy, npz_files: list[str], device: str = "cuda:0", num_envs: int | None = None, future_frames: int = 10, verbose: bool = True, anchor_obs: bool = False) -> list[ClipResult]:
+def run_benchmark(
+    policy: Policy,
+    npz_files: list[str],
+    device: str = "cuda:0",
+    num_envs: int | None = None,
+    future_frames: int = 10,
+    verbose: bool = True,
+    anchor_obs: bool = False,
+    robot: str = "g1",
+) -> list[ClipResult]:
     num_envs = min(num_envs or 1024, len(npz_files))
     args = SuperMimicEnvCfgArgs(
         npz_files=npz_files,
+        robot=robot,
         num_envs=num_envs,
         future_frames=future_frames,
         episode_length_s=1.0e5,  # clip end decides
@@ -97,7 +107,10 @@ def run_benchmark(policy: Policy, npz_files: list[str], device: str = "cuda:0", 
                             norm_return=float(ret_sum[e]) / (max_r * max(st, 1)),
                             failed=bool(term[e]),
                             fail_step=st if bool(term[e]) else -1,
-                            terms={n: float(term_sum[e, i]) / max(st, 1) for i, n in enumerate(term_names)},
+                            terms={
+                                n: float(term_sum[e, i]) / max(st, 1)
+                                for i, n in enumerate(term_names)
+                            },
                         )
                         remaining -= 1
                         if verbose and (len(results) % 50 == 0 or len(results) == n_clips):
@@ -123,11 +136,21 @@ def summarize(results: list[ClipResult]) -> dict:
     # Length-weighted return (paper Fig. 3a uses the benchmark aggregate; weighting by steps).
     tot_steps = sum(r.steps for r in results)
     w_ret = sum(r.norm_return * r.steps for r in results) / max(tot_steps, 1)
-    out = {"clips": n, "failed": failed, "mean_norm_return": mean_ret, "step_weighted_norm_return": w_ret}
+    out = {
+        "clips": n,
+        "failed": failed,
+        "mean_norm_return": mean_ret,
+        "step_weighted_norm_return": w_ret,
+    }
     if results and results[0].terms:
-        out["terms"] = {k: sum(r.terms[k] * r.steps for r in results) / max(tot_steps, 1) for k in results[0].terms}
+        out["terms"] = {
+            k: sum(r.terms[k] * r.steps for r in results) / max(tot_steps, 1)
+            for k in results[0].terms
+        }
     return out
 
 
 def save_results(results: list[ClipResult], path: str | Path) -> None:
-    Path(path).write_text(json.dumps({"summary": summarize(results), "clips": [asdict(r) for r in results]}, indent=1))
+    Path(path).write_text(
+        json.dumps({"summary": summarize(results), "clips": [asdict(r) for r in results]}, indent=1)
+    )

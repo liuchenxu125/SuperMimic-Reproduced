@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import torch
-import torch.nn as nn
+from torch import nn
 
+from supermimic.robots.layout import RobotLayout, observation_terms
 from supermimic.world_model.dynamics import MLP
-from supermimic.world_model.heads import OBS_TERMS
 
 GOAL_DIM = 680
 LATENT_DIM = 32
@@ -17,6 +17,7 @@ ACT_DIM = 29
 
 @dataclass
 class PolicyCfg:
+    num_joints: int = 29
     encoder_hidden: tuple[int, ...] = (2048, 1024, 512, 256)
     decoder_hidden: tuple[int, ...] = (2048, 1024, 512, 256)
     latent_dim: int = LATENT_DIM
@@ -36,15 +37,15 @@ class CriticCfg:
 
 def _obs_scale_vector(cfg: PolicyCfg) -> torch.Tensor:
     parts = []
-    for (name, d), s in zip(OBS_TERMS, cfg.obs_term_scale):
+    for (name, d), s in zip(observation_terms(cfg.num_joints), cfg.obs_term_scale):
         parts.append(torch.full((cfg.history * d,), 1.0 / s))
     return torch.cat(parts)  # term-major layout matches the flattened history
 
 
 def _goal_scale_vector(cfg: PolicyCfg, goal_dim: int) -> torch.Tensor:
-    sizes = (29, 29, 3, 3, 3, 1)
+    sizes = (cfg.num_joints, cfg.num_joints, 3, 3, 3, 1)
     per_frame = torch.cat([torch.full((n,), 1.0 / s) for n, s in zip(sizes, cfg.goal_term_scale)])
-    k, extra = divmod(goal_dim, 68)
+    k, extra = divmod(goal_dim, RobotLayout(cfg.num_joints).goal_dim)
     return torch.cat([per_frame.repeat(k), torch.ones(extra)])
 
 
@@ -60,9 +61,15 @@ class MotionEncoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, cfg: PolicyCfg, obs_dim: int = 930):
+    def __init__(self, cfg: PolicyCfg, obs_dim: int | None = None):
         super().__init__()
-        self.mlp = MLP(cfg.latent_dim + obs_dim, cfg.decoder_hidden, ACT_DIM, last_gain=cfg.decoder_last_gain)
+        obs_dim = obs_dim or cfg.history * RobotLayout(cfg.num_joints).obs_dim
+        self.mlp = MLP(
+            cfg.latent_dim + obs_dim,
+            cfg.decoder_hidden,
+            cfg.num_joints,
+            last_gain=cfg.decoder_last_gain,
+        )
         self.register_buffer("scale", _obs_scale_vector(cfg))
 
     def forward(self, z: torch.Tensor, obs_hist: torch.Tensor) -> torch.Tensor:
@@ -78,19 +85,35 @@ class Policy(nn.Module):
         self.encoders = nn.ModuleDict({"motion": MotionEncoder(cfg)})
         self.decoder = Decoder(cfg)
 
-    def forward(self, obs_hist: torch.Tensor, goal: torch.Tensor, interface: str = "motion") -> torch.Tensor:
+    def forward(
+        self, obs_hist: torch.Tensor, goal: torch.Tensor, interface: str = "motion"
+    ) -> torch.Tensor:
         return self.decoder(self.encoders[interface](goal), obs_hist)
 
 
 class Critic(nn.Module):
     """V(canonical state 71, goal 680, xi 33, root error 4) -> scalar (one per interface)."""
 
-    def __init__(self, cfg: CriticCfg, feat_dim: int = 71, goal_dim: int | None = None, xi_dim: int = 33, pcfg: PolicyCfg | None = None):
+    def __init__(
+        self,
+        cfg: CriticCfg,
+        feat_dim: int | None = None,
+        goal_dim: int | None = None,
+        xi_dim: int | None = None,
+        pcfg: PolicyCfg | None = None,
+    ):
         super().__init__()
         pcfg = pcfg or PolicyCfg()
+        layout = RobotLayout(pcfg.num_joints)
+        feat_dim = feat_dim or layout.state_dim
+        xi_dim = xi_dim or layout.xi_dim
         goal_dim = goal_dim or pcfg.goal_dim
         self.mlp = MLP(feat_dim + goal_dim + xi_dim + 4, cfg.hidden, 1)
         self.register_buffer("goal_scale", _goal_scale_vector(pcfg, goal_dim))
 
-    def forward(self, feat: torch.Tensor, goal: torch.Tensor, xi_norm: torch.Tensor, e_root: torch.Tensor) -> torch.Tensor:
-        return self.mlp(torch.cat([feat, goal * self.goal_scale, xi_norm, e_root], dim=-1)).squeeze(-1)
+    def forward(
+        self, feat: torch.Tensor, goal: torch.Tensor, xi_norm: torch.Tensor, e_root: torch.Tensor
+    ) -> torch.Tensor:
+        return self.mlp(torch.cat([feat, goal * self.goal_scale, xi_norm, e_root], dim=-1)).squeeze(
+            -1
+        )

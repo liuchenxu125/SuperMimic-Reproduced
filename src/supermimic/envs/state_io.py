@@ -16,10 +16,9 @@ class StateIO:
         # States are stored relative to each env's origin so that they are directly comparable
         # with the (origin-free) motion library and translation-invariant across envs.
         self.origins = env.scene.env_origins.clone()  # (N, 3)
-        assert self.sim.data.qpos.shape[-1] == NQ and self.sim.data.qvel.shape[-1] == NV, (
-            self.sim.data.qpos.shape,
-            self.sim.data.qvel.shape,
-        )
+        self.nq = self.sim.data.qpos.shape[-1]
+        self.nv = self.sim.data.qvel.shape[-1]
+        assert self.nq == self.nv + 1, "Expected one floating-base robot"
 
     def read(self) -> torch.Tensor:
         """(N, 71) copy of [qpos | qvel]."""
@@ -34,8 +33,8 @@ class StateIO:
         """Overwrite qpos/qvel of ``env_ids`` and refresh derived quantities."""
         state = state.to(self.sim.data.qpos.dtype).clone()
         state[:, 0:3] += self.origins[env_ids]
-        self.sim.data.qpos[env_ids] = state[:, :NQ]
-        self.sim.data.qvel[env_ids] = state[:, NQ:]
+        self.sim.data.qpos[env_ids] = state[:, : self.nq]
+        self.sim.data.qvel[env_ids] = state[:, self.nq :]
         if hasattr(self.sim.data, "qacc_warmstart"):
             self.sim.data.qacc_warmstart[env_ids] = 0.0
         if forward:
