@@ -22,15 +22,17 @@
 
 ## 短程 GPU 验证
 
+本节表格是 2026-10-23 的历史结果，步数使用旧版环境步计数。2026-10-24 后脚本的 `--iterations` 改为外层更新，固定 250k 更新衰减；不能将两种计数直接比较。新版说明见 [PAPER_ALIGNMENT.md](PAPER_ALIGNMENT.md)。
+
 执行脚本：`scripts/validate_training_numerics.py`。独立实验目录内保存 `numerics_validation.json`。此测试检查数值稳定性，不评估真机可部署性。
 
 ```bash
 env -u PYTHONPATH uv run python scripts/validate_training_numerics.py \
-  --run-name casbot02_noanchor_numerics_raw_v1 \
+  --run-name casbot02_noanchor_numerics_raw_paper_check \
   --npz-dir data/npz/lafan1_casbot02 --iterations 1000
 ```
 
-对照实验加 `--anchor-obs` 并更换 run-name。脚本默认 seed=0、4096 个环境、策略 batch 2048，使用目录内全部动作，保持噪声、域随机化和回报采样。学习率仍按 250,000 步衰减，不随短程验证长度加速。
+对照实验加 `--anchor-obs` 并更换 run-name。脚本默认 seed=0、4096 个环境、策略 batch 2048，使用目录内全部动作，保持噪声、域随机化和回报采样。当前脚本学习率按 250,000 次外层更新衰减，不随短程验证长度加速。
 
 修复后的三组均已完成，模型参数与日志中的关键 loss/梯度均有限：
 
@@ -48,12 +50,12 @@ CPU 回归测试：55 项通过、17 项跳过。汇总见 [验证报告](../out
 
 ```bash
 env -u PYTHONPATH uv run sm-train \
-  --robot casbot02 --run-name casbot02_lafan1_noanchor_fixed \
+  --robot casbot02 --run-name casbot02_lafan1_noanchor_paper_aligned \
   --data.npz-dir data/npz/lafan1_casbot02 \
   --env.no-anchor-obs --env.num-envs 4096 \
   --policy-trainer.batch-size 2048 --schedule.max-hours 3
 ```
 
-若使用清洗数据，改为 `data/npz/lafan1_casbot02_codex`，并更换 run-name，例如 `casbot02_lafan1_proprio_codex_fixed`。清洗数据无需重复裁头或限位。
+若使用清洗数据，改为 `data/npz/lafan1_casbot02_codex`，并更换 run-name，例如 `casbot02_lafan1_proprio_paper_aligned`。清洗数据无需重复裁头或限位。
 
-不要恢复旧的损坏权重。短程数值验证权重也不代表完成训练；常规训练使用默认 320,000 步计划及默认学习率衰减。后续仍需完整动作评测、sim2sim 和独立部署验证。
+不要恢复旧的损坏权重。短程数值验证权重也不代表完成训练；常规训练使用默认 320,000 次外层更新计划及固定 250,000 次更新的学习率衰减。后续仍需完整动作评测、sim2sim 和独立部署验证。

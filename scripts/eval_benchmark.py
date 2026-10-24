@@ -43,7 +43,7 @@ def main(
     )
     s = summarize(results)
     print(
-        f"\n{s['clips']} clips | failed {s['failed']} | mean norm return {s['mean_norm_return']:.4f} | step-weighted {s['step_weighted_norm_return']:.4f}"
+        f"\n{s['clips']} clips | failed {s['failed']} | full-clip mean {s['mean_norm_return']:.4f} | frame-weighted {s['frame_weighted_norm_return']:.4f} | survived-prefix mean {s['mean_norm_return_survived']:.4f}"
     )
     if "terms" in s:
         print("per-step term means (max 0.02 each for the 1.0-weight terms, 0.01 for root terms):")
@@ -55,7 +55,7 @@ def main(
             f"  {r.name:32s} ret {r.norm_return:.3f} steps {r.steps}/{r.frames} {'FAIL@' + str(r.fail_step) if r.failed else ''}"
         )
     out = out or ckpt.parent / f"benchmark_{ckpt.stem}.json"
-    save_results(results, out)
+    save_results(results, out, meta=cfg.get("_checkpoint"))
     print("saved", out)
 
 

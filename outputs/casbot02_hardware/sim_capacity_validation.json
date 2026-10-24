@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-24",
+  "candidate": {
+    "nconmax": 96,
+    "njmax": 320
+  },
+  "scope": "Casbot02 cleaned LAFAN1, 4096 envs, RTX 4090 D; temporary overrides only",
+  "passed": true,
+  "production_defaults_after_validation": {
+    "g1": {
+      "nconmax": 35,
+      "njmax": 250
+    },
+    "casbot02": {
+      "nconmax": 128,
+      "njmax": 500
+    }
+  },
+  "reference_histograms_and_contact_counts_identical": true,
+  "reference_max_constraints_per_world": 207,
+  "candidate_all_tests_max_constraints_per_world": 219,
+  "baseline_policy_max_constraints_per_world": 256,
+  "reference_process_memory_mib": {
+    "baseline": 10014,
+    "candidate": 7806,
+    "saved": 2208
+  },
+  "training_process_memory_mib": 18866,
+  "training_nonfinite_scalar_entries": [],
+  "tests": [
+    {
+      "report": "capacity_128_500_reference.json",
+      "passed": true,
+      "max_constraints": 207,
+      "physics_substeps": 0,
+      "post_forward_samples": 109,
+      "wall_seconds": 4.720353811979294
+    },
+    {
+      "report": "capacity_96_320_reference.json",
+      "passed": true,
+      "max_constraints": 207,
+      "physics_substeps": 0,
+      "post_forward_samples": 109,
+      "wall_seconds": 4.553264139976818
+    },
+    {
+      "report": "capacity_128_500_policy_rollout.json",
+      "passed": true,
+      "max_constraints": 256,
+      "physics_substeps": 4000,
+      "post_forward_samples": 1001,
+      "wall_seconds": 33.54462481098017
+    },
+    {
+      "report": "capacity_96_320_policy_rollout.json",
+      "passed": true,
+      "max_constraints": 192,
+      "physics_substeps": 4000,
+      "post_forward_samples": 1001,
+      "wall_seconds": 32.95783470000606
+    },
+    {
+      "report": "capacity_96_320_random_rollout.json",
+      "passed": true,
+      "max_constraints": 219,
+      "physics_substeps": 4000,
+      "post_forward_samples": 1001,
+      "wall_seconds": 35.43073754903162
+    },
+    {
+      "report": "capacity_96_320_training.json",
+      "passed": true,
+      "max_constraints": 216,
+      "physics_substeps": 1160,
+      "post_forward_samples": 291,
+      "wall_seconds": 75.91897305799648
+    }
+  ],
+  "negative_control": {
+    "report": "capacity_detector_negative_control_v2.json",
+    "purpose": "8/64 intentionally undersized; expected failure",
+    "expected_rejection_observed": true,
+    "broadphase_peak": 702,
+    "shared_capacity": 512
+  },
+  "monitor_unit_test": "tests/test_sim_capacity.py: 1 passed; transient overflow survives reset, solver limits classified separately",
+  "limitations": [
+    "Not a long-run guarantee. Monitor new contact states during subsequent training.",
+    "Batch 4096 with 4096 envs was subsequently tested and failed with CUDA OOM even at 96/320; batch 2048 remains the validated setting.",
+    "Solver/linesearch iteration-limit bits exist in both settings and are reported separately from capacity overflow.",
+    "Closed-loop policy trajectories are not bitwise-equivalent comparisons."
+  ],
+  "batch4096_probe": {
+    "report": "capacity_96_320_training_batch4096.json",
+    "gpu_monitor": "capacity_96_320_training_batch4096_gpu.json",
+    "num_envs": 4096,
+    "batch_size": 4096,
+    "nconmax": 96,
+    "njmax": 320,
+    "passed": false,
+    "failure": "CUDA out of memory at Warp graph launch after the first outer update",
+    "capacity_passed_before_failure": true,
+    "observed_peak_process_mib": 21750,
+    "observed_peak_total_used_mib": 24005,
+    "minimum_free_mib": 56,
+    "maximum_gpu_util_pct": 98,
+    "prelaunch_total_gpu_used_mib": 2247,
+    "sampling_interval_seconds": 1,
+    "inferred_completed_outer_updates": 1,
+    "progress_inference": "168 monitored physics steps = 40 replay-refill vector steps + 2 collection vector steps, decimation 4; exception then occurred during next outer-loop collection."
+  },
+  "followup_smaller_capacities": "sim_capacity_smaller_validation.json"
+}

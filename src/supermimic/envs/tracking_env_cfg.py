@@ -334,8 +334,16 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
     return cfg
 
 
-def make_env(a: SuperMimicEnvCfgArgs, device: str = "cuda:0") -> ManagerBasedRlEnv:
-    from mjlab.utils.torch import configure_torch_backends
+def make_env(
+    a: SuperMimicEnvCfgArgs, device: str = "cuda:0", *, tf32: bool = True
+) -> ManagerBasedRlEnv:
+    import torch
 
-    configure_torch_backends()
+    from supermimic.training.precision import configure_precision
+
+    # Keep environment setup and Inductor on one precision API family. The
+    # mjlab helper otherwise resets this unconditionally using newer setters.
+    configure_precision(tf32)
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.deterministic = False
     return ManagerBasedRlEnv(make_env_cfg(a), device=device)

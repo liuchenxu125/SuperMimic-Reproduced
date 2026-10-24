@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-24",
+  "scope": "RTX 4090 D, Casbot02, cleaned LAFAN1, 4096 envs; temporary overrides only",
+  "conclusions": {
+    "smaller_capacities_pass_full_reference_audits": true,
+    "shrinking_alone_solved_batch4096_oom": false,
+    "with_unused_torch_cache_trim_100_updates_passed": true,
+    "long_training_stability_validated": false,
+    "formal_training_defaults_changed": false
+  },
+  "production_defaults": {
+    "g1": {
+      "nconmax": 35,
+      "njmax": 250
+    },
+    "casbot02": {
+      "nconmax": 128,
+      "njmax": 500
+    }
+  },
+  "reference_audits": [
+    {
+      "report": "capacity_64_288_reference.json",
+      "capacity": "64_288",
+      "frames": 441093,
+      "reference_counts_match_baseline": true,
+      "process_memory_mib": 5758
+    },
+    {
+      "report": "capacity_48_288_reference.json",
+      "capacity": "48_288",
+      "frames": 441093,
+      "reference_counts_match_baseline": true,
+      "process_memory_mib": 4702
+    },
+    {
+      "report": "capacity_32_288_reference.json",
+      "capacity": "32_288",
+      "frames": 441093,
+      "reference_counts_match_baseline": true,
+      "process_memory_mib": 3678
+    }
+  ],
+  "smaller_only_batch4096_failures": [
+    {
+      "report": "capacity_64_288_training_batch4096.json",
+      "gpu_report": "capacity_64_288_training_batch4096_gpu.json",
+      "capacity": "64_288",
+      "completed_outer_updates": 1,
+      "error": "RuntimeError: Graph launch error: Warp CUDA error 2: out of memory (in function wp_cuda_graph_launch, /builds/omniverse/warp/warp/native/warp.cu:4544)",
+      "capacity_passed_before_failure": true,
+      "observed_peak_process_mib": 22212,
+      "minimum_free_mib": 83
+    },
+    {
+      "report": "capacity_48_288_training_batch4096.json",
+      "gpu_report": "capacity_48_288_training_batch4096_gpu.json",
+      "capacity": "48_288",
+      "completed_outer_updates": 1,
+      "error": "RuntimeError: Graph launch error: Warp CUDA error 2: out of memory (in function wp_cuda_graph_launch, /builds/omniverse/warp/warp/native/warp.cu:4544)",
+      "capacity_passed_before_failure": true,
+      "observed_peak_process_mib": 22212,
+      "minimum_free_mib": 87
+    },
+    {
+      "report": "capacity_32_288_training_batch4096.json",
+      "gpu_report": "capacity_32_288_training_batch4096_gpu.json",
+      "capacity": "32_288",
+      "completed_outer_updates": 2,
+      "error": "RuntimeError: Graph launch error: Warp CUDA error 2: out of memory (in function wp_cuda_graph_launch, /builds/omniverse/warp/warp/native/warp.cu:4544)",
+      "capacity_passed_before_failure": true,
+      "observed_peak_process_mib": 22188,
+      "minimum_free_mib": 106
+    }
+  ],
+  "with_cache_trim_batch4096_short_runs": [
+    {
+      "report": "capacity_64_288_training_batch4096_trim.json",
+      "gpu_report": "capacity_64_288_training_batch4096_trim_gpu.json",
+      "capacity": "64_288",
+      "batch_size": 4096,
+      "num_envs": 4096,
+      "outer_updates": 100,
+      "env_steps": 290,
+      "all_parameters_and_logged_scalars_finite": true,
+      "max_constraints_per_world": 240,
+      "cache_trims": {
+        "count": 99,
+        "released_reserved_mib": 1494744.0,
+        "seconds": 31.20532715402078
+      },
+      "torch_peak_allocated_mib": 18108.95849609375,
+      "observed_peak_process_mib": 21742,
+      "observed_peak_total_used_mib": 23261,
+      "minimum_free_mib": 800,
+      "maximum_gpu_util_pct": 100,
+      "wall_seconds": 135.99705529212952
+    },
+    {
+      "report": "capacity_48_288_training_batch4096_trim.json",
+      "gpu_report": "capacity_48_288_training_batch4096_trim_gpu.json",
+      "capacity": "48_288",
+      "batch_size": 4096,
+      "num_envs": 4096,
+      "outer_updates": 100,
+      "env_steps": 290,
+      "all_parameters_and_logged_scalars_finite": true,
+      "max_constraints_per_world": 240,
+      "cache_trims": {
+        "count": 99,
+        "released_reserved_mib": 1494784.0,
+        "seconds": 31.21353854314657
+      },
+      "torch_peak_allocated_mib": 18108.95849609375,
+      "observed_peak_process_mib": 21642,
+      "observed_peak_total_used_mib": 23822,
+      "minimum_free_mib": 239,
+      "maximum_gpu_util_pct": 100,
+      "wall_seconds": 133.90051651000977
+    }
+  ],
+  "capacity_48_288_stress_rollouts": [
+    {
+      "report": "capacity_48_288_policy_rollout.json",
+      "action_mode": "policy",
+      "steps": 1000,
+      "resets": 10503,
+      "mean_step_reward": 0.07154028622526676,
+      "max_constraints_per_world": 204,
+      "peak_contact_pool_fraction": 0.24177042643229166,
+      "peak_broadphase_pool_fraction": 0.24239095052083334
+    },
+    {
+      "report": "capacity_48_288_random_rollout.json",
+      "action_mode": "random",
+      "steps": 1000,
+      "resets": 84196,
+      "mean_step_reward": -0.08459249461535365,
+      "max_constraints_per_world": 224,
+      "peak_contact_pool_fraction": 0.2862396240234375,
+      "peak_broadphase_pool_fraction": 0.4621785481770833
+    }
+  ],
+  "diagnosis_evidence": {
+    "after_32_288_failure_active_torch_mib": 3901.5615234375,
+    "after_32_288_failure_reserved_torch_mib": 19466.0,
+    "interpretation": "Unused Torch caching reservations compete with later Warp graph allocation; releasing unused cache between learning and collection enabled otherwise identical short runs. Active imagined-training peak remains large."
+  },
+  "test_checks": "17 targeted CPU tests passed; ruff and git diff --check passed",
+  "limitations": [
+    "GPU sampling interval is one second; brief peaks may be missed.",
+    "Background desktop memory varied; minimum-free values are not controlled comparisons.",
+    "Minimum observed free memory was 800 MiB and 239 MiB; batch 4096 remains tight.",
+    "Cache trimming took about 31.2 seconds across 99 calls per run.",
+    "Smaller nconmax uses the shared pool across 4096 worlds; reference poses have up to 66 contacts in one world, so do not extrapolate to single-env play.",
+    "--trim-torch-cache is only in validation script, not in sm-train.",
+    "Formal batch 2048 remains the validated ordinary training choice."
+  ]
+}

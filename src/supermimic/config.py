@@ -39,12 +39,12 @@ class EnvCfg:
 
 @dataclass
 class ScheduleCfg:
-    total_iterations: int = 320_000  # env steps (plan D12 reading A)
+    total_iterations: int = 320_000  # outer WM + actor/critic updates (Algorithm A.1)
     updates_per_env_step: float = 0.4  # UTD
     policy_updates_per_wm_update: int = 1
-    warmup_iterations: int = 40  # env steps before the first update (fills k-step windows)
+    warmup_iterations: int = 40  # initial env steps only; retained CLI name, not training updates
     lr_final_ratio: float = 0.03
-    lr_decay_fraction: float = 250_000 / 320_000
+    lr_decay_iterations: int = 250_000  # update count, independent of total_iterations / max_hours
     log_interval: int = 50  # iterations
     checkpoint_interval: int = 4000  # iterations
     max_hours: float | None = None
@@ -66,3 +66,5 @@ class TrainConfig:
     policy_trainer: PolicyTrainerCfg = field(default_factory=PolicyTrainerCfg)
     schedule: ScheduleCfg = field(default_factory=ScheduleCfg)
     resume: Path | None = None
+    legacy_resume: bool = False  # explicit migration of old env-step checkpoints into update units
+    tf32: bool = True  # paper Fig. 5; float32 weights/state, no bf16 autocast

@@ -70,11 +70,11 @@ env -u PYTHONPATH uv run python scripts/data/audit_motion_csv.py \
 
 ## 训练
 
-当前按原论文纯本体观测接口迁移，采用已清洗数据和新的实验名。旧 `casbot02_lafan1` 是带 anchor 的历史实验；数值修复与验证见 [TRAINING_NUMERICS.md](TRAINING_NUMERICS.md)。Casbot02、LAFAN1 及 batch 2048 属于本地适配，不等同论文 G1/BONES-SEED 全量结果。
+当前按原论文纯本体观测接口迁移，采用已清洗数据和新的实验名。旧 `casbot02_lafan1` 是带 anchor 的历史实验；数值修复与验证见 [TRAINING_NUMERICS.md](TRAINING_NUMERICS.md)。2026-10-24 的计数、评测、策略目标与 TF32 修正见 [PAPER_ALIGNMENT.md](PAPER_ALIGNMENT.md)，新实验使用 `_paper_aligned` 名称。Casbot02、LAFAN1 及 batch 2048 属于本地适配，不等同论文 G1/BONES-SEED 全量结果。
 
 ```bash
 env -u PYTHONPATH uv run sm-train \
-  --robot casbot02 --run-name casbot02_lafan1_proprio_codex_fixed \
+  --robot casbot02 --run-name casbot02_lafan1_proprio_paper_aligned \
   --data.npz-dir data/npz/lafan1_casbot02_codex \
   --env.num-envs 4096 --policy-trainer.batch-size 2048 \
   --env.no-anchor-obs --schedule.max-hours 3
@@ -89,11 +89,11 @@ env -u PYTHONPATH uv run sm-train \
 
 ```bash
 env -u PYTHONPATH MUJOCO_GL=glfw uv run python scripts/play.py \
-  --ckpt logs/casbot02_lafan1_proprio_codex_fixed/ckpt_latest.pt \
+  --ckpt logs/casbot02_lafan1_proprio_paper_aligned/ckpt_latest.pt \
   --npz-dir data/npz/lafan1_casbot02_codex --clips walk1_subject1 --viewer native
 
 env -u PYTHONPATH uv run python scripts/eval_benchmark.py \
-  --ckpt logs/casbot02_lafan1_proprio_codex_fixed/ckpt_latest.pt \
+  --ckpt logs/casbot02_lafan1_proprio_paper_aligned/ckpt_latest.pt \
   --npz-dir data/npz/lafan1_casbot02_codex
 ```
 

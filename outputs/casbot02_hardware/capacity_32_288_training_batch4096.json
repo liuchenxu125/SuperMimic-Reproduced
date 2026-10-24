@@ -1,0 +1,82 @@
+{
+  "args": {
+    "mode": "train",
+    "nconmax": 32,
+    "njmax": 288,
+    "num_envs": 4096,
+    "npz_dir": "data/npz/lafan1_casbot02_codex",
+    "steps": 1000,
+    "iterations": 100,
+    "batch_size": 4096,
+    "action_mode": "policy",
+    "ckpt": null,
+    "seed": 0,
+    "out": "outputs/casbot02_hardware/capacity_32_288_training_batch4096.json"
+  },
+  "gpu": "NVIDIA GeForce RTX 4090 D",
+  "purpose": "temporary capacity validation; no production defaults changed",
+  "passed": false,
+  "error": "RuntimeError: Graph launch error: Warp CUDA error 2: out of memory (in function wp_cuda_graph_launch, /builds/omniverse/warp/warp/native/warp.cu:4544)",
+  "training_progress": {
+    "outer_updates": 2,
+    "policy_updates": 2,
+    "env_steps": 45
+  },
+  "capacity": {
+    "nworld": 4096,
+    "naconmax_shared": 131072,
+    "njmax_per_world": 288,
+    "njmax_pad": 288,
+    "jacobian_sparse": true,
+    "calls": {
+      "step": 180,
+      "forward": 46
+    },
+    "max_contacts_shared": 47174,
+    "max_broadphase_pairs_shared": 50161,
+    "max_constraints_per_world": 188,
+    "contact_pool_peak_fraction": 0.3599090576171875,
+    "broadphase_pool_peak_fraction": 0.38269805908203125,
+    "constraint_peak_fraction": 0.6527777777777778,
+    "raw_exceed_samples": {
+      "contact_pool": 0,
+      "broadphase_pool": 0,
+      "constraints": 0
+    },
+    "overflow_worlds_by_bit": {
+      "NEFC": 0,
+      "NJMAX_NNZ": 0,
+      "BROADPHASE": 0,
+      "NARROWPHASE": 0,
+      "CCD": 0,
+      "HFIELD": 0,
+      "CONTACT_MATCH": 0,
+      "NVMAX": 0,
+      "EPA_HORIZON": 0,
+      "ITERATIONS": 3,
+      "LS_ITERATIONS": 75,
+      "TACTILE": 0
+    },
+    "overflow_world_samples_by_bit": {
+      "NEFC": 0,
+      "NJMAX_NNZ": 0,
+      "BROADPHASE": 0,
+      "NARROWPHASE": 0,
+      "CCD": 0,
+      "HFIELD": 0,
+      "CONTACT_MATCH": 0,
+      "NVMAX": 0,
+      "EPA_HORIZON": 0,
+      "ITERATIONS": 87,
+      "LS_ITERATIONS": 5144,
+      "TACTILE": 0
+    },
+    "capacity_passed": true
+  },
+  "wall_seconds": 14.833716610039119,
+  "process_gpu_memory_mib": 22188,
+  "torch_allocated_mib": 3901.5615234375,
+  "torch_reserved_mib": 19466.0,
+  "torch_peak_allocated_mib": 18107.5986328125,
+  "torch_peak_reserved_mib": 19466.0
+}

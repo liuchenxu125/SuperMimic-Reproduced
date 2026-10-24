@@ -1,0 +1,225 @@
+{
+  "date": "2026-10-24",
+  "scope": [
+    "full-clip benchmark",
+    "outer-update schedule and resume",
+    "Eq.2 actor time sum",
+    "explicit TF32"
+  ],
+  "cpu_pytest": {
+    "passed": 71,
+    "skipped": 17,
+    "command": "env -u PYTHONPATH MPLCONFIGDIR=/tmp/supermimic-paper-mpl .venv/bin/python -m pytest -q"
+  },
+  "gpu_pytest": {
+    "passed": 2,
+    "elapsed_seconds": 358.04,
+    "tests": [
+      "tests/test_imagination.py::test_training_smoke",
+      "tests/test_casbot02.py::test_casbot02_training_and_checkpoint"
+    ],
+    "checkpoint_counters": [
+      {
+        "robot": "g1",
+        "iteration": 62,
+        "num_updates": 62,
+        "env_steps": 195,
+        "iteration_unit": "update",
+        "replay_refill_env_steps": 40
+      },
+      {
+        "robot": "casbot02",
+        "iteration": 35,
+        "num_updates": 35,
+        "env_steps": 107,
+        "iteration_unit": "update",
+        "replay_refill_env_steps": 20
+      }
+    ],
+    "warning": "Warp emitted an overflow-in-cast RuntimeWarning in the synthetic Casbot02 test; assertions and optimizer finite-value guards passed."
+  },
+  "full_size_casbot02_smoke": {
+    "purpose": "numerical stability only; not deployable-policy qualification",
+    "anchor_obs": false,
+    "npz_dir": "data/npz/lafan1_casbot02_codex",
+    "seed": 0,
+    "num_envs": 4096,
+    "policy_batch_size": 2048,
+    "requested_iterations": 300,
+    "iteration_unit": "update",
+    "learning_rate_decay_iterations": 250000,
+    "nonfinite_tensors": {
+      "world_model": [],
+      "policy": [],
+      "critic": []
+    },
+    "passed": true,
+    "completed_iterations": 300,
+    "updates": 300,
+    "env_steps": 790,
+    "precision": {
+      "tf32_requested": true,
+      "float32_matmul_precision": "high",
+      "cuda_matmul_allow_tf32": true,
+      "cudnn_allow_tf32": true,
+      "parameter_dtype": "float32",
+      "autocast": false,
+      "torch_version": "2.14.1+cu130",
+      "environment_overrides": {
+        "NVIDIA_TF32_OVERRIDE": null,
+        "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": null
+      }
+    },
+    "replay_refill_env_steps": 40,
+    "wall_seconds": 188.26419377326965,
+    "wm_lr": 0.00019999931529526317,
+    "parameter_dtypes": [
+      "torch.float32"
+    ],
+    "nonfinite_scalar_entries": []
+  },
+  "precision_switch_gpu_checks": [
+    {
+      "tf32": false,
+      "precision": {
+        "tf32_requested": false,
+        "float32_matmul_precision": "highest",
+        "cuda_matmul_allow_tf32": false,
+        "cudnn_allow_tf32": false,
+        "parameter_dtype": "float32",
+        "autocast": false,
+        "torch_version": "2.14.1+cu130",
+        "environment_overrides": {
+          "NVIDIA_TF32_OVERRIDE": null,
+          "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": null
+        }
+      },
+      "iteration": 2,
+      "env_steps": 45,
+      "all_weights_finite": true
+    },
+    {
+      "tf32": true,
+      "precision": {
+        "tf32_requested": true,
+        "float32_matmul_precision": "high",
+        "cuda_matmul_allow_tf32": true,
+        "cudnn_allow_tf32": true,
+        "parameter_dtype": "float32",
+        "autocast": false,
+        "torch_version": "2.14.1+cu130",
+        "environment_overrides": {
+          "NVIDIA_TF32_OVERRIDE": null,
+          "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE": null
+        }
+      },
+      "iteration": 2,
+      "env_steps": 45,
+      "all_weights_finite": true
+    }
+  ],
+  "benchmark_clock_success_fixture": {
+    "schema_version": 2,
+    "normalization": "full_clip",
+    "checkpoint": {
+      "iteration": 280000,
+      "iteration_unit": "env_step",
+      "env_steps": null,
+      "num_updates": 111984
+    },
+    "summary": {
+      "clips": 1,
+      "failed": 0,
+      "mean_norm_return": 0.8872563362121582,
+      "step_weighted_norm_return": 0.8872563362121582,
+      "frame_weighted_norm_return": 0.8872563362121582,
+      "mean_norm_return_survived": 0.8872563362121582,
+      "terms": {
+        "motion_global_root_pos": 0.0098525333404541,
+        "motion_global_root_ori": 0.008073903918266297,
+        "motion_body_pos": 0.019509578943252563,
+        "motion_body_ori": 0.017545337677001952,
+        "motion_body_lin_vel": 0.018306854963302612,
+        "motion_body_ang_vel": 0.017979072332382204,
+        "action_rate_l2": -0.0025067901611328124,
+        "joint_limit": -3.486224450170994e-05
+      }
+    },
+    "clips": [
+      {
+        "name": "walk4_short",
+        "frames": 50,
+        "steps": 50,
+        "norm_return": 0.8872563362121582,
+        "failed": false,
+        "fail_step": -1,
+        "norm_return_survived": 0.8872563362121582,
+        "terms": {
+          "motion_global_root_pos": 0.0098525333404541,
+          "motion_global_root_ori": 0.008073903918266297,
+          "motion_body_pos": 0.019509578943252563,
+          "motion_body_ori": 0.017545337677001952,
+          "motion_body_lin_vel": 0.018306854963302612,
+          "motion_body_ang_vel": 0.017979072332382204,
+          "action_rate_l2": -0.0025067901611328124,
+          "joint_limit": -3.486224450170994e-05
+        }
+      }
+    ]
+  },
+  "benchmark_early_failure_fixture": {
+    "schema_version": 2,
+    "normalization": "full_clip",
+    "checkpoint": {
+      "iteration": 300,
+      "iteration_unit": "update",
+      "env_steps": 790,
+      "num_updates": 300
+    },
+    "summary": {
+      "clips": 1,
+      "failed": 1,
+      "mean_norm_return": 0.0037501677470768062,
+      "step_weighted_norm_return": 0.0037501677470768062,
+      "frame_weighted_norm_return": 0.0037501677470768062,
+      "mean_norm_return_survived": 0.4657026493188106,
+      "terms": {
+        "motion_global_root_pos": 0.006803975863890214,
+        "motion_global_root_ori": 0.003777032774506193,
+        "motion_body_pos": 0.010011650396115852,
+        "motion_body_ori": 0.0008219678632237694,
+        "motion_body_lin_vel": 0.011136673616640495,
+        "motion_body_ang_vel": 0.014658468239235155,
+        "action_rate_l2": -0.0006284833405957078,
+        "joint_limit": -1.1016833454822049e-05
+      }
+    },
+    "clips": [
+      {
+        "name": "walk4_subject1",
+        "frames": 8196,
+        "steps": 66,
+        "norm_return": 0.0037501677470768062,
+        "failed": true,
+        "fail_step": 66,
+        "norm_return_survived": 0.4657026493188106,
+        "terms": {
+          "motion_global_root_pos": 0.006803975863890214,
+          "motion_global_root_ori": 0.003777032774506193,
+          "motion_body_pos": 0.010011650396115852,
+          "motion_body_ori": 0.0008219678632237694,
+          "motion_body_lin_vel": 0.011136673616640495,
+          "motion_body_ang_vel": 0.014658468239235155,
+          "action_rate_l2": -0.0006284833405957078,
+          "joint_limit": -1.1016833454822049e-05
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "Short runs validate protocol and finite values, not convergence or hardware deployment.",
+    "50-frame success fixture is a temporary excerpt, not a full walk4 performance evaluation.",
+    "Batch 2048 and Casbot02/LAFAN1 remain local adaptations.",
+    "Old checkpoints keep their old training protocol; explicit migration is not a from-scratch paper run."
+  ]
+}

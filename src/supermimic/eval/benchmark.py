@@ -4,7 +4,8 @@ Every clip is played once from its first frame with the deterministic policy:
 no observation/action noise, no reset noise, no domain randomization (foot friction 1.0),
 deterministic physics. A clip *fails* if the training termination (pelvis height /
 tilt vs reference) fires before the clip ends. Normalised return = sum of per-step
-rewards / (max step reward * number of steps).
+rewards / (max step reward * full clip length). Unplayed steps after failure
+contribute zero; the survived-prefix score is retained as a separate diagnostic.
 """
 
 from __future__ import annotations
@@ -27,7 +28,28 @@ class ClipResult:
     norm_return: float
     failed: bool
     fail_step: int  # -1 if not failed
+    norm_return_survived: float | None = None
     terms: dict | None = None  # per-term mean reward per step (dt-scaled)
+
+
+def clip_result(name, frames, steps, reward_sum, failed, max_step_reward=0.1, terms=None):
+    """The current command clock executes L steps for an L-frame full clip.
+
+    Reset advances the target to frame 1; the final frame is scored again on
+    the clip-end timeout. Check that contract instead of hiding early timeouts.
+    """
+    if frames < 1 or steps < 1 or steps > frames or (not failed and steps != frames):
+        raise ValueError(f"{name}: invalid full-clip evaluation length {steps}/{frames}")
+    return ClipResult(
+        name=name,
+        frames=frames,
+        steps=steps,
+        norm_return=reward_sum / (max_step_reward * frames),
+        norm_return_survived=reward_sum / (max_step_reward * steps),
+        failed=failed,
+        fail_step=steps if failed else -1,
+        terms=terms,
+    )
 
 
 def load_policy_from_checkpoint(path: str | Path, device: str) -> tuple[Policy, dict]:
@@ -37,7 +59,12 @@ def load_policy_from_checkpoint(path: str | Path, device: str) -> tuple[Policy, 
     policy = Policy(pcfg).to(device)
     policy.load_state_dict(ck["policy"])
     policy.eval()
-    return policy, ck["config"]
+    cfg = dict(ck["config"])
+    cfg["_checkpoint"] = {
+        key: ck.get(key) for key in ("iteration", "iteration_unit", "env_steps", "num_updates")
+    }
+    cfg["_checkpoint"]["iteration_unit"] = ck.get("iteration_unit", "env_step")
+    return policy, cfg
 
 
 @torch.no_grad()
@@ -100,13 +127,13 @@ def run_benchmark(
                     ci = int(current[e])
                     if ci < n_clips and ci not in results:
                         st = int(steps[e])
-                        results[ci] = ClipResult(
+                        results[ci] = clip_result(
                             name=lib.clips[ci].name,
                             frames=lib.clips[ci].length,
                             steps=st,
-                            norm_return=float(ret_sum[e]) / (max_r * max(st, 1)),
+                            reward_sum=float(ret_sum[e]),
+                            max_step_reward=max_r,
                             failed=bool(term[e]),
-                            fail_step=st if bool(term[e]) else -1,
                             terms={
                                 n: float(term_sum[e, i]) / max(st, 1)
                                 for i, n in enumerate(term_names)
@@ -133,16 +160,23 @@ def summarize(results: list[ClipResult]) -> dict:
     n = len(results)
     failed = sum(r.failed for r in results)
     mean_ret = sum(r.norm_return for r in results) / max(n, 1)
-    # Length-weighted return (paper Fig. 3a uses the benchmark aggregate; weighting by steps).
-    tot_steps = sum(r.steps for r in results)
-    w_ret = sum(r.norm_return * r.steps for r in results) / max(tot_steps, 1)
+    # Weight by full reference lengths, including unplayed suffixes after failure.
+    tot_frames = sum(r.frames for r in results)
+    w_ret = sum(r.norm_return * r.frames for r in results) / max(tot_frames, 1)
+    survived = sum(
+        r.norm_return_survived if r.norm_return_survived is not None else r.norm_return
+        for r in results
+    ) / max(n, 1)
     out = {
         "clips": n,
         "failed": failed,
         "mean_norm_return": mean_ret,
         "step_weighted_norm_return": w_ret,
+        "frame_weighted_norm_return": w_ret,
+        "mean_norm_return_survived": survived,
     }
     if results and results[0].terms:
+        tot_steps = sum(r.steps for r in results)
         out["terms"] = {
             k: sum(r.terms[k] * r.steps for r in results) / max(tot_steps, 1)
             for k in results[0].terms
@@ -150,7 +184,16 @@ def summarize(results: list[ClipResult]) -> dict:
     return out
 
 
-def save_results(results: list[ClipResult], path: str | Path) -> None:
+def save_results(results: list[ClipResult], path: str | Path, meta: dict | None = None) -> None:
     Path(path).write_text(
-        json.dumps({"summary": summarize(results), "clips": [asdict(r) for r in results]}, indent=1)
+        json.dumps(
+            {
+                "schema_version": 2,
+                "normalization": "full_clip",
+                "checkpoint": meta or {},
+                "summary": summarize(results),
+                "clips": [asdict(r) for r in results],
+            },
+            indent=1,
+        )
     )

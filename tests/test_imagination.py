@@ -1,5 +1,6 @@
 """GAE targets, policy objective, and a short end-to-end training smoke run."""
 
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +31,9 @@ def test_gae_targets_match_hand_computation():
     np.testing.assert_allclose(out1[0].numpy(), mc.numpy(), atol=1e-6)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available() or not NPZ.exists(), reason="needs CUDA + LAFAN1 npz")
+@pytest.mark.skipif(
+    not torch.cuda.is_available() or not NPZ.exists(), reason="needs CUDA + LAFAN1 npz"
+)
 def test_training_smoke(tmp_path):
     from supermimic.config import TrainConfig
     from supermimic.training.loop import Trainer
@@ -53,13 +56,28 @@ def test_training_smoke(tmp_path):
     tr = Trainer(cfg)
     try:
         tr.run()
-        assert tr.num_updates > 0
+        assert tr.iteration == tr.num_updates == 60
+        assert tr.env_steps == 170  # 20 refill + 60 / 0.4 collection steps
         assert (tmp_path / "smoke" / "ckpt_latest.pt").exists()
         # Resume path works.
-        cfg2 = TrainConfig(**{**cfg.__dict__, "resume": tmp_path / "smoke" / "ckpt_latest.pt", "run_name": "smoke2"})
+        cfg2 = deepcopy(cfg)
+        cfg2.resume = tmp_path / "smoke" / "ckpt_latest.pt"
+        cfg2.run_name = "smoke2"
+        cfg2.schedule.total_iterations = 62
+        cfg2.schedule.checkpoint_interval = 1
         tr.env.close()
+        tr.writer.close()
         tr2 = Trainer(cfg2)
         assert tr2.iteration == 60
-        tr2.env.close()
+        try:
+            tr2.run()
+            assert tr2.iteration == tr2.num_updates == 62
+            assert tr2.env_steps == 195  # extra 20-step refill and 5 collection steps
+            saved = torch.load(tr2.log_dir / "ckpt_latest.pt", weights_only=False)
+            assert saved["iteration_unit"] == "update"
+            assert saved["precision"]["cuda_matmul_allow_tf32"]
+        finally:
+            tr2.env.close()
+            tr2.writer.close()
     finally:
         pass

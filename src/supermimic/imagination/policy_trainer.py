@@ -72,7 +72,7 @@ class PolicyTrainer:
         else:
             v_H = None
         J = policy_objective(ro, v_H, cfg.gamma)
-        loss = -J / cfg.horizon
+        loss = -J  # Eq. 2 already averages over rollouts; sum over time, no extra 1/H.
         try:
             gn = backward_step(
                 loss, self.policy, self.opt, name="Policy",

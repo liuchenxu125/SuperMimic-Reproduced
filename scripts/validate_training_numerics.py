@@ -29,9 +29,9 @@ def main():
     cfg.env.anchor_obs = args.anchor_obs
     cfg.env.num_envs = args.num_envs
     cfg.policy_trainer.batch_size = args.batch_size
-    # Limit the run without accelerating the original 250,000-step LR decay.
+    # Limit outer updates without accelerating the 250,000-update LR decay.
     cfg.schedule.total_iterations = args.iterations
-    cfg.schedule.lr_decay_fraction = 250_000 / args.iterations
+    cfg.schedule.lr_decay_iterations = 250_000
     cfg.schedule.checkpoint_interval = args.iterations
     output = cfg.log_root / args.run_name
     if output.exists():
@@ -47,7 +47,9 @@ def main():
         "num_envs": args.num_envs,
         "policy_batch_size": args.batch_size,
         "requested_iterations": args.iterations,
-        "learning_rate_decay_steps": 250_000,
+        "iteration_unit": "update",
+        "learning_rate_decay_iterations": 250_000,
+        "precision": trainer.precision,
     }
     try:
         trainer.run()
@@ -68,6 +70,8 @@ def main():
     finally:
         report["completed_iterations"] = trainer.iteration
         report["updates"] = trainer.num_updates
+        report["env_steps"] = trainer.env_steps
+        report["replay_refill_env_steps"] = trainer.replay_refill_env_steps
         (output / "numerics_validation.json").write_text(json.dumps(report, indent=2) + "\n")
         trainer.writer.close()
         trainer.env.close()

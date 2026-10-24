@@ -1,14 +1,16 @@
 # SuperMimic-Reproduced
 
-> **English summary.** An independent from-scratch reproduction of *SuperMimic* (arXiv:2610.28480): a learned differentiable world model plus short-horizon BPTT actor-critic for Unitree G1 whole-body motion tracking, built on [mjlab](https://github.com/mujocolab/mjlab) / MuJoCo Warp. Includes the data pipeline (LAFAN1, BONES-SEED 129.9k clips), differentiable FK and analytic reward heads, the world model and imagination trainer, torchrun data-parallel training, the Appendix-F benchmark, and an interactive replay viewer. On LAFAN1 it reaches the paper's 0.82 tracking score in 1.66 h on one RTX 5090 (with anchor-relative observations; paper-observation runs are in progress). Documentation is in Chinese; see `docs/` for the paper spec, plan, review log and experiment log.
+> **English summary.** An independent from-scratch reproduction of *SuperMimic* (arXiv:2610.28480): a learned differentiable world model plus short-horizon BPTT actor-critic for Unitree G1 whole-body motion tracking, built on [mjlab](https://github.com/mujocolab/mjlab) / MuJoCo Warp. Includes the data pipeline (LAFAN1, BONES-SEED 129.9k clips), differentiable FK and analytic reward heads, the world model and imagination trainer, torchrun data-parallel training, the Appendix-F benchmark, and an interactive replay viewer. Several historical LAFAN1 runs used anchor-relative observations; local scores used a survived-prefix metric. They require reevaluation under the corrected full-clip protocol; update-based training, actor loss scaling and explicit TF32 were aligned on 2026-10-24. Documentation is in Chinese; see `docs/` for the paper spec, plan, review log and experiment log.
 
 从零复现论文 **SuperMimic: Scaling Humanoid Whole-Body Control with One Differentiable World Model**（[arXiv:2610.28480](https://arxiv.org/abs/2610.28480)，CoRL 2026）：一个学习得到的可微世界模型 + 短视野 BPTT actor-critic，用于 Unitree G1 人形全身动作跟踪。底座是 [mjlab](https://github.com/mujocolab/mjlab)（MuJoCo Warp），固定到 commit `8bb2bc9`；不使用 rsl_rl，世界模型、BPTT 训练器、多 clip 动作库、基于回报的重置采样、评测全部自己实现。
 
-> 状态（2026-10-21）：LAFAN1 上达到论文量级（M3），BONES-SEED 全量数据管线与单卡训练完成，多卡训练已跑通；正式结果正在按论文观测口径重跑（e6/e7）。详见 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
+> 状态（2026-10-24）：已修正整段评测归一化、训练更新计数/学习率、Eq. 2 策略目标缩放与显式 TF32。历史 run 需按新协议重评/重新训练，不能据旧分数声称达到论文性能。见 [论文对齐说明](docs/PAPER_ALIGNMENT.md)；历史实验见 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
 ## 结果速览
 
-评测协议为论文 Appendix F：每条 clip 从首帧整条确定性播放、无噪声无域随机化，**归一化回报** = Σ每步奖励 / (0.1 × 步数)，1.0 为完美跟踪；"失败" = 训练终止条件触发。
+评测协议为论文 Appendix F：每条 clip 从首帧整条确定性播放、无噪声无域随机化，**归一化回报** = Σ每步奖励 / (0.1 × 完整参考帧数)，提前失败的剩余部分计零；"失败" = 训练终止条件触发。
+
+下表本地数字保留旧版存活段归一化结果，**未经新协议重评，不应直接与论文分数对比**。
 
 | 实验 | 数据 | 硬件 | 观测口径 | 训练时长 | 评测回报 | 失败 |
 |---|---|---|---|---|---|---|
@@ -17,18 +19,19 @@
 | e3 | LAFAN1 40 clip | 1×5090 | +锚点相对位姿 | 1.66 h / 3.3 h | 0.824 / **0.904** | 5/40 / 3/40 |
 | 论文 Table A.8 | BONES-SEED 129.5k clip | 1×H100 | 论文 | 3 h | >0.90 | 25/129,514 |
 | e5 | BONES-SEED 129.9k clip | 1×5090 | +锚点相对位姿 | 4.2 h / 5.8 h | 0.934 / 0.935（2000 条子集） | 6/2000 / 5/2000 |
-| e6 / e7 | LAFAN1 40 clip | 3×5090 / 1×5090 | **论文** | 进行中 | – | – |
+| e6 / e7 | LAFAN1 40 clip | 3×5090 / 1×5090 | **论文观测** | 历史 run，需重评 | – | – |
 
 - 世界模型 8 步开环归一化误差 0.0065–0.0099（论文 0.007–0.011）。
 - 仿真吞吐 4096 环境约 2×10⁵ env-steps/s（5090）；`torch.compile` 后一次想象 fwd+bwd（批 2048，H=32）0.33 s。
 - 四卡数据并行（显式梯度 all-reduce）效率 91%。
 
-**最重要的偏离项**：论文 Table A.1 的策略观测只有 93 维本体项（无状态估计）。按此口径的 e2 评测回报封顶 0.56，根部位置/朝向奖励几乎拿不到；加入 BeyondMimic 式锚点相对观测（goal 组追加 9 维）后 e3 达到 0.904。e3/e5 的数字因此**不与论文同口径**，正式结果以论文口径的 e6/e7 及后续 BONES-SEED 全量 run 为准。
+**最重要的偏离项**：论文 Table A.1 的策略观测只有 93 维本体项（无状态估计）。按此口径的 e2 评测回报封顶 0.56，根部位置/朝向奖励几乎拿不到；加入 BeyondMimic 式锚点相对观测（goal 组追加 9 维）后 e3 达到 0.904。e3/e5 的数字因此**不与论文同口径**，这些旧 run 也需核对本次修正的计数、目标尺度、精度和评测协议后再比较。
 
 ## 文档
 
 | 文件 | 内容 |
 |---|---|
+| [docs/PAPER_ALIGNMENT.md](docs/PAPER_ALIGNMENT.md) | 本次四项论文对齐、旧 checkpoint 兼容及验证 |
 | [训练流程.md](训练流程.md) | 本机 G1 / Casbot02 的精简指令：数据、训练、续训、评测、play 和 Casbot02 sim2sim |
 | [docs/PAPER_SPEC.md](docs/PAPER_SPEC.md) | 论文全部数值、公式、协议的逐条转录；"未指明"清单 U1–U20 |
 | [docs/REPRODUCTION_PLAN.md](docs/REPRODUCTION_PLAN.md) | 复现计划：目标、环境、设计决策 D1–D20、repo 骨架、分阶段步骤、测试、预算、风险 |
@@ -118,21 +121,21 @@ G1 / Casbot02 的日常指令见 [训练流程](训练流程.md)。实际数据�
 
 ```bash
 # LAFAN1，论文观测口径，单卡
-env -u PYTHONPATH uv run sm-train --run-name e7 --data.npz-dir data/npz/lafan1 \
+env -u PYTHONPATH uv run sm-train --run-name g1_lafan1_paper_aligned --data.npz-dir data/npz/lafan1 \
   --env.num-envs 4096 --policy-trainer.batch-size 4096 --schedule.max-hours 3
 
 # BONES-SEED 全量，紧凑库
-env -u PYTHONPATH uv run sm-train --run-name e5 --data.library data/library/bones_seed_compact.pt \
+env -u PYTHONPATH uv run sm-train --run-name bones_seed_paper_aligned --data.library data/library/bones_seed_compact.pt \
   --env.num-envs 4096 --policy-trainer.batch-size 2048 --schedule.max-hours 20
 
 # 多卡：torchrun，一进程一卡（每 rank 自己的仿真与 buffer，梯度 all-reduce，lr × sqrt(world)）
-env -u PYTHONPATH uv run torchrun --nproc_per_node 4 -m supermimic.scripts.train --run-name e6 ...
+env -u PYTHONPATH uv run torchrun --nproc_per_node 4 -m supermimic.scripts.train --run-name g1_multigpu_paper_aligned ...
 # 跳过坏卡：CUDA_VISIBLE_DEVICES=0,2,3 ... --nproc_per_node 3
 
 # 可选：--env.anchor-obs（BeyondMimic 锚点相对观测，偏离论文），--resume <ckpt>
 ```
 
-默认超参按论文 Table A.5/A.6：4096 环境、H=32、UTD 0.4、γ=0.99、critic 5 epoch × 4 minibatch、WM 每次更新 10 批。日志为 TensorBoard（`logs/<run>/tb`），每 `checkpoint-interval` 迭代存 `ckpt_XXXXXXX.pt`。
+默认超参按论文 Table A.5/A.6：4096 环境、H=32、UTD 0.4、γ=0.99、critic 5 epoch × 4 minibatch、WM 每次更新 10 批。日志为 TensorBoard（`logs/<run>/tb`），每 `checkpoint-interval` 次外层更新存 `ckpt_XXXXXXX.pt`（默认 4000）。默认训练 320k 次更新、LR 在固定 250k 次更新内衰减，TF32 显式开启；`max-hours` 只限制本次运行时间。旧环境步 checkpoint 默认不能直接续训，见 [兼容说明](docs/PAPER_ALIGNMENT.md)。
 
 ## 评测与可视化
 
