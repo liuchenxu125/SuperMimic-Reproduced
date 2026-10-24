@@ -8,8 +8,8 @@ import torch
 
 from supermimic.data.replay_buffer import ReplayBuffer, WindowBatch
 from supermimic.envs.mdp.motion_library import MotionLibrary
+from supermimic.training.numerics import backward_step
 from supermimic.world_model.heads import ReferenceFrame
-from supermimic.training.distributed import allreduce_grads
 from supermimic.world_model.world_model import WorldModel
 
 
@@ -54,11 +54,9 @@ class WorldModelTrainer:
         for _ in range(self.cfg.batches_per_update):
             w = buffer.sample_windows(self.cfg.batch_size, self.cfg.window)
             loss, m = self.loss_on(w)
-            self.opt.zero_grad(set_to_none=True)
-            loss.backward()
-            allreduce_grads(self.wm)
-            gn = torch.nn.utils.clip_grad_norm_(self.wm.parameters(), self.cfg.grad_clip)
-            self.opt.step()
+            gn = backward_step(
+                loss, self.wm, self.opt, name="World model", max_norm=self.cfg.grad_clip
+            )
             m["loss"] = loss.detach()
             m["grad_norm"] = gn.detach()
             for k, v in m.items():

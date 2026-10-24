@@ -39,6 +39,8 @@ class CppActor:
         record = np.concatenate(
             (data.qpos[7:], data.qvel[6:], data.qpos[:3], data.qpos[3:7], data.qvel[3:6])
         ).astype("<f8")
+        if not sim.meta["anchor_obs"]:
+            record[54:57] = np.nan  # C++ proprio inference receives no root position.
         began = time.perf_counter()
         self.proc.stdin.write(record.tobytes())
         self.proc.stdin.flush()
@@ -131,6 +133,9 @@ def main():
         p.error("--seconds must include at least one 20 ms control step")
     sim = Sim2Sim(args.sim_bundle)
     meta = json.loads((args.hardware_bundle / "manifest.json").read_text())
+    for key in ("checkpoint_sha256", "anchor_obs", "goal_dim", "joint_names"):
+        if sim.meta[key] != meta[key]:
+            raise ValueError(f"Sim and hardware bundles disagree on {key}")
     sim.reset(meta["clip"], args.start_frame, start_xy=[1.2, -0.6], start_yaw=0.7)
     if args.from_rest:
         sim.data.qvel[:] = 0
@@ -154,6 +159,7 @@ def main():
         max_abs_errors=cpp.max_errors,
         from_rest=args.from_rest,
         explicit_pd_1000hz=args.explicit_pd,
+        measured_root_position_supplied_to_cpp=bool(sim.meta["anchor_obs"]),
         host_roundtrip_ms={
             k: float(v)
             for k, v in zip(

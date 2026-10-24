@@ -10,7 +10,7 @@ import mujoco
 import numpy as np
 import torch
 
-from supermimic.deployment.export import ActorOnly
+from supermimic.deployment.export import ActorOnly, validate_policy
 from supermimic.policy.nets import Policy, PolicyCfg
 
 
@@ -22,6 +22,7 @@ def main():
         "--output", type=Path, default=Path("rl_controller/config/model/supermimic_walk4")
     )
     args = parser.parse_args()
+    torch.set_num_threads(2)
     meta = json.loads((args.bundle / "manifest.json").read_text())
     checkpoint = Path(meta["checkpoint_path"])
     if hashlib.sha256(checkpoint.read_bytes()).hexdigest() != meta["checkpoint_sha256"]:
@@ -34,8 +35,8 @@ def main():
         raise ValueError("Cannot change anchor_obs when exporting existing weights")
     policy = Policy(PolicyCfg(**ckpt["config"]["policy"])).eval()
     policy.load_state_dict(ckpt["policy"])
+    validate_policy(policy)
     args.output.mkdir(parents=True, exist_ok=True)
-    torch.set_num_threads(2)
     torch.onnx.export(
         ActorOnly(policy),
         (torch.zeros(1, meta["obs_dim"]), torch.zeros(1, meta["goal_dim"])),

@@ -11,7 +11,7 @@ from supermimic.envs.mdp.motion_library import MotionLibrary
 from supermimic.imagination.objective import gae_targets, policy_objective
 from supermimic.imagination.rollout import ImagRollout, imagine
 from supermimic.policy.nets import Critic, Policy
-from supermimic.training.distributed import allreduce_grads
+from supermimic.training.numerics import backward_step, require_finite
 from supermimic.world_model.world_model import WorldModel
 
 
@@ -73,14 +73,14 @@ class PolicyTrainer:
             v_H = None
         J = policy_objective(ro, v_H, cfg.gamma)
         loss = -J / cfg.horizon
-        self.opt.zero_grad(set_to_none=True)
-        loss.backward()
-        allreduce_grads(self.policy)
-        gn = torch.nn.utils.clip_grad_norm_(self.policy.parameters(), cfg.grad_clip_norm)
-        torch.nn.utils.clip_grad_value_(self.policy.parameters(), cfg.grad_clip_value)
-        self.opt.step()
-        self.wm.requires_grad_(True)
-        self.critic.requires_grad_(True)
+        try:
+            gn = backward_step(
+                loss, self.policy, self.opt, name="Policy",
+                max_norm=cfg.grad_clip_norm, max_value=cfg.grad_clip_value,
+            )
+        finally:
+            self.wm.requires_grad_(True)
+            self.critic.requires_grad_(True)
 
         metrics = {
             "imag_objective": float(J.detach()),
@@ -107,22 +107,25 @@ class PolicyTrainer:
                 X_xi = xi_rep[:-1].reshape(-1, xi_rep.shape[-1])
                 X_er = e_root_d[:-1].reshape(-1, 4)
                 Y = targets.reshape(-1)
+            require_finite(Y, "Critic targets")
             N = Y.shape[0]
             mb = N // cfg.critic_minibatches
             last = torch.zeros((), device=Y.device)
+            critic_grad_max = torch.zeros((), device=Y.device, dtype=torch.float64)
             for _ in range(cfg.critic_epochs):
                 perm = torch.randperm(N, device=Y.device)
                 for i in range(cfg.critic_minibatches):
                     idx = perm[i * mb : (i + 1) * mb]
                     pred = self.critic(X_feat[idx], X_goal[idx], X_xi[idx], X_er[idx])
                     closs = torch.nn.functional.mse_loss(pred, Y[idx])
-                    self.critic_opt.zero_grad(set_to_none=True)
-                    closs.backward()
-                    allreduce_grads(self.critic)
-                    torch.nn.utils.clip_grad_norm_(self.critic.parameters(), cfg.critic_grad_clip)
-                    self.critic_opt.step()
+                    critic_grad = backward_step(
+                        closs, self.critic, self.critic_opt,
+                        name="Critic", max_norm=cfg.critic_grad_clip,
+                    )
+                    critic_grad_max = torch.maximum(critic_grad_max, critic_grad.to(torch.float64))
                     last = closs.detach()
             metrics["critic_loss"] = float(last)
+            metrics["critic_grad_norm_max"] = float(critic_grad_max)
             metrics["critic_value_mean"] = float(values.mean())
             metrics["critic_target_mean"] = float(targets.mean())
         return metrics

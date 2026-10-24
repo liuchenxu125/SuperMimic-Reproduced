@@ -32,6 +32,31 @@ class ActorOnly(nn.Module):
         return self.policy(obs_hist, goal)
 
 
+def validate_policy(policy: Policy) -> None:
+    """Reject divergent checkpoints before writing a deployable bundle."""
+    bad = [name for name, value in policy.state_dict().items() if not torch.isfinite(value).all()]
+    if bad:
+        raise ValueError(
+            f"Policy contains NaN/Inf in {len(bad)} tensors (e.g. {bad[0]}). "
+            "Training diverged; use a finite checkpoint or retrain. Cannot export for deployment."
+        )
+    obs_dim = (3 * policy.cfg.num_joints + 6) * policy.cfg.history
+    with torch.inference_mode(), torch.random.fork_rng(devices=[]):
+        torch.manual_seed(1301)
+        for random in (False, True):
+            obs = torch.randn(1, obs_dim) * 0.2 if random else torch.zeros(1, obs_dim)
+            goal = (
+                torch.randn(1, policy.cfg.goal_dim) * 0.2
+                if random
+                else torch.zeros(1, policy.cfg.goal_dim)
+            )
+            action = policy(obs, goal)
+            if action.shape != (1, policy.cfg.num_joints) or not torch.isfinite(action).all():
+                raise ValueError(
+                    "Policy inference produced invalid actions; cannot export for deployment"
+                )
+
+
 def digest(path):
     h = hashlib.sha256()
     with Path(path).open("rb") as f:
@@ -54,6 +79,7 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
     pcfg = PolicyCfg(**{k: tuple(v) if isinstance(v, list) else v for k, v in pc.items()})
     policy = Policy(pcfg).cpu().eval()
     policy.load_state_dict(ck["policy"])
+    validate_policy(policy)
     n, k = pcfg.num_joints, cfg["env"]["future_frames"]
     anchor = cfg["env"].get("anchor_obs", False)
     obs_dim = (3 * n + 6) * pcfg.history

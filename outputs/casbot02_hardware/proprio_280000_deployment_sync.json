@@ -1,0 +1,77 @@
+{
+  "run": "casbot02_lafan1_proprio_codex_fixed",
+  "checkpoint_iteration": 280000,
+  "checkpoint_sha256": "05c847907b66affdd578c10b8c2e557d9a781d90f4ed072d4ea47cc78253485d",
+  "bundle": "rl_controller/config/model/supermimic_walk4_proprio",
+  "configuration": "rl_controller/config/supermimic_walk4_proprio.yaml",
+  "obs_frame_dim": 87,
+  "history_frames": 10,
+  "obs_dim": 870,
+  "reference_frame_dim": 64,
+  "reference_frames": 10,
+  "goal_dim": 640,
+  "total_input_dim": 1510,
+  "action_dim": 27,
+  "anchor_obs": false,
+  "policy_frequency_hz": 50,
+  "pd_frequency_hz": 1000,
+  "clip": "walk4_subject1",
+  "checksums": {
+    "actor_sha256": "714b205fa6b5f2f9d3674708055e28f4ae34521b86492f3864090d41225ccbf3",
+    "motion_sha256": "ce9d7dc0f4de40a2fc333934c0c2ab10427248e567bde698c828383670c58df2"
+  },
+  "closed_loop": {
+    "onnx_full": {
+      "report": "outputs/casbot02_hardware/proprio_280000_walk4_onnx_full.json",
+      "completed_clip": true,
+      "steps": 8196,
+      "seconds": 163.92000000000002,
+      "max_abs_errors": {
+        "observation": 0.0,
+        "goal": 0.0,
+        "actor": 9.5367431640625e-06,
+        "target": 5.91878290823189e-08
+      },
+      "root_position_supplied": false,
+      "host_roundtrip_ms": {
+        "median": 1.0836980072781444,
+        "p99": 2.239974956028161,
+        "max_after_warmup": 7.680239039473236
+      }
+    },
+    "effort_from_rest": {
+      "report": "outputs/casbot02_hardware/proprio_280000_walk4_effort_from_rest.json",
+      "completed_clip": true,
+      "steps": 8196,
+      "seconds": 163.92000000000002,
+      "max_abs_errors": {
+        "observation": 0.0,
+        "goal": 0.0,
+        "actor": 1.33514404296875e-05,
+        "target": 5.960464477539063e-08
+      },
+      "root_position_supplied": false,
+      "host_roundtrip_ms": {
+        "median": 1.2098799925297499,
+        "p99": 2.3563915642444035,
+        "max_after_warmup": 12.209662003442645
+      }
+    }
+  },
+  "ros_integration": {
+    "actual_trained_onnx": true,
+    "isolated_domain_id": 186,
+    "localhost_only": true,
+    "synthetic_topics_prefix": "/supermimic_offline_test",
+    "dry_run_passed": true,
+    "synthetic_effort_routing_passed": true,
+    "root_pose_subscription_absent": true,
+    "sensor_fault_damping_passed": true,
+    "wrong_interface_rejected": true,
+    "startup_dimensions_and_checkpoint_logged": true
+  },
+  "real_robot_tested": false,
+  "arm_build_tested": false,
+  "default_dry_run": true,
+  "known_limitation": "Long-term world position drift persists; full clip completion only checks height and tilt."
+}

@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+import onnx
 import torch
 import yaml
 
@@ -33,7 +34,7 @@ def parity(probe, bundle, actor, reference, q0, scale, shifted=False):
         for t in range(64):
             qp = np.r_[reference.root_pos[t], reference.root_quat[t], reference.joint_pos[t]]
             if shifted:
-                qp[:3] += [100, -200, 3]
+                qp[:3] = np.nan  # Unavailable position must never enter proprio inference.
                 dq = np.array([np.cos(0.3), 0.0, 0.0, np.sin(0.3)])
                 qp[3:7] = quat_multiply(dq, qp[3:7])
             omega = rotation(reference.root_quat[t]).T @ reference.root_ang[t]
@@ -127,7 +128,30 @@ def main():
             "cpp_frames_checked": 128,
             "max_abs_errors": errors,
             "position_and_global_yaw_invariant": True,
+            "unavailable_position_nan_accepted": True,
         }
+        # A malformed external ONNX must fail startup, before a controller can
+        # publish even preparation commands. Keep this fixture in /tmp only.
+        broken = bundle / "nonfinite_actor"
+        broken.mkdir()
+        shutil.copy(bundle / "manifest.json", broken / "manifest.json")
+        shutil.copy(bundle / "motion.bin", broken / "motion.bin")
+        graph = onnx.load(bundle / "actor.onnx")
+        parameter = graph.graph.initializer[-1]
+        values = onnx.numpy_helper.to_array(parameter).copy()
+        values.reshape(-1)[0] = np.nan
+        parameter.CopyFrom(onnx.numpy_helper.from_array(values, parameter.name))
+        onnx.save(graph, broken / "actor.onnx")
+        rejected = subprocess.run(
+            [str(args.probe.resolve()), str(broken)],
+            check=False,
+            input=b"",
+            capture_output=True,
+            timeout=10,
+        )
+        if rejected.returncode == 0 or b"Nonfinite actor output" not in rejected.stderr:
+            raise RuntimeError("C++ did not reject nonfinite ONNX: " + rejected.stderr.decode())
+        report["nonfinite_onnx_rejected_at_startup"] = True
         if args.with_ros:
             config = yaml.safe_load(
                 (root / "rl_controller/config/supermimic_walk4_proprio.yaml").read_text()

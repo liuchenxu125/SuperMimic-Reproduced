@@ -37,8 +37,8 @@ def test_native_observation_and_history_match_training():
     np.testing.assert_allclose(h.packed(), repeated)
 
 
-@pytest.fixture(scope="module")
-def bundle(tmp_path_factory):
+@pytest.fixture(scope="module", params=[True, False], ids=["anchor", "proprio"])
+def bundle(tmp_path_factory, request):
     from mjlab.entity import Entity
 
     from supermimic.deployment.export import export_bundle
@@ -76,13 +76,16 @@ def bundle(tmp_path_factory):
         body_lin_vel_w=np.tile([0.1, 0, 0], (20, m.nbody - 1, 1)).astype(np.float32),
         body_ang_vel_w=np.zeros((20, m.nbody - 1, 3), np.float32),
     )
-    pc = PolicyCfg(num_joints=27, goal_dim=649, encoder_hidden=(32,), decoder_hidden=(32,))
+    anchor = request.param
+    pc = PolicyCfg(
+        num_joints=27, goal_dim=649 if anchor else 640, encoder_hidden=(32,), decoder_hidden=(32,)
+    )
     torch.manual_seed(17)
     p = Policy(pc)
     cfg = {
         "robot": "casbot02",
         "policy": asdict(pc),
-        "env": {"future_frames": 10, "anchor_obs": True},
+        "env": {"future_frames": 10, "anchor_obs": anchor},
         "world_model": {"height_threshold": 0.25, "tilt_threshold": 0.8},
     }
     ck = root / "checkpoint.pt"
@@ -181,6 +184,34 @@ def test_bad_reference_rejected(bundle, tmp_path):
         Reference(wrong, meta["joint_names"], 10, 0.02)
     with pytest.raises(ValueError, match="quaternion"):
         rotation([0, 0, 0, 0])
+
+
+@pytest.mark.parametrize("bad_value", [float("nan"), float("inf")])
+def test_divergent_checkpoint_rejected_before_export(bundle, tmp_path, bad_value):
+    from supermimic.deployment.export import export_bundle
+
+    path, _, _, source = bundle
+    checkpoint = torch.load(path.parent / "checkpoint.pt", weights_only=False)
+    weights = next(value for value in checkpoint["policy"].values() if value.ndim == 2)
+    weights.view(-1)[0] = bad_value
+    broken = tmp_path / "broken.pt"
+    torch.save(checkpoint, broken)
+    output = tmp_path / "must_not_exist"
+    with pytest.raises(ValueError, match="Policy contains NaN/Inf"):
+        export_bundle(broken, [source], output)
+    assert not output.exists()
+
+
+def test_proprio_goal_ignores_unavailable_root_pose(bundle):
+    path, _, meta, _ = bundle
+    if meta["anchor_obs"]:
+        pytest.skip("Only applies to the proprio interface")
+    sim = Sim2Sim(path)
+    sim.reset("small")
+    goal = sim.reference.goal(1, None, None, False)
+    unavailable = sim.reference.goal(1, np.full(3, np.nan), np.full(4, np.nan), False)
+    np.testing.assert_array_equal(goal, unavailable)
+    assert goal.shape == (640,)
 
 
 def test_reference_overlay_geometry_without_gl_context(bundle):

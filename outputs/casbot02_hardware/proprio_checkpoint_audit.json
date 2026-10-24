@@ -1,0 +1,62 @@
+[
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0004000.pt",
+    "iteration": 4000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0008000.pt",
+    "iteration": 8000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0012000.pt",
+    "iteration": 12000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0016000.pt",
+    "iteration": 16000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0020000.pt",
+    "iteration": 20000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0024000.pt",
+    "iteration": 24000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0028000.pt",
+    "iteration": 28000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0032000.pt",
+    "iteration": 32000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_0036000.pt",
+    "iteration": 36000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  },
+  {
+    "checkpoint": "logs/casbot02_lafan1_proprio_codex/ckpt_latest.pt",
+    "iteration": 36000,
+    "nonfinite_policy_tensors": 20,
+    "nonfinite_policy_values": 8685883
+  }
+]

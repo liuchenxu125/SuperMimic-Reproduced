@@ -1,0 +1,259 @@
+{
+  "format": "supermimic-training-numerics-v1",
+  "date": "2026-10-23",
+  "gpu": "NVIDIA GeForce RTX 4090 D",
+  "torch": "2.14.1+cu130",
+  "scope": "Single-seed 1000-step numerical regression; convergence and deployment quality not established.",
+  "cpu_tests": {
+    "passed": 55,
+    "skipped": 17
+  },
+  "runs": [
+    {
+      "purpose": "numerical stability only; not deployable-policy qualification",
+      "anchor_obs": false,
+      "npz_dir": "data/npz/lafan1_casbot02",
+      "seed": 0,
+      "num_envs": 4096,
+      "policy_batch_size": 2048,
+      "requested_iterations": 1000,
+      "learning_rate_decay_steps": 250000,
+      "nonfinite_tensors": {
+        "world_model": [],
+        "policy": [],
+        "critic": []
+      },
+      "passed": true,
+      "completed_iterations": 1000,
+      "updates": 384,
+      "run_name": "casbot02_noanchor_numerics_raw_v2",
+      "metrics": {
+        "wm/loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 2.4310877323150635,
+          "minimum": 2.4310877323150635,
+          "maximum": 99.4273910522461
+        },
+        "wm/grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 18.314071655273438,
+          "minimum": 14.028931617736816,
+          "maximum": 107.16393280029297
+        },
+        "policy/policy_grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.014628071337938309,
+          "minimum": 6.65749394102022e-05,
+          "maximum": 414808309760.0
+        },
+        "policy/imag_objective": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.8977828621864319,
+          "minimum": -308155.90625,
+          "maximum": 1.099058985710144
+        },
+        "policy/critic_loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.016441069543361664,
+          "minimum": 0.004656645469367504,
+          "maximum": 1630544873914368.0
+        },
+        "policy/critic_grad_norm_max": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.34048035740852356,
+          "minimum": 0.03905368223786354,
+          "maximum": 441120129024.0
+        }
+      },
+      "nonfinite_optimizer_tensors": {
+        "wm_opt": [],
+        "policy_opt": [],
+        "critic_opt": []
+      },
+      "checkpoint_sha256": "808f52ae714cdbacadec1fb91d4442714a5471e06529671e0fdad153cf63885e"
+    },
+    {
+      "purpose": "numerical stability only; not deployable-policy qualification",
+      "anchor_obs": true,
+      "npz_dir": "data/npz/lafan1_casbot02",
+      "seed": 0,
+      "num_envs": 4096,
+      "policy_batch_size": 2048,
+      "requested_iterations": 1000,
+      "learning_rate_decay_steps": 250000,
+      "nonfinite_tensors": {
+        "world_model": [],
+        "policy": [],
+        "critic": []
+      },
+      "passed": true,
+      "completed_iterations": 1000,
+      "updates": 384,
+      "run_name": "casbot02_anchor_numerics_raw_v2",
+      "metrics": {
+        "wm/loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 2.6724250316619873,
+          "minimum": 2.6724250316619873,
+          "maximum": 101.52197265625
+        },
+        "wm/grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 16.66725730895996,
+          "minimum": 14.556901931762695,
+          "maximum": 96.69981384277344
+        },
+        "policy/policy_grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.010849082842469215,
+          "minimum": 7.379955786745995e-05,
+          "maximum": 16.89763069152832
+        },
+        "policy/imag_objective": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.8493040204048157,
+          "minimum": -7.752408504486084,
+          "maximum": 1.1613191366195679
+        },
+        "policy/critic_loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.011690427549183369,
+          "minimum": 0.004345566965639591,
+          "maximum": 945383.125
+        },
+        "policy/critic_grad_norm_max": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.23288273811340332,
+          "minimum": 0.02491266466677189,
+          "maximum": 112227.8671875
+        }
+      },
+      "nonfinite_optimizer_tensors": {
+        "wm_opt": [],
+        "policy_opt": [],
+        "critic_opt": []
+      },
+      "checkpoint_sha256": "dd06b265a9b123a77f42aabbb74d56ba25f86e2099b257d275c5c0e31b3750cb"
+    },
+    {
+      "purpose": "numerical stability only; not deployable-policy qualification",
+      "anchor_obs": false,
+      "npz_dir": "data/npz/lafan1_casbot02_codex",
+      "seed": 0,
+      "num_envs": 4096,
+      "policy_batch_size": 2048,
+      "requested_iterations": 1000,
+      "learning_rate_decay_steps": 250000,
+      "nonfinite_tensors": {
+        "world_model": [],
+        "policy": [],
+        "critic": []
+      },
+      "passed": true,
+      "completed_iterations": 1000,
+      "updates": 384,
+      "run_name": "casbot02_noanchor_numerics_clean_v2",
+      "metrics": {
+        "wm/loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 2.602588415145874,
+          "minimum": 2.602588415145874,
+          "maximum": 100.31045532226562
+        },
+        "wm/grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 17.27698516845703,
+          "minimum": 15.205642700195312,
+          "maximum": 98.22028350830078
+        },
+        "policy/policy_grad_norm": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.08262705057859421,
+          "minimum": 7.022132922429591e-05,
+          "maximum": 0.3784494996070862
+        },
+        "policy/imag_objective": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.8855267763137817,
+          "minimum": 0.06303006410598755,
+          "maximum": 0.919708251953125
+        },
+        "policy/critic_loss": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.01161008607596159,
+          "minimum": 0.004390058573335409,
+          "maximum": 75.48163604736328
+        },
+        "policy/critic_grad_norm_max": {
+          "points": 20,
+          "nonfinite_points": 0,
+          "last_step": 1000,
+          "last_value": 0.22137483954429626,
+          "minimum": 0.033152539283037186,
+          "maximum": 38.88936996459961
+        }
+      },
+      "nonfinite_optimizer_tensors": {
+        "wm_opt": [],
+        "policy_opt": [],
+        "critic_opt": []
+      },
+      "checkpoint_sha256": "f22ac300f2279cf7ca33cf4cebfce59a0e0cdee398bd49023c89511ea434f407"
+    }
+  ],
+  "initial_probe_before_float64_norm_fallback": {
+    "purpose": "numerical stability only; not deployable-policy qualification",
+    "anchor_obs": false,
+    "npz_dir": "data/npz/lafan1_casbot02",
+    "seed": 0,
+    "num_envs": 4096,
+    "policy_batch_size": 2048,
+    "requested_iterations": 1000,
+    "learning_rate_decay_steps": 250000,
+    "passed": false,
+    "error": "FloatingPointError: Critic gradient norm is NaN/Inf (finite elements but overflowing total norm); stopped before optimizer.step()",
+    "completed_iterations": 729,
+    "updates": 275
+  },
+  "source_sha256": {
+    "src/supermimic/envs/mdp/rewards.py": "9d7d4d384a8f05e0835e988c0219a7565be11b448f0c1b5f35f2390064a34af4",
+    "src/supermimic/training/numerics.py": "ca2bc426465c09e12cc8e0b35a1e5df80c53f3a0d77d4ac72988d12fac63b975",
+    "src/supermimic/imagination/policy_trainer.py": "1993c3a6cd1dbb1ad7d056f45a712bd6a9cd285b6f47de361f165ea1a64863ba",
+    "src/supermimic/world_model/wm_trainer.py": "dbcdbd480de0cf9df966ab16cca912c9b0d6d9550c03abe026cac8db61df20ed",
+    "scripts/validate_training_numerics.py": "aa34d75b8d5a43c9ee8fdee1a4834d45ffb02bd59b8f62563923066458118465"
+  }
+}
