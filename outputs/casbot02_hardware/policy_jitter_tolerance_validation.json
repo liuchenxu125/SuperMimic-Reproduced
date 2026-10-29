@@ -1,0 +1,43 @@
+{
+  "thresholds": {
+    "max_inference_seconds": 0.04,
+    "late_inference_seconds": 0.025,
+    "max_consecutive_late_updates": 20,
+    "max_target_age": 0.06
+  },
+  "nominal_policy_period_seconds": 0.02,
+  "tests": [
+    {
+      "case": "jitter",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 2241
+    },
+    {
+      "case": "below_late_threshold",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 2264
+    },
+    {
+      "case": "slow_policy",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1582
+    },
+    {
+      "case": "sustained_late",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1583
+    }
+  ],
+  "previous_regression_log": "/tmp/sm_jitter_tests.log",
+  "log": "/tmp/sm_jitter_25ms_tests.log",
+  "native_build": "passed",
+  "arm64_build": "passed",
+  "uploaded": false,
+  "hardware_run": false,
+  "runner_sha256": "31860cca8db7271553c6594764eb24792d93c5590b859bfb325e70a371971cc5",
+  "amp_comparison": "No single-call inference deadline; 2000 missing-result calls log error only."
+}

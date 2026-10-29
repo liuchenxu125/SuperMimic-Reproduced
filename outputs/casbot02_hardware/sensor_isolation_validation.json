@@ -1,0 +1,56 @@
+{
+  "created_at": "2026-10-27T10:52:07.530373+08:00",
+  "scope": "sensor-cache isolation from command/status I/O; control state still serializes output and stop acknowledgements",
+  "native_build_passed": true,
+  "arm64_build_passed": true,
+  "tests": [
+    {
+      "dry_run": true,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 833,
+      "last_status": "FAULT dry_run=true frame=0 inference_ms=1.649359 sensors=OK fault=Policy target timeout joint_rx=4591 imu_rx=3690 mode=7 mode_rx=3820 joint_debug_rx=3697 joint_standard_rx=894 joint_source=debug max_control_gap_ms=350.254250 max_control_lock_ms=0.049781 max_publish_ms=350.138372 max_report_io_ms=350.137039 max_policy_commit_lock_ms=0.028272 max_debug_gap_ms=1139.428326 max_standard_gap_ms=4936.597646 max_imu_gap_ms=1215.152308 max_mode_gap_ms=130.851139 max_debug_lock_ms=0.025324 max_imu_lock_ms=0.023738 debug_gaps_over100=1 standard_gaps_over100=1 imu_gaps_over100=1 mode_gaps_over100=1"
+    },
+    {
+      "dry_run": false,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 2310,
+      "last_status": "FAULT dry_run=false frame=0 inference_ms=1.227602 sensors=OK fault=Policy target timeout joint_rx=5659 imu_rx=4541 mode=7 mode_rx=4705 joint_debug_rx=4552 joint_standard_rx=1107 joint_source=debug max_control_gap_ms=350.203991 max_control_lock_ms=0.043902 max_publish_ms=350.126906 max_report_io_ms=350.152000 max_policy_commit_lock_ms=0.047364 max_debug_gap_ms=1136.318212 max_standard_gap_ms=4920.441586 max_imu_gap_ms=1211.338969 max_mode_gap_ms=123.047505 max_debug_lock_ms=0.225349 max_imu_lock_ms=0.039317 debug_gaps_over100=1 standard_gaps_over100=1 imu_gaps_over100=1 mode_gaps_over100=1"
+    },
+    {
+      "dry_run": true,
+      "anchor_obs": true,
+      "checks": "passed",
+      "messages_checked": 633,
+      "last_status": "FAULT dry_run=true frame=5 inference_ms=1.230949 sensors=Stale sensor timestamp or receipt: pose stamp_age_ms=1181.486130 receipt_age_ms=1181.303820 fault=Sensor timestamps are not synchronized joint_rx=2420 imu_rx=2304 mode=7 mode_rx=2305 joint_debug_rx=2183 joint_standard_rx=237 joint_source=debug max_control_gap_ms=2.092388 max_control_lock_ms=0.038027 max_publish_ms=0.089741 max_report_io_ms=0.114276 max_policy_commit_lock_ms=0.059741 max_debug_gap_ms=1136.673640 max_standard_gap_ms=13.506690 max_imu_gap_ms=13.512318 max_mode_gap_ms=129.367532 max_debug_lock_ms=0.033268 max_imu_lock_ms=0.025117 debug_gaps_over100=1 standard_gaps_over100=0 imu_gaps_over100=0 mode_gaps_over100=1"
+    },
+    {
+      "dry_run": false,
+      "anchor_obs": true,
+      "checks": "passed",
+      "messages_checked": 1743,
+      "last_status": "FAULT dry_run=false frame=4 inference_ms=1.089434 sensors=OK fault=Sensor timestamps are not synchronized joint_rx=3003 imu_rx=2855 mode=7 mode_rx=2856 joint_debug_rx=2705 joint_standard_rx=298 joint_source=debug max_control_gap_ms=1.773858 max_control_lock_ms=0.025187 max_publish_ms=0.103658 max_report_io_ms=0.101017 max_policy_commit_lock_ms=0.080600 max_debug_gap_ms=1136.739503 max_standard_gap_ms=7.893811 max_imu_gap_ms=11.704440 max_mode_gap_ms=124.023958 max_debug_lock_ms=0.072367 max_imu_lock_ms=0.021912 debug_gaps_over100=1 standard_gaps_over100=0 imu_gaps_over100=0 mode_gaps_over100=1"
+    }
+  ],
+  "injected_publish_stall_ms": 350,
+  "blocking_io_assertions": [
+    "READY preserved with fresh sensors during command/status publish stall",
+    "no new >100ms callback gaps on debug joints, standard joints, IMU, mode",
+    "stop acknowledgement prevents position-control restart",
+    "HANDOFF command stall still faults on target age; fresh sensors do not bypass watchdog"
+  ],
+  "logs": [
+    "/tmp/supermimic_sensor_isolation_test.log",
+    "/tmp/supermimic_sensor_isolation_anchor_test.log"
+  ],
+  "arm64_runner_sha256": "bff77b0b229b744996f6e8d1e6a4811036ca155770307dfb4baeb9c8ea6502bb",
+  "source_sha256": {
+    "rl_controller/supermimic/runner.cpp": "db375a8cb9cacba5b18b7604b0591e4d893f2fc04a20a60eae5ba8ca129b0639",
+    "rl_controller/tests/test_supermimic_ros.py": "17b7b9995e69639be34a5bb8607966d501f5a344e7da18f4de8e996eca836e3a",
+    "rl_controller/tests/block_publish.c": "97a59c71f797dc856ce6edcc6eb4217521bff434a905d4b5194c9a13e52e2721"
+  },
+  "uploaded_to_orin": false,
+  "robot_tested": false,
+  "limitation": "Injected host tests establish blocking isolation, not the root cause of the historical 334ms Orin pause. Actual DDS publication or OS stalls may still trip target protection."
+}

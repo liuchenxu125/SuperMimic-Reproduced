@@ -1,0 +1,36 @@
+{
+  "configuration": "rl_controller/config/supermimic_walk1_subject2_proprio.yaml",
+  "prepare_pose": "default",
+  "prepare_values_match_training": true,
+  "durations": {
+    "prepare_seconds": 6.0,
+    "entry_blend_seconds": 1.0,
+    "preview_seconds": 10.0,
+    "return_seconds": 3.0
+  },
+  "held_reference": "All future frames repeat start_frame pose; reference joint/angular/linear velocities are zero. No motion cursor advancement.",
+  "history": "Real observations and previous raw actor actions continue updating during handoff and are preserved at release.",
+  "playback": "Starts at f+1 after handoff; preview budget starts only then.",
+  "checks": {
+    "held_reference_50_steps": "passed",
+    "history_continuity_at_release": "passed",
+    "default_preparation_target_restoring_torque": "passed",
+    "handoff_longer_than_preview_does_not_consume_preview": "passed",
+    "isolated_ros_dry_run": "passed",
+    "isolated_ros_synthetic_effort": "passed",
+    "normal_return_hold_emergency_stop_faults_mode_exit": "passed",
+    "native_build": "passed",
+    "arm64_build_install": "passed",
+    "installed_weights_config_and_hashes_match": true
+  },
+  "checkpoint": "logs/casbot02_lafan1_proprio_paper_kpkd/ckpt_0024000.pt",
+  "checkpoint_sha256": "94c46339978ca1674a7bcaad7b3008d5b31eca105941b67b8395e0c4212e82f6",
+  "native_actor_motion_10s_closed_loop_report": "outputs/casbot02_hardware/proprio_kpkd_024000_walk1_subject2_effort_10s.json",
+  "complete_start_handoff_motion_return_physical_loop_validated": false,
+  "real_robot_tested": false,
+  "logs": {
+    "ros": "/tmp/supermimic_held_reference_ros_test.log",
+    "native_build": "/tmp/supermimic_held_reference_native_build.log",
+    "arm64_build": "/tmp/supermimic_kpkd_024000_arm64_build.log"
+  }
+}

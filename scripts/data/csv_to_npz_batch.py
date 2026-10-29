@@ -1,8 +1,10 @@
-"""Convert G1/Casbot02 CSVs (metres, radians, xyzw) using CPU MuJoCo FK."""
+"""Convert LAFAN1/BONES-SEED G1 or Casbot02 CSVs using CPU MuJoCo FK."""
 
 from __future__ import annotations
 
 import argparse
+import csv
+import math
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -33,6 +35,7 @@ def main() -> None:
     parser.add_argument("--input-fps", type=float, default=30, help="LAFAN1 source rate: 30")
     parser.add_argument("--output-fps", type=float, default=50)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--fps-map", type=Path, help="CSV name,fps; per-clip source FPS overrides")
     parser.add_argument(
         "--pattern", default="*.csv", help="E.g. walk1_subject1.csv for a smoke run"
     )
@@ -40,6 +43,19 @@ def main() -> None:
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be at least 1")
+    if not all(math.isfinite(fps) and fps > 0 for fps in (args.input_fps, args.output_fps)):
+        parser.error("Frame rates must be finite and positive")
+    fps_by_name = {}
+    if args.fps_map is not None:
+        with args.fps_map.expanduser().open(encoding="utf-8-sig", newline="") as stream:
+            reader = csv.DictReader(stream)
+            if not {"name", "fps"}.issubset(reader.fieldnames or []):
+                parser.error("--fps-map requires name,fps columns")
+            for row in reader:
+                name, fps = row["name"], float(row["fps"])
+                if name in fps_by_name or not math.isfinite(fps) or fps <= 0:
+                    parser.error(f"Invalid or duplicate FPS entry: {name}")
+                fps_by_name[name] = fps
     source = args.input_dir.expanduser().resolve()
     output = (
         (
@@ -55,7 +71,8 @@ def main() -> None:
     if len({path.stem for path in files}) != len(files):
         parser.error("Input files have duplicate output names")
     jobs = [
-        (str(p), str(output / f"{p.stem}.npz"), args.input_fps, args.output_fps, args.robot)
+        (str(p), str(output / f"{p.stem}.npz"), fps_by_name.get(p.stem, args.input_fps),
+         args.output_fps, args.robot)
         for p in files
         if args.overwrite or not (output / f"{p.stem}.npz").exists()
     ]

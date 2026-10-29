@@ -6,6 +6,7 @@ build/
 dist/
 logs/
 /data/
+/data.zip
 wandb/
 *.npz
 *.pt
@@ -30,3 +31,22 @@ experiments/**/outputs/
 !/outputs/casbot02_sim2sim/*.json
 !/outputs/casbot02_sim2sim/README.md
 !/outputs/casbot02_sim2sim/preview.png
+
+# Small audit reports only; motion data, binaries and backups remain local.
+!/outputs/casbot02_retarget_limits_20261029/
+/outputs/casbot02_retarget_limits_20261029/*
+!/outputs/casbot02_retarget_limits_20261029/conversion_report.json
+!/outputs/casbot02_retarget_limits_20261029/validation.json
+!/outputs/casbot02_tuned_lafan1_20261029/
+/outputs/casbot02_tuned_lafan1_20261029/*
+!/outputs/casbot02_tuned_lafan1_20261029/source_audit.json
+!/outputs/casbot02_tuned_lafan1_20261029/validation.json
+!/outputs/casbot02_hold_last_frame_20261029/
+/outputs/casbot02_hold_last_frame_20261029/*
+!/outputs/casbot02_hold_last_frame_20261029/validation.json
+!/outputs/casbot02_primitive_data_080000_deployment/
+/outputs/casbot02_primitive_data_080000_deployment/*
+!/outputs/casbot02_primitive_data_080000_deployment/deployment.json
+!/outputs/casbot02_primitive_data_068000_096000_comparison/
+/outputs/casbot02_primitive_data_068000_096000_comparison/*
+!/outputs/casbot02_primitive_data_068000_096000_comparison/summary.json

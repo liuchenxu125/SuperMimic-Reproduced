@@ -1,0 +1,82 @@
+{
+  "sdk_tag": "2.2.37",
+  "sdk_commit": "a96a6b4697813c851ebdc511eae14daf103bac51",
+  "command_contract": "SDK position + integer PD; velocity=0; effort=0; 27 policy joints + 2 head joints",
+  "mode_contract": "GetRobotMode queries; no non-7 topic assumed",
+  "tests": [
+    {
+      "case": "manual",
+      "dry_run": true,
+      "checks": "passed",
+      "commands": 725
+    },
+    {
+      "case": "manual",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 4155
+    },
+    {
+      "case": "pd_fault",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1923
+    },
+    {
+      "case": "query_loss",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1474
+    },
+    {
+      "case": "shutdown",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1200
+    },
+    {
+      "case": "auto",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 2969
+    },
+    {
+      "case": "auto",
+      "dry_run": true,
+      "checks": "passed",
+      "commands": 533
+    },
+    {
+      "case": "target_envelope",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1232
+    }
+  ],
+  "logs": [
+    "/tmp/sm_sdk237_test.log",
+    "/tmp/sm_sdk237_auto_test.log",
+    "/tmp/sm_sdk237_envelope_test.log"
+  ],
+  "native_build": "passed",
+  "arm64_cross_build": "passed",
+  "uploaded": false,
+  "hardware_run": false,
+  "physical_sdk_validation": false,
+  "limitations": [
+    "Arm library interpolation, EtherCAT and motor firmware not simulated.",
+    "Target envelope does not guarantee hardware torque caps.",
+    "SDK requires use_default_kp_kd=false and reloaded process; controller verifies live gains.",
+    "SDK caches last commands; normal SIGINT/SIGTERM sends damping; crashes/network failure need SDK watchdog."
+  ],
+  "sha256": {
+    "rl_controller/supermimic/runner.cpp": "d8a75b047fdc4b7166dbb981badea7ad98e5af847d9eeff28aa666671c9e1ee3",
+    "rl_controller/supermimic/CMakeLists.txt": "66f810ffab97e86b987f320ddad39a8144109f704b517d42b63a7475c4862f44",
+    "rl_controller/config/supermimic_walk1_subject2_proprio.yaml": "808ede5d634cfcaff839ab2f6266dd09b5efbb6f83b6a41cfd5ae2e87317108d",
+    "rl_controller/build/install_arm64/bin/supermimic_runner": "dc1ed0dd1024c70cd9ad4a127cdcd4534c4deec24f83ffa802546ea895fb96dd",
+    "rl_controller/config/model/supermimic_walk1_subject2_proprio/manifest.json": "731040a9f0dcd9fd9763c54eb2f5ad4c845deb3eb77a7d3d3f2128168e328a8c",
+    "rl_controller/config/model/supermimic_walk1_subject2_proprio/actor.onnx": "9c056107a7c559e4fb28de6f3ff1a89d26ea42fdabb2ee3b3b561ea1d178a6ce"
+  },
+  "superseded_by": "sdk237_mode_classification_validation.json",
+  "known_issue": "Original mock returned raw mode; SDK service actually overwrites mode with class 2/3/4. Fixed and retested."
+}

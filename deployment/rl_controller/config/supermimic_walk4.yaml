@@ -1,0 +1,36 @@
+# SDK 2.2.37 position + integer Kp/Kd interface (29 commanded joints including head).
+# Real launch checks this file AND live debug gain feedback; SDK must be restarted after changing it.
+sdk_config_file: /workspace/hl_motion/hl_config/motion_params.yaml
+mode_service: /get_robot_mode
+# Relative paths resolve against this config file. The AMP runner is unchanged.
+bundle: model/supermimic_walk4
+require_anchor_obs: true
+start_frame: 0
+preview_seconds: 10.0
+prepare_seconds: 6.0
+max_sensor_age: 0.10
+max_sensor_skew: 0.04
+joint_start_tolerance: 0.15
+root_start_height_tolerance: 0.12
+max_root_tracking_error: 0.75
+# 50 Hz is the nominal cadence, not a single-call fault threshold.
+max_inference_seconds: 0.04
+late_inference_seconds: 0.025
+max_consecutive_late_updates: 20
+max_target_age: 0.06
+# A fixed floor-aligned world frame, in metres, z-up, base_link pose (not IMU pose).
+pose_topic: /supermimic/base_pose
+world_frame: odom
+base_frame: base_link
+imu_frame: base_link
+# Rotation of IMU-local vectors into base_link. Configure if IMU axes differ.
+imu_to_base_quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+joint_topic: /motion/debug/joint_state
+standard_joint_topic: /motion/joint_state
+imu_topic: /motion/imu
+mode_topic: /motion/current_mode
+# Effort-only JointStateData: kp=kd=0, effort=clamped PD torque.
+# This requires the lower-level debug command consumer to honor effort.
+# No simultaneous publication to /motion/joint_cmd (avoid double PD/consumers).
+command_topic: /motion/debug/joint_cmd
+# Dry run is a ROS parameter and defaults to true; this file never enables motors.

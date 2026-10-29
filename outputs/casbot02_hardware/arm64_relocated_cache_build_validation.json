@@ -1,0 +1,18 @@
+{
+  "command": "./build_in_docker.sh arm64",
+  "result": "build_and_install_passed",
+  "root_cause": "Copied CMakeCache.txt retained absolute paths to /home/casbot/Desktop/rl_controller",
+  "fix": "make.sh calls scripts/cmake_cache.sh to preserve relocated build directory and configure afresh",
+  "cache_backup": "rl_controller/build/build_arm64.relocated.20261026-102125.1",
+  "installed_root": "rl_controller/build/install_arm64",
+  "runner_architecture": "ELF64 AArch64",
+  "probe_architecture": "ELF64 AArch64",
+  "default_clip": "walk1_subject2",
+  "checkpoint_iteration": 260000,
+  "installed_model_and_motion_hashes_verified": true,
+  "shell_syntax_passed": true,
+  "relocation_and_incremental_configure_checks_passed": true,
+  "arm_runtime_tested": false,
+  "real_robot_tested": false,
+  "build_log": "/tmp/supermimic_arm64_build_fix.log"
+}

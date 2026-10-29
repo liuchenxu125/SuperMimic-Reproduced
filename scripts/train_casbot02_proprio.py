@@ -12,6 +12,7 @@ import torch
 import tyro
 
 from supermimic.config import TrainConfig
+from supermimic.goal_spec import anchor_goal_dim
 
 
 def make_config(
@@ -20,15 +21,20 @@ def make_config(
     num_envs=4096,
     policy_batch_size=2048,
     resume=None,
+    anchor_ori_obs=False,
+    actuator_delay=True,
 ):
     cfg = TrainConfig(robot="casbot02", run_name=run_name)
     cfg.data.npz_dir = Path("data/npz/lafan1_casbot02")
     cfg.data.clips = ["walk4_subject1"]
     cfg.env.anchor_obs = False
+    cfg.env.anchor_ori_obs = anchor_ori_obs
+    cfg.env.actuator_delay = actuator_delay
     cfg.env.num_envs = num_envs
     cfg.policy.num_joints = 27
-    cfg.policy.goal_dim = 640
+    cfg.policy.goal_dim = 640 + anchor_goal_dim(False, anchor_ori_obs)
     cfg.policy_trainer.anchor_obs = False
+    cfg.policy_trainer.anchor_ori_obs = anchor_ori_obs
     cfg.policy_trainer.batch_size = policy_batch_size
     spec = cfg.world_model.state_spec
     spec.num_joints = 27
@@ -46,10 +52,13 @@ def main(
     policy_batch_size: int = 2048,
     resume: Path | None = None,
     print_config: bool = False,
+    anchor_ori_obs: bool = False,
+    actuator_delay: bool = True,
 ):
     if min(max_hours, num_envs, policy_batch_size) <= 0:
         raise ValueError("Training duration and batch sizes must be positive")
-    cfg = make_config(run_name, max_hours, num_envs, policy_batch_size, resume)
+    cfg = make_config(run_name, max_hours, num_envs, policy_batch_size, resume,
+                      anchor_ori_obs, actuator_delay)
     if print_config:
         print(json.dumps(asdict(cfg), indent=2, default=str))
         return
@@ -58,12 +67,13 @@ def main(
         if (
             saved.get("robot") != "casbot02"
             or saved["env"].get("anchor_obs", False)
-            or saved["policy"]["goal_dim"] != 640
+            or saved["env"].get("anchor_ori_obs", False) != anchor_ori_obs
+            or saved["policy"]["goal_dim"] != cfg.policy.goal_dim
             or saved["data"]["clips"] != ["walk4_subject1"]
         ):
             raise ValueError(
-                "Resume requires a Casbot02 640-goal walk4 checkpoint. "
-                "The existing 649-goal checkpoint cannot be resumed as this policy."
+                f"Resume requires a Casbot02 {cfg.policy.goal_dim}-goal walk4 checkpoint "
+                "with the same orientation interface; use a new run for different inputs."
             )
     elif (cfg.log_root / run_name / "config.json").exists():
         raise FileExistsError("Run already exists; use --resume or a different --run-name")

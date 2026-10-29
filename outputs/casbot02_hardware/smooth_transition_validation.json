@@ -1,0 +1,42 @@
+{
+  "reference": {
+    "policy_node": "https://github.com/lzyang2000/morphmimic/blob/main/deploy/sim2sim/policy_node.py",
+    "policy_node_blob_sha": "975c26664a768c4f131921ff3021b689805278db",
+    "teleop": "https://github.com/lzyang2000/morphmimic/blob/main/deploy/sim2sim/teleop.py",
+    "mechanism": "CuedClipReference --from-stand: blended reference lead-in / clip / return; quaternion SLERP"
+  },
+  "implementation": "Independent controller-target interpolation, not a port of the reference-state generator.",
+  "config": "rl_controller/config/supermimic_walk1_subject2_proprio.yaml",
+  "timing": {
+    "prepare_seconds": 6.0,
+    "preview_seconds": 10.0,
+    "entry_blend_seconds": 0.5,
+    "return_seconds": 3.0
+  },
+  "return_target": "Measured joint pose captured before prepare, clamped to soft limits; PD HOLD afterwards.",
+  "services": {
+    "finish": "Graceful RETURN then HOLD",
+    "stop": "Immediate IDLE / bounded damping"
+  },
+  "fault": "Immediate damping; no return interpolation on sensor, timing, tilt or mode faults.",
+  "tests": {
+    "fixed_endpoint_interpolation_and_monotonicity": "passed",
+    "dry_run_isolated_ros": "passed",
+    "synthetic_effort_isolated_ros": "passed",
+    "normal_return_and_hold_restoring_torque": "passed",
+    "manual_finish_and_stop_during_return": "passed",
+    "missing_sensors_fault_and_mode_exit": "passed",
+    "native_build": "passed",
+    "arm64_build_and_install": "passed",
+    "installed_config_matches_source": true
+  },
+  "logs": {
+    "ros": "/tmp/supermimic_transition_ros_test.log",
+    "native": "/tmp/supermimic_transition_native_build.log",
+    "arm64": "/tmp/supermimic_transition_arm64_build.log"
+  },
+  "runner_source_sha256": "57f82699d56b9d82600c7f70201f000b057f2c8a8f7857107c4e11425ac8b4f0",
+  "real_robot_tested": false,
+  "balance_or_full_transition_dynamics_validated": false,
+  "actor_note": "Still the legacy 260000 actor, previously failed at 9.56s with new HANDOFF motor parameters without these transitions. Isolated synthetic-state tests are not a balance validation."
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from supermimic.imagination.policy_trainer import PolicyTrainerCfg
 from supermimic.policy.nets import CriticCfg, PolicyCfg
@@ -27,6 +28,7 @@ class EnvCfg:
     num_envs: int = 4096
     episode_length_s: float = 10.0
     action_noise_std: float = 0.1
+    action_noise_mode: Literal["collection", "execution"] = "collection"
     obs_noise: bool = True
     reset_noise: bool = True
     domain_randomization: bool = True
@@ -35,6 +37,11 @@ class EnvCfg:
     future_frames: int = 10
     compact_library: bool = False
     anchor_obs: bool = False
+    anchor_ori_obs: bool = False  # append rot6d once, independently of root position
+    actuator_delay: bool = True  # Casbot02: 0-2 physics steps (0/5/10 ms)
+    actuator_delay_mode: Literal["step", "episode"] = "step"
+    training_floor_friction: float = 0.3  # MorphMimic floor; evaluation stays at 1.0
+    collision_model: Literal["mesh", "primitive"] = "primitive"  # Casbot02 contact geometry
 
 
 @dataclass

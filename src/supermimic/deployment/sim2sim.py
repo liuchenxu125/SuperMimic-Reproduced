@@ -145,14 +145,18 @@ class Reference:
         self.root_ang = self.root_ang @ r.T
         # Stored features are invariant under global XY/yaw transforms.
 
-    def goal(self, frame: int, robot_pos, robot_quat, anchor_obs: bool) -> np.ndarray:
+    def goal(
+        self, frame: int, robot_pos, robot_quat, anchor_obs: bool, anchor_ori_obs: bool = False
+    ) -> np.ndarray:
         idx = np.minimum(frame + np.arange(self.goal_frames), self.length - 1)
         result = self.features[idx].reshape(-1)
-        if anchor_obs:
+        if anchor_obs or anchor_ori_obs:
             r = rotation(robot_quat)
-            pos = r.T @ (self.root_pos[frame] - robot_pos)
+            if anchor_obs:
+                pos = r.T @ (self.root_pos[frame] - robot_pos)
+                result = np.concatenate((result, pos))
             ori = r.T @ rotation(self.root_quat[frame])
-            result = np.concatenate((result, pos, ori[:, :2].reshape(-1)))
+            result = np.concatenate((result, ori[:, :2].reshape(-1)))
         if not np.isfinite(result).all():
             raise FloatingPointError("Nonfinite reference goal")
         return result.astype(np.float32)
@@ -199,6 +203,36 @@ def load_model(bundle: Path, metadata: dict):
     return model, mujoco.MjData(model), to_joint
 
 
+class PositionCommandDelay:
+    """Command bus latency, advanced once per physics step.
+
+    Like mjlab, clamp to available history after reset instead of replaying
+    zero targets or targets from the previous episode. Feedback is not delayed.
+    """
+
+    def __init__(self, max_lag: int, seed: int = 0, mode: str = "episode"):
+        if max_lag < 0:
+            raise ValueError("Command delay must be nonnegative")
+        if mode not in ("step", "episode"):
+            raise ValueError(f"Unknown command delay mode: {mode!r}")
+        self.max_lag = max_lag
+        self.mode = mode
+        self.rng = np.random.default_rng(seed)
+        self.reset()
+
+    def reset(self):
+        self.lag = int(self.rng.integers(self.max_lag + 1)) if self.mode == "episode" else 0
+        self.targets = []
+
+    def apply(self, target):
+        if self.mode == "step":
+            self.lag = int(self.rng.integers(self.max_lag + 1))
+        self.targets.append(np.asarray(target).copy())
+        if len(self.targets) > self.max_lag + 1:
+            self.targets.pop(0)
+        return self.targets[max(0, len(self.targets) - 1 - self.lag)]
+
+
 class Sim2Sim:
     def __init__(self, bundle: Path, threads: int = 2):
         self.bundle = Path(bundle).resolve()
@@ -220,6 +254,10 @@ class Sim2Sim:
         if not np.isclose(self.dt, self.model.opt.timestep * self.decimation):
             raise ValueError("Control timing does not match physics decimation")
         self.previous_action = np.zeros(len(self.q0), dtype=np.float32)
+        self.command_delay = PositionCommandDelay(
+            2 if self.meta.get("actuator_delay", False) else 0,
+            mode=self.meta.get("actuator_delay_mode", "episode"),
+        )
         self.root_id = self.model.body(self.meta["root_body_name"]).id
 
     def reset(self, clip: str, start_frame: int = 0, start_xy=None, start_yaw=None):
@@ -234,6 +272,7 @@ class Sim2Sim:
         self.reference.align(start_frame, start_xy, start_yaw)
         ref = self.reference
         mujoco.mj_resetData(self.model, self.data)
+        self.command_delay.reset()
         self.data.qpos[:3] = ref.root_pos[start_frame]
         self.data.qpos[3:7] = ref.root_quat[start_frame]
         lo = np.array(self.meta["soft_joint_limits"])[:, 0]
@@ -256,7 +295,8 @@ class Sim2Sim:
 
     def inputs(self):
         return self.history.packed(), self.reference.goal(
-            self.target_frame, self.data.qpos[:3], self.data.qpos[3:7], self.meta["anchor_obs"]
+            self.target_frame, self.data.qpos[:3], self.data.qpos[3:7], self.meta["anchor_obs"],
+            self.meta.get("anchor_ori_obs", False),
         )
 
     def position_targets(self, action):
@@ -275,6 +315,8 @@ class Sim2Sim:
         targets = self.position_targets(action)
         self.data.ctrl[:] = targets[self.actuator_to_joint]
         for _ in range(self.decimation):
+            if self.meta.get("actuator_delay", False):
+                self.data.ctrl[:] = self.command_delay.apply(targets)[self.actuator_to_joint]
             mujoco.mj_step(self.model, self.data)
         if not np.isfinite(self.data.qpos).all() or not np.isfinite(self.data.qvel).all():
             raise FloatingPointError("MuJoCo state became nonfinite")
@@ -314,6 +356,9 @@ class Sim2Sim:
             "start_frame": self.start_frame,
             "steps": self.steps,
             "simulated_seconds": self.steps * self.dt,
+            "actuator_delay_physics_steps": self.command_delay.lag,
+            "actuator_delay_mode": self.command_delay.mode,
+            "actuator_delay_max_physics_steps": self.command_delay.max_lag,
             "failed": self.failed,
             "completed_clip": bool(getattr(self, "completed", False)),
             "mean_height_error_m": mean[0],

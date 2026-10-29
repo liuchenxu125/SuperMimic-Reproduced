@@ -1,0 +1,4 @@
+# Exact crb_ros_msg interface used by hl_motion 2.2.37.
+---
+int32 mode
+string mode_name

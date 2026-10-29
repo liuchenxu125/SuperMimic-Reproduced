@@ -3,11 +3,12 @@
 Differences from mjlab's BeyondMimic re-implementation (``mjlab.tasks.tracking``):
   * observations: paper Table A.1 proprioception only (no anchor pose, no base lin vel),
     10-frame history (term-major), plus a separate ``goal`` group with K future frames;
-  * action: ``NoisyJointPositionAction`` (clean action observed, noise only executed);
+  * action: ``NoisyJointPositionAction`` (new trainer injects noise before env.step;
+    optional execution-only noise retains the legacy low-level interface);
   * multi-clip command with return-based reset sampling and clip-end time-outs;
   * rewards: self-collision term removed, joint-limit weight -2;
   * terminations: pelvis height / tilt vs reference, no end-effector term, clip-end time-out;
-  * events: no push; friction and encoder bias re-sampled per episode; COM at startup;
+  * events: no push; friction, encoder bias and COM sampled at startup;
   * a ``ReplayRecorder`` streams transitions into a GPU replay buffer.
 """
 
@@ -28,6 +29,7 @@ from mjlab.sim import MujocoCfg, SimulationCfg
 from mjlab.tasks.tracking import mdp as track_mdp
 from mjlab.terrains import TerrainEntityCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
+from mjlab.utils.spec_config import GeomCfg
 from mjlab.viewer import ViewerConfig
 
 from supermimic.data.recorder import ReplayRecorderCfg
@@ -76,7 +78,7 @@ class SuperMimicEnvCfgArgs:
     future_frames: int = 10
     history_length: int = 10
     episode_length_s: float = 10.0
-    action_noise_std: float = 0.1
+    action_noise_std: float = 0.1  # action-term noise; Trainer uses 0 for collection mode
     obs_noise: bool = True
     reset_noise: bool = True
     domain_randomization: bool = True
@@ -92,11 +94,18 @@ class SuperMimicEnvCfgArgs:
     anchor_obs: bool = (
         False  # add BeyondMimic anchor-relative pose (9) to the goal group (plan D5 alt.)
     )
+    anchor_ori_obs: bool = False  # relative rot6d only (6), appended once to the goal
+    actuator_delay: bool = False  # explicit opt-in here preserves legacy checkpoint callers
+    actuator_delay_mode: str = "episode"  # missing checkpoint field means the old mechanism
+    training_floor_friction: float = 0.3
+    collision_model: str = "mesh"  # old checkpoints/callers retain original contacts
     debug_vis: bool = False  # draw the reference ghost in the viewer (scripts/play.py)
     extra_command_kwargs: dict = field(default_factory=dict)
 
 
 def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
+    if not 0.0 <= a.training_floor_friction < float("inf"):
+        raise ValueError("training_floor_friction must be finite and nonnegative")
     robot = get_robot(a.robot)
     # ---------------------------------------------------------------- observations
     noise = (lambda lo, hi: Unoise(n_min=lo, n_max=hi)) if a.obs_noise else (lambda lo, hi: None)
@@ -131,13 +140,19 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
                             params={"command_name": "motion"},
                             noise=noise(-0.25, 0.25),
                         ),
+                    }
+                    if a.anchor_obs
+                    else {}
+                ),
+                **(
+                    {
                         "anchor_ori": ObservationTermCfg(
                             func=track_mdp.motion_anchor_ori_b,
                             params={"command_name": "motion"},
                             noise=noise(-0.05, 0.05),
                         ),
                     }
-                    if a.anchor_obs
+                    if a.anchor_obs or a.anchor_ori_obs
                     else {}
                 ),
             },
@@ -207,12 +222,12 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
             },
         )
         events["encoder_bias"] = EventTermCfg(
-            mode="reset",
+            mode="startup",
             func=dr.encoder_bias,
             params={"asset_cfg": SceneEntityCfg("robot"), "bias_range": (-0.01, 0.01)},
         )
         events["foot_friction"] = EventTermCfg(
-            mode="reset",
+            mode="startup",
             func=dr.geom_friction,
             params={
                 "asset_cfg": SceneEntityCfg("robot", geom_names=robot.foot_geom_regex),
@@ -302,9 +317,18 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
 
     cfg = ManagerBasedRlEnvCfg(
         scene=SceneCfg(
-            terrain=TerrainEntityCfg(terrain_type="plane"),
+            terrain=TerrainEntityCfg(
+                terrain_type="plane",
+                geoms=(GeomCfg(
+                    geom_names_expr=("terrain",),
+                    friction=(a.training_floor_friction if a.domain_randomization else 1.0,),
+                ),),
+            ),
             num_envs=a.num_envs,
-            entities={"robot": robot.entity_cfg()},
+            entities={"robot": robot.entity_cfg(
+                actuator_delay=a.actuator_delay, actuator_delay_mode=a.actuator_delay_mode,
+                collision_model=a.collision_model,
+            )},
         ),
         observations=observations,
         actions=actions,
@@ -323,8 +347,12 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
             azimuth=120.0,
         ),
         sim=QuietSimulationCfg(
-            nconmax=35 if robot.name == "g1" else 128,
-            njmax=250 if robot.name == "g1" else 500,
+            # Contact pool is shared across worlds. Keep more slots for small
+            # viewers, where the 4096-world audit's average-pool benefit is absent.
+            nconmax=(35 if robot.name == "g1" else
+                     48 if a.collision_model == "primitive" and a.num_envs >= 32 else 128),
+            njmax=(250 if robot.name == "g1" else
+                   256 if a.collision_model == "primitive" else 500),
             mujoco=MujocoCfg(timestep=0.005, iterations=10, ls_iterations=20),
         ),
         decimation=4,

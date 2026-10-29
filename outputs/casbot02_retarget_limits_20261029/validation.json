@@ -1,0 +1,94 @@
+{
+  "xml_changes_only_joint_ranges": true,
+  "both_xml_27_ranges_match_retarget": true,
+  "source_data_unchanged": true,
+  "other_npz_unchanged": 40,
+  "converted_clips": [
+    {
+      "clip": "X1_1000HZ",
+      "frames": 3742,
+      "clamped_frames": 949,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 5.892368437621087e-08,
+      "fk_linear_velocity_max_error_m_s": 1.1225325979857814e-07,
+      "fk_angular_velocity_max_error_rad_s": 7.706325622081067e-07,
+      "sha256": "fa5998881d606d5b39f8eecdfe6fe1042fa8f5cc647311fbf9df8387311ac85c"
+    },
+    {
+      "clip": "X1_Xiao360_100HZ",
+      "frames": 3741,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 5.9570439248091134e-08,
+      "fk_linear_velocity_max_error_m_s": 1.1259285503939509e-07,
+      "fk_angular_velocity_max_error_rad_s": 6.270235992644757e-07,
+      "sha256": "0d41b1694e3882c004345b7a737d03f8051dc5dda87a17c05d208800f1a96462"
+    },
+    {
+      "clip": "原地右转",
+      "frames": 552,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 5.9164743104744844e-08,
+      "fk_linear_velocity_max_error_m_s": 7.130504697805407e-08,
+      "fk_angular_velocity_max_error_rad_s": 2.1109096515203873e-07,
+      "sha256": "31c3c9da705a5af4d078264393e7725e4e98a78756dc1e681d26ebaa161b69aa"
+    },
+    {
+      "clip": "原地左转",
+      "frames": 552,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 5.947646353199332e-08,
+      "fk_linear_velocity_max_error_m_s": 9.446712989635841e-08,
+      "fk_angular_velocity_max_error_rad_s": 1.9923514349429183e-07,
+      "sha256": "a2c18b5ace0d32c3de5e843b523af6edf88ad2a8e15fbe2728bedc60ce6f345c"
+    },
+    {
+      "clip": "后退",
+      "frames": 419,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 1.1821951506618689e-07,
+      "fk_linear_velocity_max_error_m_s": 1.1833443469555505e-07,
+      "fk_angular_velocity_max_error_rad_s": 3.6042964879356987e-07,
+      "sha256": "f38a3eef5590505056d25a58d01653c554fd9d794832106caf8c78ea086e319e"
+    },
+    {
+      "clip": "直行1步态",
+      "frames": 1242,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 4.725456843601705e-07,
+      "fk_linear_velocity_max_error_m_s": 1.3807093535156412e-07,
+      "fk_angular_velocity_max_error_rad_s": 3.4824302996838696e-07,
+      "sha256": "b5f4b3573c6d5a00ea274e0f0c339137bb40130a7ee8971e08f5558e7898ab9f"
+    },
+    {
+      "clip": "直行2步态",
+      "frames": 790,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 4.7074235709487766e-07,
+      "fk_linear_velocity_max_error_m_s": 1.0463730149012918e-07,
+      "fk_angular_velocity_max_error_rad_s": 3.365186422854549e-07,
+      "sha256": "7af8906e45f0aeeb66ade66243f39515713f993a573ccf90322e99b0895b2e99"
+    },
+    {
+      "clip": "踏步",
+      "frames": 597,
+      "clamped_frames": 0,
+      "hard_limit_violations": 0,
+      "fk_position_max_error_m": 4.709649070733235e-08,
+      "fk_linear_velocity_max_error_m_s": 9.484789464941912e-08,
+      "fk_angular_velocity_max_error_rad_s": 2.568892494281272e-07,
+      "sha256": "7eeadac7b5d0bcf82874c009df059d026f8a25282f783e7864fff6561747ffab"
+    }
+  ],
+  "converted_frames": 11635,
+  "tests": {
+    "passed": 13,
+    "skipped_requires_cuda": 2
+  },
+  "retarget_xml_sha256": "f4ac328c8035beff6c6cf73942dddee18e95a2cfdb5c9c8ed667db1c2265d179"
+}

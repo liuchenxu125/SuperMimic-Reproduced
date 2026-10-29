@@ -1,0 +1,111 @@
+{
+  "source": {
+    "path": "/home/casbot/Desktop/HANDOFF/src/wbc_mjlab/casbot02_constants.py",
+    "sha256": "4081a9a009c7794404fbd288a68544648be7903590e126783f8a5034d42e7d98",
+    "fields": [
+      "stiffness",
+      "damping",
+      "effort_limit"
+    ],
+    "action_scale_formula": "0.25 * effort_limit / stiffness",
+    "extensions": {
+      "waist_yaw_joint": "Use the declared CASBOT02_WAIST_YAW_ACTUATOR (not included in the source articulation tuple).",
+      "upper_left_6_joint / upper_left_7_joint / upper_right_6_joint / upper_right_7_joint": "Extend CASBOT02_ARM_LIGHT_ACTUATOR to the four additional 27-DOF wrist joints."
+    },
+    "scope": "KP, KD and torque caps changed. Armature, friction, velocity limits and delay remain the existing project settings."
+  },
+  "training_config": "src/supermimic/robots/assets/casbot02/motor_parameters.json",
+  "hardware_bundle": "rl_controller/config/model/supermimic_walk1_subject2_proprio",
+  "sim2sim_bundle": "outputs/casbot02_handoff_parameters/sim2sim_260000_legacy_actor",
+  "backup": "outputs/casbot02_handoff_parameters/before",
+  "groups": {
+    "CASBOT02_LEG_HEAVY_ACTUATOR": {
+      "kp": 276.3489232147048,
+      "kd": 17.5929188596,
+      "effort_limit_nm": 120.0,
+      "action_scale": 0.10855841105156754
+    },
+    "CASBOT02_LEG_LIGHT_ACTUATOR": {
+      "kp": 114.48741104609199,
+      "kd": 7.28849495612,
+      "effort_limit_nm": 80.0,
+      "action_scale": 0.1746916959450512
+    },
+    "CASBOT02_WAIST_YAW_ACTUATOR": {
+      "kp": 96.72212312514668,
+      "kd": 6.15752160086,
+      "effort_limit_nm": 60.0,
+      "action_scale": 0.1550834443593822
+    },
+    "CASBOT02_ARM_HEAVY_ACTUATOR": {
+      "kp": 130.27877808693228,
+      "kd": 8.29380460524,
+      "effort_limit_nm": 40.0,
+      "action_scale": 0.07675847246070432
+    },
+    "CASBOT02_ARM_LIGHT_ACTUATOR": {
+      "kp": 96.72212312514668,
+      "kd": 6.15752160086,
+      "effort_limit_nm": 30.0,
+      "action_scale": 0.0775417221796911
+    }
+  },
+  "joint_groups": {
+    "leg_l1_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_l2_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_l4_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_r1_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_r2_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_r4_joint": "CASBOT02_LEG_HEAVY_ACTUATOR",
+    "leg_l3_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "leg_l5_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "leg_l6_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "leg_r3_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "leg_r5_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "leg_r6_joint": "CASBOT02_LEG_LIGHT_ACTUATOR",
+    "waist_yaw_joint": "CASBOT02_WAIST_YAW_ACTUATOR",
+    "upper_left_1_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_left_2_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_left_4_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_right_1_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_right_2_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_right_4_joint": "CASBOT02_ARM_HEAVY_ACTUATOR",
+    "upper_left_3_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_left_5_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_right_3_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_right_5_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_left_6_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_left_7_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_right_6_joint": "CASBOT02_ARM_LIGHT_ACTUATOR",
+    "upper_right_7_joint": "CASBOT02_ARM_LIGHT_ACTUATOR"
+  },
+  "q0": {
+    "training": "User-requested new default pose",
+    "legacy_deployment": "Original q0 retained, matching the old actor and reference features"
+  },
+  "policy_training_parameters_match": false,
+  "verification": {
+    "training_vs_hardware_motors_match": true,
+    "hardware_vs_arm64_install_match": true,
+    "native_mujoco_export_tests": {
+      "passed": 15,
+      "skipped": 1
+    },
+    "arm64_build_and_install_passed": true,
+    "legacy_actor_validation": {
+      "report": "outputs/casbot02_hardware/proprio_260000_walk1_subject2_handoff_effort_10s.json",
+      "failed": true,
+      "seconds": 9.56,
+      "max_abs_errors": {
+        "observation": 0.0,
+        "goal": 0.0,
+        "actor": 6.67572021484375e-06,
+        "target": 1.1796860155399713e-07
+      }
+    },
+    "real_robot_commands_sent": false,
+    "new_training_started": false
+  },
+  "actor_sha256": "dd881bfb6b4602de8b70d7b631c481fcfb2fa78b622785926f8f5ae4d79de728",
+  "motion_sha256": "bf2b6c9d1bbfd9a559980f25efa6465f54ca37d59c6d0ee3760f7acaa7a7a7f5"
+}

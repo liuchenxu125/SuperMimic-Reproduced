@@ -19,6 +19,12 @@ def configure_precision(tf32: bool) -> dict:
     # Use the legacy precision family consistently: the pinned Inductor cache
     # still calls get_float32_matmul_precision(). Mixing in the new per-backend
     # setters makes that call raise on torch 2.14. We do not enable autocast.
+    # mjlab's script imports can already have installed per-backend overrides.
+    # Clear those overrides before selecting the legacy family; merely setting
+    # the legacy flag leaves the mixed state in place on the pinned PyTorch.
+    for backend in (torch.backends.cuda.matmul, torch.backends.cudnn):
+        if hasattr(backend, "fp32_precision"):
+            backend.fp32_precision = "none"
     torch.set_float32_matmul_precision("high" if tf32 else "highest")
     torch.backends.cudnn.allow_tf32 = tf32
     return {

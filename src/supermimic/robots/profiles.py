@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
+from typing import Literal
 
 from .layout import RobotLayout
 
@@ -57,14 +59,17 @@ class RobotProfile:
     def layout(self):
         return RobotLayout(self.num_joints)
 
-    def spec(self):
+    def spec(self, *, collision_model: Literal["mesh", "primitive"] = "mesh"):
         import mujoco
 
         if self.name == "g1":
             from mjlab.asset_zoo.robots.unitree_g1.g1_constants import get_spec
 
             return get_spec()
-        spec = mujoco.MjSpec.from_file(str(CASBOT_ASSETS / "xml/casbot02.xml"))
+        if collision_model not in ("mesh", "primitive"):
+            raise ValueError(f"Unknown collision model: {collision_model!r}")
+        filename = "casbot02_primitives.xml" if collision_model == "primitive" else "casbot02.xml"
+        spec = mujoco.MjSpec.from_file(str(CASBOT_ASSETS / "xml" / filename))
         # The attached scene owns simulator options (200 Hz physics in MujocoCfg).
         # Reset only source options that differ from MuJoCo defaults, avoiding
         # ambiguous attach-time overrides while leaving the copied XML untouched.
@@ -81,8 +86,8 @@ class RobotProfile:
                 geom.name = f"casbot_{i}_{'collision' if geom.contype else 'visual'}"
         return spec
 
-    def model(self):
-        model = self.spec().compile()
+    def model(self, *, collision_model: Literal["mesh", "primitive"] = "mesh"):
+        model = self.spec(collision_model=collision_model).compile()
         if (model.nq, model.nv) != (self.layout.nq, self.layout.nv):
             raise ValueError(f"{self.name} model does not match its configured joint count")
         return model
@@ -102,7 +107,13 @@ class RobotProfile:
             for name, p in self.motor_parameters()["motors"].items()
         }
 
-    def entity_cfg(self):
+    def entity_cfg(
+        self, *, actuator_delay: bool = False,
+        actuator_delay_mode: Literal["step", "episode"] = "step",
+        collision_model: Literal["mesh", "primitive"] = "mesh",
+    ):
+        if actuator_delay_mode not in ("step", "episode"):
+            raise ValueError(f"Unknown actuator delay mode: {actuator_delay_mode!r}")
         if self.name == "g1":
             from mjlab.asset_zoo.robots import get_g1_robot_cfg
 
@@ -120,11 +131,19 @@ class RobotProfile:
                 armature=p["armature"],
                 frictionloss=p["friction"],
                 viscous_damping=0.0,
+                # 200 Hz physics: command latency is 0/5/10 ms. New runs
+                # resample every physics step; episode mode preserves old runs.
+                # mjlab fuses matching builtins into one bus per environment.
+                delay_min_lag=0,
+                delay_max_lag=2 if actuator_delay else 0,
+                delay_hold_prob=0.0 if actuator_delay_mode == "step" else 1.0,
+                delay_update_period=0,
+                delay_per_env_phase=False,
             )
             for name, p in params["motors"].items()
         )
         return EntityCfg(
-            spec_fn=self.spec,
+            spec_fn=partial(self.spec, collision_model=collision_model),
             init_state=EntityCfg.InitialStateCfg(
                 pos=(0, 0, 0.9), joint_pos=params["default_joint_pos"], joint_vel={".*": 0.0}
             ),
@@ -153,6 +172,6 @@ def get_robot(name="g1") -> RobotProfile:
             "base_link",
             "base_link",
             CASBOT_TRACKED,
-            r"^(left|right)_foot_collision$",
+            r"^(left|right)_foot(?:[1-7])?_collision$",
         )
     raise ValueError(f"Unknown robot {name!r}; expected 'g1' or 'casbot02'")

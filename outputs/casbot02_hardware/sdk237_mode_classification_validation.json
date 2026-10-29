@@ -1,0 +1,64 @@
+{
+  "sdk_tag": "2.2.37",
+  "sdk_commit": "a96a6b4697813c851ebdc511eae14daf103bac51",
+  "fix": "GetRobotMode returns classes 2/3/4, NOT raw enums. Raw topic 7 authorizes debug; class 2/3 confirms prior non-debug. Class 4 never asserts mode 7.",
+  "tests": [
+    {
+      "case": "auto",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 3123
+    },
+    {
+      "case": "auto",
+      "dry_run": true,
+      "checks": "passed",
+      "commands": 557
+    },
+    {
+      "case": "manual",
+      "dry_run": true,
+      "checks": "passed",
+      "commands": 725
+    },
+    {
+      "case": "manual",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 4192
+    },
+    {
+      "case": "pd_fault",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1935
+    },
+    {
+      "case": "query_loss",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1476
+    },
+    {
+      "case": "shutdown",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1209
+    },
+    {
+      "case": "topic_loss",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 1460
+    }
+  ],
+  "test_logs": [
+    "/tmp/sm_mode_class_auto_test.log",
+    "/tmp/sm_mode_class_test.log"
+  ],
+  "native_build": "passed",
+  "arm64_build": "passed",
+  "hardware_run": false,
+  "uploaded": false,
+  "runner_sha256": "481eef742594b942b72b8aaaed4ac9b6487404694b5ad13236fa82e145511ca7"
+}

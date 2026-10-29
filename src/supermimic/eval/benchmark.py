@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import BinaryIO
 
 import torch
 
@@ -52,7 +53,7 @@ def clip_result(name, frames, steps, reward_sum, failed, max_step_reward=0.1, te
     )
 
 
-def load_policy_from_checkpoint(path: str | Path, device: str) -> tuple[Policy, dict]:
+def load_policy_from_checkpoint(path: str | Path | BinaryIO, device: str) -> tuple[Policy, dict]:
     ck = torch.load(path, map_location=device, weights_only=False)
     pc = ck["config"]["policy"]
     pcfg = PolicyCfg(**{k: (tuple(v) if isinstance(v, list) else v) for k, v in pc.items()})
@@ -77,6 +78,10 @@ def run_benchmark(
     verbose: bool = True,
     anchor_obs: bool = False,
     robot: str = "g1",
+    anchor_ori_obs: bool = False,
+    actuator_delay: bool = False,
+    actuator_delay_mode: str = "episode",
+    collision_model: str = "mesh",
 ) -> list[ClipResult]:
     num_envs = min(num_envs or 1024, len(npz_files))
     args = SuperMimicEnvCfgArgs(
@@ -93,6 +98,10 @@ def run_benchmark(
         record_transitions=False,
         seed=0,
         anchor_obs=anchor_obs,
+        anchor_ori_obs=anchor_ori_obs,
+        actuator_delay=actuator_delay,
+        actuator_delay_mode=actuator_delay_mode,
+        collision_model=collision_model,
     )
     env = make_env(args, device=device)
     try:
@@ -184,7 +193,10 @@ def summarize(results: list[ClipResult]) -> dict:
     return out
 
 
-def save_results(results: list[ClipResult], path: str | Path, meta: dict | None = None) -> None:
+def save_results(
+    results: list[ClipResult], path: str | Path, meta: dict | None = None,
+    *, evaluation: dict | None = None, shard: dict | None = None,
+) -> None:
     Path(path).write_text(
         json.dumps(
             {
@@ -193,6 +205,8 @@ def save_results(results: list[ClipResult], path: str | Path, meta: dict | None 
                 "checkpoint": meta or {},
                 "summary": summarize(results),
                 "clips": [asdict(r) for r in results],
+                **({"evaluation": evaluation} if evaluation is not None else {}),
+                **({"shard": shard} if shard is not None else {}),
             },
             indent=1,
         )

@@ -1,0 +1,31 @@
+{
+  "clip": "walk1_subject2",
+  "start_frame": 0,
+  "steps": 500,
+  "simulated_seconds": 10.0,
+  "failed": false,
+  "completed_clip": false,
+  "mean_height_error_m": 0.01598627053050928,
+  "mean_tilt_error": 0.003883576478636833,
+  "mean_root_position_error_m": 0.06428316463937167,
+  "mean_joint_rmse_rad": 0.13014153459130137,
+  "max_abs_action": 18.909692764282227,
+  "physics": "native MuJoCo CPU",
+  "actor_runtime": "C++ ONNX Runtime 1.19 CPU",
+  "root_state_source": "MuJoCo ground truth; not a hardware state estimator",
+  "reset_goal_advance_frames": 1,
+  "max_abs_errors": {
+    "observation": 0.0,
+    "goal": 0.0,
+    "actor": 8.58306884765625e-06,
+    "target": 5.899016386479161e-08
+  },
+  "from_rest": true,
+  "explicit_pd_1000hz": true,
+  "measured_root_position_supplied_to_cpp": false,
+  "host_roundtrip_ms": {
+    "median": 0.5931600462645292,
+    "p99": 1.0834173252806065,
+    "max_after_warmup": 1.4428460272029042
+  }
+}

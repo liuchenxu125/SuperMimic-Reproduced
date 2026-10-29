@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--npz-dir", type=Path, default=Path("data/npz/lafan1_casbot02"))
     parser.add_argument("--anchor-obs", action="store_true")
+    parser.add_argument("--anchor-ori-obs", action="store_true")
     parser.add_argument("--num-envs", type=int, default=4096)
     parser.add_argument("--batch-size", type=int, default=2048)
     parser.add_argument("--iterations", type=int, default=1000)
@@ -27,6 +28,7 @@ def main():
     cfg = TrainConfig(robot="casbot02", run_name=args.run_name)
     cfg.data.npz_dir = args.npz_dir
     cfg.env.anchor_obs = args.anchor_obs
+    cfg.env.anchor_ori_obs = args.anchor_ori_obs
     cfg.env.num_envs = args.num_envs
     cfg.policy_trainer.batch_size = args.batch_size
     # Limit outer updates without accelerating the 250,000-update LR decay.
@@ -42,6 +44,7 @@ def main():
     report = {
         "purpose": "numerical stability only; not deployable-policy qualification",
         "anchor_obs": args.anchor_obs,
+        "anchor_ori_obs": args.anchor_ori_obs,
         "npz_dir": str(args.npz_dir),
         "seed": cfg.seed,
         "num_envs": args.num_envs,

@@ -2,7 +2,7 @@
 
 Everything here is a pure differentiable function of the 71-d simulator state
 ``s = [qpos(36) | qvel(35)]`` (root position expressed relative to the env origin,
-see ``StateIO``), the previous clean action, the sim context ``xi`` and the
+see ``StateIO``), the previous environment-input action, the sim context ``xi`` and the
 reference frame, so the same code serves the simulator-side tests and the
 imagined rollouts.
 """
@@ -49,6 +49,20 @@ def analytic_observation(
     )
 
 
+def anchor_relative_orientation(
+    robot_anchor_quat: torch.Tensor, ref_anchor_quat: torch.Tensor
+) -> torch.Tensor:
+    """Reference rotation in the current robot anchor frame, encoded as rot6d.
+
+    Uses no positions. Matches mjlab's motion_anchor_ori_b (first two matrix
+    columns, flattened row-major) and remains differentiable for imagination.
+    """
+    from supermimic.kinematics.rotations import matrix_from_quat, quat_inv, quat_mul
+
+    relative = quat_mul(quat_inv(robot_anchor_quat), ref_anchor_quat)
+    return matrix_from_quat(relative)[..., :2].reshape(*relative.shape[:-1], 6)
+
+
 def anchor_relative_obs(
     robot_anchor_pos: torch.Tensor,
     robot_anchor_quat: torch.Tensor,
@@ -57,13 +71,9 @@ def anchor_relative_obs(
 ) -> torch.Tensor:
     """Reference anchor pose expressed in the robot anchor frame: [pos (3), rot6d (6)] (= mjlab's
     motion_anchor_pos_b / motion_anchor_ori_b, plan D5 alternative)."""
-    from supermimic.kinematics.rotations import matrix_from_quat, quat_inv, quat_mul
-
-    q10 = quat_inv(robot_anchor_quat)
     pos = quat_apply_inverse(robot_anchor_quat, ref_anchor_pos - robot_anchor_pos)
-    q12 = quat_mul(q10, ref_anchor_quat)
-    mat = matrix_from_quat(q12)
-    return torch.cat([pos, mat[..., :2].reshape(*q12.shape[:-1], 6)], dim=-1)
+    ori = anchor_relative_orientation(robot_anchor_quat, ref_anchor_quat)
+    return torch.cat([pos, ori], dim=-1)
 
 
 ANCHOR_OBS_DIM = 9

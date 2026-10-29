@@ -7,6 +7,7 @@ import hashlib
 import json
 import re
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import mujoco
@@ -17,6 +18,7 @@ from torch import nn
 
 from supermimic.envs.mdp.motion_library import RefState, goal_features
 from supermimic.envs.tracking_env_cfg import SuperMimicEnvCfgArgs, make_env_cfg
+from supermimic.goal_spec import anchor_goal_dim
 from supermimic.policy.nets import Policy, PolicyCfg
 from supermimic.robots import get_robot
 
@@ -82,8 +84,9 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
     validate_policy(policy)
     n, k = pcfg.num_joints, cfg["env"]["future_frames"]
     anchor = cfg["env"].get("anchor_obs", False)
+    anchor_ori = cfg["env"].get("anchor_ori_obs", False)
     obs_dim = (3 * n + 6) * pcfg.history
-    if n != 27 or pcfg.goal_dim != k * (2 * n + 10) + (9 if anchor else 0):
+    if n != 27 or pcfg.goal_dim != k * (2 * n + 10) + anchor_goal_dim(anchor, anchor_ori):
         raise ValueError("Checkpoint dimensions are inconsistent with the selected robot/interface")
     output.mkdir(parents=True, exist_ok=True)
     profile = get_robot("casbot02")
@@ -96,6 +99,10 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
         reset_noise=False,
         obs_noise=False,
         anchor_obs=anchor,
+        anchor_ori_obs=anchor_ori,
+        actuator_delay=cfg["env"].get("actuator_delay", False),
+        actuator_delay_mode=cfg["env"].get("actuator_delay_mode", "episode"),
+        collision_model=cfg["env"].get("collision_model", "mesh"),
     )
     env_cfg = make_env_cfg(args)
     scene = Scene(env_cfg.scene, "cpu")  # No simulator, CUDA allocation, or training.
@@ -130,8 +137,11 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
         for i in range(model.ngeom)
         if re.fullmatch(profile.foot_geom_regex, model.geom(i).name.removeprefix("robot/"))
     ]
-    if len(feet) != 2:
-        raise ValueError("Expected both Casbot02 foot collision geoms")
+    if len(feet) not in (2, 14) or not all(
+        any(name.startswith("robot/" + side + "_foot") for name in feet)
+        for side in ("left", "right")
+    ):
+        raise ValueError("Expected both Casbot02 foot collision groups")
     opts = {}
     for name in [
         "timestep",
@@ -152,6 +162,17 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
         value = getattr(model.opt, name)
         opts[name] = value.tolist() if isinstance(value, np.ndarray) else value
     scene.write(output / "scene")  # Includes portable XML + STL assets.
+    # MuJoCo's XML writer rounds floating-point actuator gains. Keep the
+    # training gains and torque caps exactly equal to the deployment manifest.
+    scene_xml = output / "scene/scene.xml"
+    tree = ET.parse(scene_xml)
+    by_name = {p["name"]: p for p in motors}
+    for actuator in tree.getroot().find("actuator"):
+        p = by_name[actuator.attrib["joint"].removeprefix("robot/")]
+        actuator.set("gainprm", str(p["kp"]))
+        actuator.set("biasprm", f"0 {-p['kp']} {-p['kd']}")
+        actuator.set("forcerange", f"{-p['effort_limit_nm']} {p['effort_limit_nm']}")
+    tree.write(scene_xml, encoding="unicode")
     (output / "motions").mkdir(exist_ok=True)
     clip_files, source_motions = {}, {}
     for path in motions:
@@ -229,6 +250,10 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
         "history": pcfg.history,
         "future_frames": k,
         "anchor_obs": anchor,
+        "anchor_ori_obs": anchor_ori,
+        "actuator_delay": cfg["env"].get("actuator_delay", False),
+        "actuator_delay_mode": cfg["env"].get("actuator_delay_mode", "episode"),
+        "collision_model": cfg["env"].get("collision_model", "mesh"),
         "control_dt": 0.02,
         "decimation": 4,
         "mujoco_options": opts,

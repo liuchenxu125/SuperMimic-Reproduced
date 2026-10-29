@@ -1,0 +1,439 @@
+{
+  "input_dir": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data",
+  "output_dir": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex",
+  "robot": "casbot02",
+  "joint_count": 27,
+  "body_count": 30,
+  "output_fps": 50.0,
+  "root_convention": "AMP converter: x=raw[1], y=raw[0], z=raw[2]; pitch=raw[3]-auto_offset, roll=raw[4], yaw=-raw[5]",
+  "joint_columns_zero_based": [
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    60,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37
+  ],
+  "clips": [
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 74830,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 3742,
+      "seconds": 74.84,
+      "source_time_span_seconds": 74.829,
+      "pitch_offset_subtracted_rad": 0.0,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 999.9954251788043,
+      "source_limit_statistics": {
+        "frames": 74830,
+        "frames_outside_hard_limits": 18976,
+        "joint_values_outside_hard_limits": 20460,
+        "max_excess_rad": 0.08725,
+        "joints": {
+          "leg_l2_joint": {
+            "values": 62,
+            "max_excess_rad": 0.02582000000000001
+          },
+          "upper_left_4_joint": {
+            "values": 16393,
+            "max_excess_rad": 0.08725
+          },
+          "upper_right_4_joint": {
+            "values": 4005,
+            "max_excess_rad": 0.080242
+          }
+        }
+      },
+      "resampled_before_limits": {
+        "frames": 3742,
+        "frames_outside_hard_limits": 949,
+        "joint_values_outside_hard_limits": 1022,
+        "max_excess_rad": 0.0872500017285347,
+        "joints": {
+          "leg_l2_joint": {
+            "values": 3,
+            "max_excess_rad": 0.020602002234458933
+          },
+          "upper_left_4_joint": {
+            "values": 820,
+            "max_excess_rad": 0.0872500017285347
+          },
+          "upper_right_4_joint": {
+            "values": 199,
+            "max_excess_rad": 0.0786449983716011
+          }
+        }
+      },
+      "output_limit_statistics": {
+        "frames": 3742,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 949,
+      "joint_values_clamped": 1022,
+      "max_joint_adjustment_rad": 0.0872500017285347,
+      "joints_clamped": {
+        "leg_l2_joint": {
+          "values": 3,
+          "max_adjustment_rad": 0.02060200273990631
+        },
+        "upper_left_4_joint": {
+          "values": 820,
+          "max_adjustment_rad": 0.0872500017285347
+        },
+        "upper_right_4_joint": {
+          "values": 199,
+          "max_adjustment_rad": 0.0786449983716011
+        }
+      },
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/X1_1000HZ.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/X1_1000HZ.npz",
+      "source_sha256": "d1415b8f8623ec29d66e5894ab1fc0dc5d086cc6c514340018032951d1f7071d",
+      "output_sha256": "fa5998881d606d5b39f8eecdfe6fe1042fa8f5cc647311fbf9df8387311ac85c",
+      "input_fps_source": "filename"
+    },
+    {
+      "header_detected": true,
+      "blank_lines": 0,
+      "source_frames": 7481,
+      "input_fps": 100.0,
+      "output_fps": 50.0,
+      "output_frames": 3741,
+      "seconds": 74.82,
+      "source_time_span_seconds": 74.8,
+      "pitch_offset_subtracted_rad": 0.0,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 100.00001579452707,
+      "source_limit_statistics": {
+        "frames": 7481,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 3741,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 3741,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/X1_Xiao360_100HZ.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/X1_Xiao360_100HZ.npz",
+      "source_sha256": "7ecb62178f718af6fc1f69e28e579fa33c82e32a761cc3d392068d3b80c1d9ad",
+      "output_sha256": "0d41b1694e3882c004345b7a737d03f8051dc5dda87a17c05d208800f1a96462",
+      "input_fps_source": "filename"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 11033,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 552,
+      "seconds": 11.04,
+      "source_time_span_seconds": 11.032,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 999.9846819763985,
+      "source_limit_statistics": {
+        "frames": 11033,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 552,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 552,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/原地右转.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/原地右转.npz",
+      "source_sha256": "311046222c6d9f186d8cd3f33e54b608c755bec62ccd1ee019dcf8d617c7eef4",
+      "output_sha256": "31c3c9da705a5af4d078264393e7725e4e98a78756dc1e681d26ebaa161b69aa",
+      "input_fps_source": "fallback"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 11030,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 552,
+      "seconds": 11.04,
+      "source_time_span_seconds": 11.029,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 999.8566972495133,
+      "source_limit_statistics": {
+        "frames": 11030,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 552,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 552,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/原地左转.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/原地左转.npz",
+      "source_sha256": "42af792caa2518550bee5bb5d6cecad74b5777d7d508f0584fe5289d5656d2b5",
+      "output_sha256": "a2c18b5ace0d32c3de5e843b523af6edf88ad2a8e15fbe2728bedc60ce6f345c",
+      "input_fps_source": "fallback"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 8367,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 419,
+      "seconds": 8.38,
+      "source_time_span_seconds": 8.366,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 999.9994122521479,
+      "source_limit_statistics": {
+        "frames": 8367,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 419,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 419,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/后退.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/后退.npz",
+      "source_sha256": "3df42614d40e29f238ab59152f2faebc56ed8738457ed7ed6f2fd83d749fe7a1",
+      "output_sha256": "f38a3eef5590505056d25a58d01653c554fd9d794832106caf8c78ea086e319e",
+      "input_fps_source": "fallback"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 24832,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 1242,
+      "seconds": 24.84,
+      "source_time_span_seconds": 24.831,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 999.75003057079,
+      "source_limit_statistics": {
+        "frames": 24832,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 1242,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 1242,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/直行1步态.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/直行1步态.npz",
+      "source_sha256": "af3a637c942ee52c8e8017331044246388349c02de51177640fdba007b9ea11e",
+      "output_sha256": "b5f4b3573c6d5a00ea274e0f0c339137bb40130a7ee8971e08f5558e7898ab9f",
+      "input_fps_source": "fallback"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 15798,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 790,
+      "seconds": 15.8,
+      "source_time_span_seconds": 15.797,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 1000.0009336220011,
+      "source_limit_statistics": {
+        "frames": 15798,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 790,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 790,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/直行2步态.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/直行2步态.npz",
+      "source_sha256": "459223af98b82394e50378519b4a1ffa31ececfb3db63fbed50e231ce9dbe954",
+      "output_sha256": "7af8906e45f0aeeb66ade66243f39515713f993a573ccf90322e99b0895b2e99",
+      "input_fps_source": "fallback"
+    },
+    {
+      "header_detected": false,
+      "blank_lines": 0,
+      "source_frames": 11923,
+      "input_fps": 1000.0,
+      "output_fps": 50.0,
+      "output_frames": 597,
+      "seconds": 11.94,
+      "source_time_span_seconds": 11.922,
+      "pitch_offset_subtracted_rad": 1.5707963267948966,
+      "root_lateral_sign": 1,
+      "root_yaw_sign": -1,
+      "fps_estimate_from_recorded_linear_velocity": 980.5828040415462,
+      "source_limit_statistics": {
+        "frames": 11923,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_before_limits": {
+        "frames": 597,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "output_limit_statistics": {
+        "frames": 597,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "clamp_joints": true,
+      "frames_clamped": 0,
+      "joint_values_clamped": 0,
+      "max_joint_adjustment_rad": 0.0,
+      "joints_clamped": {},
+      "source": "/home/casbot/Desktop/SuperMimic-Reproduced/data/data/踏步.data",
+      "output": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex/踏步.npz",
+      "source_sha256": "336603d5033a72496297da676f0a7039d07aa4fb6809fe42a31bf3dcb8649273",
+      "output_sha256": "7eeadac7b5d0bcf82874c009df059d026f8a25282f783e7864fff6561747ffab",
+      "input_fps_source": "fallback"
+    }
+  ]
+}

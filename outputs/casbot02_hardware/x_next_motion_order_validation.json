@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-28",
+  "joystick_motion_order": [
+    "walk1_subject2",
+    "dance1_subject2",
+    "walk1_subject1",
+    "walk2_subject4",
+    "walk3_subject1",
+    "walk4_subject1",
+    "dance1_subject3"
+  ],
+  "first_X_from_default": "dance1_subject2",
+  "seven_unique_valid_bundles_same_actor": true,
+  "arm64_build_and_install_passed": true,
+  "installed_config_matches_source": true,
+  "runtime_and_weights_unchanged": true,
+  "uploaded_to_orin": false,
+  "config_sha256": "cbf3aa64fd43a34dcf306e6a56a2139bbd50aba8863ceb356d1b0872c7121f6e"
+}

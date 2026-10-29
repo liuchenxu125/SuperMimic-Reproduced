@@ -119,6 +119,12 @@ Casbot02 清洗副本的制作方法和结果见 [数据清洗报告](outputs/ca
 G1 / Casbot02 的日常指令见 [训练流程](训练流程.md)。实际数据集、权重、生成的运行包及本机独立内网
 `rl_controller` 工程不随本仓库上传；Casbot02 机器人资产、训练/转换/清洗/导出源码和小型验证报告保留在仓库中。
 
+SuperMimic 部署控制器、配置及测试的源码快照现保存在
+[deployment/rl_controller](deployment/rl_controller/README.md)，包括 X 松键按菜单顺序切换、
+连续策略桥接、SDK 2.2.37 位置 PD 适配和 END_HOLD 末帧策略保持；不含公司 SDK、
+上传凭据、模型和动作二进制。当前训练使用的新 tuned LAFAN1 数据与 XML 范围对齐记录见
+[训练流程](训练流程.md) 和 [数据验证](outputs/casbot02_tuned_lafan1_20261029/validation.json)。
+
 ```bash
 # LAFAN1，论文观测口径，单卡
 env -u PYTHONPATH uv run sm-train --run-name g1_lafan1_paper_aligned --data.npz-dir data/npz/lafan1 \
@@ -153,7 +159,7 @@ env -u PYTHONPATH uv run python scripts/play.py --ckpt logs/e7/ckpt_latest.pt --
 
 - 实现了 Algorithm A.1 全流程、Table A.1–A.6 的观测/奖励/终止/网络/超参、Appendix F 评测协议、D 节域随机化（sim context ξ）。
 - 论文未指明之处（U1–U20）的取舍记录在 `REPRODUCTION_PLAN.md` 第 4 节；实测后改动的决定记录在 `EXPERIMENTS.md`。
-- 未做：速度接口与蒸馏、PPO-Sim/PPO-WM 基线、H×critic 消融、ONNX 导出、真机。
+- 未做：论文速度接口与蒸馏、PPO-Sim/PPO-WM 基线、H×critic 消融及原论文 G1 真机实验。Casbot02 的 ONNX 导出与 SDK 部署控制器已接入，验证范围见上方部署源码快照。
 - mjlab 的 `csv_to_npz` 四元数 slerp 在相邻帧几乎相同时会提前返回（姿态滞后一帧），本仓库用自己的向量化 slerp（与 scipy 一致到 1e-9）。
 - MuJoCo Warp 的 solver 溢出 printf 是编译期常量，必须在 `put_model` 后、图捕获前关闭，否则早期策略每步触发、仿真慢 10×。
 - torchrun 下 MuJoCo Warp 总在第一张可见卡上，需按 rank 设置 `CUDA_VISIBLE_DEVICES`（`scripts/train.py` 自动处理）。

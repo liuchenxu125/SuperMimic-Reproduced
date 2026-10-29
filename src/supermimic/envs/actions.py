@@ -1,9 +1,10 @@
-"""Joint-position action with execution noise (plan D9).
+"""Joint-position action with optional legacy execution-only noise.
 
-The *clean* policy action stays in ``raw_action`` (so ``last_action`` observations and
-the action-rate penalty see it); Gaussian noise ``eps ~ N(0, std^2)`` is added to the
-normalized action only when computing the executed set-point. ``executed_raw`` exposes
-``a + eps`` for the replay buffer (the world model is fit on executed actions).
+New training adds noise before env.step and sets this term's noise_std to zero.
+Then raw_action, executed_raw, last_action and action-rate penalties all see the
+same noisy action. Imagined policy rollouts remain free of execution noise.
+With nonzero noise_std, this term preserves the old execution-only behavior:
+raw_action keeps the environment input and executed_raw exposes input + noise.
 """
 
 from __future__ import annotations

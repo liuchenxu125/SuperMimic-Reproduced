@@ -14,6 +14,7 @@ from supermimic.world_model.heads import (
     ReferenceFrame,
     analytic_observation,
     anchor_relative_obs,
+    anchor_relative_orientation,
     flatten_history_term_major,
 )
 from supermimic.world_model.wm_trainer import reference_at
@@ -47,6 +48,7 @@ def imagine(
     obs_noise: bool = True,
     step_fn: ImagStep | None = None,
     anchor_obs: bool = False,
+    anchor_ori_obs: bool = False,
 ) -> ImagRollout:
     device = start.state.device
     n = start.state.shape[0]
@@ -56,7 +58,7 @@ def imagine(
     noise_half = torch.tensor(
         [0.01] * nj + [0.5] * nj + [0.2] * 3 + [0.05] * 3 + [0.0] * nj, device=device
     )
-    anchor_noise_half = ANCHOR_NOISE_HALF.to(device)
+    anchor_noise_half = (ANCHOR_NOISE_HALF if anchor_obs else ANCHOR_NOISE_HALF[3:]).to(device)
     ai = wm.heads.anchor_index
 
     def add_noise(o):
@@ -66,14 +68,17 @@ def imagine(
 
     def make_goal(frame_t, ref_t, anchor_pose):
         g = lib.goal_window(frame_t, future_frames)
-        if not anchor_obs:
+        if not (anchor_obs or anchor_ori_obs):
             return g
-        rel = anchor_relative_obs(
-            anchor_pose[..., 0:3],
-            anchor_pose[..., 3:7],
-            ref_t.body_pos_w[..., ai, :],
-            ref_t.body_quat_w[..., ai, :],
-        )
+        if anchor_obs:
+            rel = anchor_relative_obs(
+                anchor_pose[..., 0:3], anchor_pose[..., 3:7],
+                ref_t.body_pos_w[..., ai, :], ref_t.body_quat_w[..., ai, :],
+            )
+        else:
+            rel = anchor_relative_orientation(
+                anchor_pose[..., 3:7], ref_t.body_quat_w[..., ai, :]
+            )
         if obs_noise:
             rel = rel + (torch.rand_like(rel) * 2 - 1) * anchor_noise_half
         return torch.cat([g, rel], dim=-1)
@@ -111,7 +116,7 @@ def imagine(
         )
 
     ref = ref_at(0)
-    if anchor_obs:
+    if anchor_obs or anchor_ori_obs:
         b0 = wm.heads.robot_bodies(s)
         anchor_pose = torch.cat([b0["pos"][..., ai, :], b0["quat"][..., ai, :]], dim=-1)
     else:

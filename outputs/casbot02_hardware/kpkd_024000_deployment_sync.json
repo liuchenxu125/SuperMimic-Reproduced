@@ -1,0 +1,24 @@
+{
+  "checkpoint": "logs/casbot02_lafan1_proprio_paper_kpkd/ckpt_0024000.pt",
+  "checkpoint_iteration_unit": "update",
+  "checkpoint_sha256": "94c46339978ca1674a7bcaad7b3008d5b31eca105941b67b8395e0c4212e82f6",
+  "bundle": "rl_controller/config/model/supermimic_walk1_subject2_proprio",
+  "backup": "outputs/casbot02_deployment_backups/walk1_before_kpkd_024000_20261026_144835",
+  "sim_bundle": "outputs/casbot02_walk1_subject2_kpkd_024000_sim2sim",
+  "motion": "walk1_subject2",
+  "input_dims": [
+    870,
+    640
+  ],
+  "output_dim": 27,
+  "control_parameters_and_q0_match_training": true,
+  "native_explicit_pd_10s_passed": true,
+  "closed_loop_report": "outputs/casbot02_hardware/proprio_kpkd_024000_walk1_subject2_effort_10s.json",
+  "full_clip_validated": false,
+  "real_robot_tested": false,
+  "arm64_build_and_install_passed": true,
+  "installed_manifest_and_file_hashes_verified": true,
+  "prepare_default_and_held_reference_validation": "outputs/casbot02_hardware/default_pose_held_reference_validation.json",
+  "actor_sha256": "04b9134629c9e0662f8182a59885550fe640c758bf9ba1cdbd36be9c9c883df9",
+  "motion_sha256": "7a4dca19eeac9757f88d25e6b618215fbf3ef9bb0939b8f66c62b54eafc4300e"
+}

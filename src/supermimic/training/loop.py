@@ -13,6 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from supermimic.config import TrainConfig
 from supermimic.envs import SuperMimicEnvCfgArgs, make_env
 from supermimic.envs.mdp.motion_library import discover_npz
+from supermimic.goal_spec import anchor_goal_dim
 from supermimic.imagination.policy_trainer import PolicyTrainer
 from supermimic.kinematics.g1_fk import G1Kinematics
 from supermimic.policy.nets import Critic, Policy
@@ -43,10 +44,11 @@ class Trainer:
             cfg.world_model.state_spec.xi_scale = (
                 (0.45,) + (0.01,) * profile.num_joints + (0.05,) * 3
             )
-        cfg.policy.goal_dim = cfg.env.future_frames * profile.layout.goal_dim + (
-            9 if cfg.env.anchor_obs else 0
+        cfg.policy.goal_dim = cfg.env.future_frames * profile.layout.goal_dim + anchor_goal_dim(
+            cfg.env.anchor_obs, cfg.env.anchor_ori_obs
         )
         cfg.policy_trainer.anchor_obs = cfg.env.anchor_obs
+        cfg.policy_trainer.anchor_ori_obs = cfg.env.anchor_ori_obs
         cfg.policy_trainer.future_frames = cfg.env.future_frames
         cfg.policy_trainer.history = cfg.policy.history
         sch = cfg.schedule
@@ -89,7 +91,48 @@ class Trainer:
             if resume_checkpoint["config"].get("robot", "g1") != cfg.robot:
                 raise ValueError("Resume robot differs from checkpoint")
             if resume_checkpoint["config"]["policy"]["goal_dim"] != cfg.policy.goal_dim:
-                raise ValueError("Resume goal/anchor dimensions differ from checkpoint")
+                raise ValueError(
+                    "Resume goal/anchor dimensions differ from checkpoint: "
+                    f"saved={resume_checkpoint['config']['policy']['goal_dim']}, "
+                    f"requested={cfg.policy.goal_dim}. Use a new run for changed inputs."
+                )
+            if cfg.robot == "casbot02" and (
+                resume_checkpoint["config"]["env"].get("actuator_delay", False)
+                != cfg.env.actuator_delay
+            ):
+                raise ValueError(
+                    "Resume actuator delay differs from checkpoint. Use a new run for "
+                    "delayed training, or --env.no-actuator-delay for a legacy checkpoint."
+                )
+            saved_env = resume_checkpoint["config"]["env"]
+            if cfg.robot == "casbot02" and (
+                saved_env.get("collision_model", "mesh") != cfg.env.collision_model
+            ):
+                raise ValueError("Resume collision model differs from checkpoint; use a new run")
+            if cfg.robot == "casbot02" and cfg.env.actuator_delay and (
+                saved_env.get("actuator_delay_mode", "episode") != cfg.env.actuator_delay_mode
+            ):
+                raise ValueError(
+                    "Resume actuator delay mode differs from checkpoint. Use a new run, "
+                    "or --env.actuator-delay-mode episode for the old mechanism."
+                )
+            saved_floor = (saved_env.get("training_floor_friction", 1.0)
+                           if saved_env.get("domain_randomization", True) else 1.0)
+            requested_floor = (cfg.env.training_floor_friction
+                               if cfg.env.domain_randomization else 1.0)
+            if saved_floor != requested_floor:
+                raise ValueError(
+                    "Resume training floor friction differs from checkpoint. Use a new run, "
+                    "or restore --env.training-floor-friction to the saved value "
+                    f"({saved_floor})."
+                )
+            if (cfg.env.action_noise_std > 0 or saved_env.get("action_noise_std", 0.1) > 0) and (
+                saved_env.get("action_noise_mode", "execution") != cfg.env.action_noise_mode
+            ):
+                raise ValueError(
+                    "Resume action noise mode differs from checkpoint. Use a new run, "
+                    "or --env.action-noise-mode execution for the legacy noise path."
+                )
         if (self.log_dir / "config.json").exists() and (
             cfg.resume is None or self.log_dir.resolve() != cfg.resume.resolve().parent
         ):
@@ -130,7 +173,10 @@ class Trainer:
                 future_frames=cfg.env.future_frames,
                 history_length=cfg.policy.history,
                 episode_length_s=cfg.env.episode_length_s,
-                action_noise_std=cfg.env.action_noise_std,
+                # Collection mode supplies the noisy action to env.step itself.
+                # Disable action-term noise to avoid sampling twice.
+                action_noise_std=(cfg.env.action_noise_std
+                                  if cfg.env.action_noise_mode == "execution" else 0.0),
                 obs_noise=cfg.env.obs_noise,
                 reset_noise=cfg.env.reset_noise,
                 domain_randomization=cfg.env.domain_randomization,
@@ -138,6 +184,11 @@ class Trainer:
                 replay_capacity=cfg.env.replay_capacity,
                 compact_library=cfg.env.compact_library,
                 anchor_obs=cfg.env.anchor_obs,
+                anchor_ori_obs=cfg.env.anchor_ori_obs,
+                actuator_delay=cfg.env.actuator_delay,
+                actuator_delay_mode=cfg.env.actuator_delay_mode,
+                training_floor_friction=cfg.env.training_floor_friction,
+                collision_model=cfg.env.collision_model,
                 seed=cfg.seed + 1000 * self.rank,
             ),
             device=self.device,
@@ -170,6 +221,28 @@ class Trainer:
         )
         n_params = lambda m: sum(p.numel() for p in m.parameters())
         if self.is_main:
+            print(
+                f"[INFO] policy inputs: history={cfg.policy.history * profile.layout.obs_dim}, "
+                f"goal={cfg.policy.goal_dim}, actions={profile.num_joints}, "
+                f"anchor_pos={cfg.env.anchor_obs}, "
+                f"anchor_ori={cfg.env.anchor_obs or cfg.env.anchor_ori_obs}", flush=True,
+            )
+            if cfg.robot == "casbot02":
+                print(f"[INFO] collision model: {cfg.env.collision_model}", flush=True)
+                print(
+                    "[INFO] actuator command delay: "
+                    + (f"0-2 physics steps (0/5/10 ms), mode={cfg.env.actuator_delay_mode}"
+                       if cfg.env.actuator_delay else "disabled"), flush=True,
+                )
+            print(
+                "[INFO] floor sliding friction: "
+                f"{cfg.env.training_floor_friction if cfg.env.domain_randomization else 1.0}",
+                flush=True,
+            )
+            print(
+                f"[INFO] action noise: std={cfg.env.action_noise_std}, "
+                f"mode={cfg.env.action_noise_mode}", flush=True,
+            )
             print(
                 f"[INFO] params: world model {n_params(self.wm) / 1e6:.2f}M, policy {n_params(self.policy) / 1e6:.2f}M, critic {n_params(self.critic) / 1e6:.3f}M"
             )
@@ -293,6 +366,8 @@ class Trainer:
 
     def _collect_step(self) -> None:
         action = self.act(self._obs)
+        if self.cfg.env.action_noise_mode == "collection" and self.cfg.env.action_noise_std > 0:
+            action = action + self.cfg.env.action_noise_std * torch.randn_like(action)
         self._obs, rew, term, tout, _extras = self.env.step(action)
         self.env_steps += 1
         self.ep_reward_sum += rew

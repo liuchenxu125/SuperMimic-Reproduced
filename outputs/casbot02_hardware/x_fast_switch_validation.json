@@ -1,0 +1,61 @@
+{
+  "scope": "X only: live proprio reference bridge; B and normal finish retain return/HOLD",
+  "switch_seconds": 0.8,
+  "observation_dim": 870,
+  "goal_dim": 640,
+  "actions": 27,
+  "model_checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+  "arm64_runner_sha256": "dccf5034e4e3b1830abe92336b241213ab40ec9680fffb58c03e72b78c1a5d79",
+  "config_sha256": "fc3fde7749ee871f738830a3eb514d80d86953ab7508f0ee2d2c8d87774761e8",
+  "source_install_config_and_helper_match": true,
+  "ctest_passed": 4,
+  "ros_tests": {
+    "joystick": {
+      "case": "joystick",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 8710
+    },
+    "motion_switch": {
+      "case": "motion_switch",
+      "dry_run": false,
+      "checks": "passed",
+      "commands": 6520
+    }
+  },
+  "native_tests": {
+    "implicit": {
+      "report": "outputs/casbot02_hardware/x_fast_switch_native_implicit.json",
+      "passed": 7,
+      "total": 7,
+      "before_seconds": 5,
+      "switch_seconds": 0.8,
+      "after_seconds": 10,
+      "max_observation_error": 0.0,
+      "max_actor_error": 1.1444091796875e-05
+    },
+    "explicit": {
+      "report": "outputs/casbot02_hardware/x_fast_switch_native_explicit.json",
+      "passed": 7,
+      "total": 7,
+      "before_seconds": 5,
+      "switch_seconds": 0.8,
+      "after_seconds": 10,
+      "max_observation_error": 0.0,
+      "max_actor_error": 1.1444091796875e-05
+    }
+  },
+  "source_sha256": {
+    "rl_controller/supermimic/core.hpp": "2c1f50ddbfb21c46ccc12e5b204d130f94a1448310d5147524b7d3a672beb642",
+    "rl_controller/supermimic/core.cpp": "785958d038a75f81e66fd1ba82c72a176ec66000aa61110477b9d17873e372a2",
+    "rl_controller/supermimic/runner.cpp": "cb3137a13df6e71a9347505e693d95bc46ccacb51665bf3a63883eae9d15ba55"
+  },
+  "orin_uploaded": false,
+  "hardware_executed": false,
+  "limits": [
+    "Fixed 5-second switch points, nominal physics; not arbitrary phase guarantees",
+    "Reference-start initialization; full preparation/return physical balance not tested",
+    "Explicit bounded integer PD approximates SDK; complete SDK interpolation and firmware not modeled",
+    "Actor was not specifically trained for arbitrary motion transitions"
+  ]
+}

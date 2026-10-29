@@ -46,6 +46,10 @@ def test_casbot02_fk_and_gradients():
     from supermimic.kinematics.g1_fk import G1Kinematics
 
     model = get_robot("casbot02").model()
+    for side in ("l", "r"):
+        for index in (3, 5, 6):
+            joint = model.joint(f"leg_{side}{index}_joint")
+            assert model.dof_armature[model.jnt_dofadr[joint.id]] == 0.029
     rng = np.random.default_rng(42)
     qpos = np.zeros((8, model.nq))
     qpos[:, :3] = rng.normal(size=(8, 3))
@@ -133,6 +137,76 @@ def test_conversion_library_and_network_dimensions(casbot_clip):
     ).shape == (20,)
 
 
+@pytest.mark.parametrize("obs_noise", [False, True])
+def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_noise):
+    """CPU BPTT: one rot6d suffix, unchanged future features, finite updates."""
+    from types import SimpleNamespace
+
+    from supermimic.data.replay_buffer import StartBatch
+    from supermimic.envs.mdp.motion_library import MotionLibrary
+    from supermimic.imagination.policy_trainer import PolicyTrainer, PolicyTrainerCfg
+    from supermimic.imagination.rollout import imagine
+    from supermimic.kinematics.g1_fk import G1Kinematics
+    from supermimic.policy.nets import Critic, CriticCfg, Policy, PolicyCfg
+    from supermimic.world_model.heads import AnalyticHeads, anchor_relative_orientation
+    from supermimic.world_model.state_spec import StateSpecCfg
+    from supermimic.world_model.wm_trainer import reference_at
+    from supermimic.world_model.world_model import WorldModel, WorldModelCfg
+
+    torch.manual_seed(63)
+    profile = get_robot("casbot02")
+    model = profile.model()
+    defaults = profile.motor_parameters()["default_joint_pos"]
+    q0 = torch.tensor([defaults[model.joint(i).name] for i in range(1, model.njnt)],
+                      dtype=torch.float32)
+    lib = MotionLibrary([casbot_clip], profile.tracked_bodies, q0, device="cpu",
+                        robot_name="casbot02", root_body_name=profile.root_body)
+    heads = AnalyticHeads(
+        G1Kinematics(model, "cpu"), profile.tracked_bodies, profile.anchor_body,
+        profile.root_body, torch.tensor(model.jnt_range[1:], dtype=torch.float32), q0,
+    )
+    wm = WorldModel(WorldModelCfg(hidden=(32,), term_hidden=(16,),
+                                 state_spec=StateSpecCfg(num_joints=27)), heads, "cpu")
+    pc = PolicyCfg(num_joints=27, goal_dim=646, encoder_hidden=(32,), decoder_hidden=(32,))
+    policy, critic = Policy(pc), Critic(CriticCfg(hidden=(32,)), pcfg=pc)
+    frames = torch.tensor([5, 15])
+    qp, qv = lib.ref_qpos_qvel(frames)
+    state = torch.cat([qp, qv], -1).requires_grad_(True)
+    start = StartBatch(
+        state=state, xi=wm.spec.xi_offset[None].expand(2, -1).clone(), frame=frames,
+        prev_action=torch.zeros(2, 27), hist_states=state[None].expand(10, -1, -1),
+        hist_actions=torch.zeros(10, 2, 27),
+    )
+    ro = imagine(wm, policy, lib, start, horizon=2, anchor_ori_obs=True, obs_noise=obs_noise)
+    assert ro.goals.shape == (3, 2, 646) and ro.actions.shape == (2, 2, 27)
+    for t in range(3):
+        torch.testing.assert_close(ro.goals[t, :, :640], lib.goal_window(ro.frames[t], 10),
+                                   atol=0, rtol=0)
+        ref = reference_at(lib, ro.frames[t])
+        actual_quat = heads.robot_bodies(ro.states[t])["quat"][:, heads.anchor_index]
+        expected = anchor_relative_orientation(actual_quat, ref.body_quat_w[:, heads.anchor_index])
+        difference = (ro.goals[t, :, 640:] - expected).abs()
+        if obs_noise:
+            assert difference.max() <= 0.050001 and difference.max() > 0
+        else:
+            torch.testing.assert_close(ro.goals[t, :, 640:], expected)
+    grad = torch.autograd.grad(ro.goals[0, :, 641].sum(), state)[0]
+    assert torch.isfinite(grad).all() and grad[:, 3:7].abs().sum() > 0
+
+    # Exercise the real policy/critic update on a detached replay seed.
+    start.state = start.state.detach()
+    start.hist_states = start.hist_states.detach()
+    trainer = PolicyTrainer(wm, policy, critic, lib, PolicyTrainerCfg(
+        horizon=2, batch_size=2, anchor_ori_obs=True, obs_noise=obs_noise,
+        compile=None, critic_epochs=1, critic_minibatches=1,
+    ))
+    before = next(policy.parameters()).detach().clone()
+    metrics = trainer.update(SimpleNamespace(sample_starts=lambda *args: start))
+    assert all(np.isfinite(v) for v in metrics.values())
+    assert not torch.equal(before, next(policy.parameters()))
+    assert all(torch.isfinite(p).all() for m in (wm, policy, critic) for p in m.parameters())
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="needs CUDA")
 def test_casbot02_training_and_checkpoint(casbot_clip, tmp_path):
     from supermimic.config import TrainConfig
@@ -159,12 +233,16 @@ def test_casbot02_training_and_checkpoint(casbot_clip, tmp_path):
     try:
         trainer.run()
         assert trainer.num_updates > 0
+        actuators = trainer.env.scene["robot"].actuators
+        assert all(act.has_delay and act._delay_buffer is not None for act in actuators)
+        assert set(actuators[0]._delay_buffer.current_lags.tolist()) <= {0, 1, 2}
         starts = trainer.buffer.sample_starts(8)
         assert starts.state.shape == (8, 67) and starts.hist_actions.shape == (10, 8, 27)
         assert torch.isfinite(starts.state).all()
         ckpt = tmp_path / "casbot02_smoke/ckpt_latest.pt"
         policy, saved = load_policy_from_checkpoint(ckpt, "cuda:0")
         assert saved["robot"] == "casbot02"
+        assert saved["env"]["actuator_delay"] is True
         assert saved["policy"]["goal_dim"] == 649
         assert torch.isfinite(
             policy(torch.zeros(1, 870, device="cuda"), torch.zeros(1, 649, device="cuda"))

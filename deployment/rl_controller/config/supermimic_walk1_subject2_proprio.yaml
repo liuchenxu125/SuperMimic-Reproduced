@@ -1,0 +1,104 @@
+# SDK 2.2.37 position + integer Kp/Kd interface (29 commanded joints including head).
+# Real launch checks this file AND live debug gain feedback; SDK must be restarted after changing it.
+sdk_config_file: /workspace/hl_motion/hl_config/motion_params.yaml
+mode_service: /get_robot_mode
+# Casbot02 proprio policy: 870 history + 640 reference -> 27 actions, 50 Hz.
+# casbot02_lafan1_proprio_paper_kpkd_primitive_data / ckpt_0080000.pt, walk1_subject2.
+# Fixed snapshot exported at update 80000; collision model: primitive.
+# HANDOFF gains/scales and the new default pose match this training run.
+# Historical explicit-PD preview does not validate the SDK 2.2.37 actuator path.
+# Initial automatic motion: walk1_subject2 (from this bundle manifest).
+bundle: model/supermimic_walk1_subject2_proprio
+# Preloaded references share this actor; select with the ROS 'motion' parameter.
+motions:
+  踏步: model/supermimic_motion_bank/踏步
+  直行1步态: model/supermimic_motion_bank/直行1步态
+  后退: model/supermimic_motion_bank/后退
+  直行2步态: model/supermimic_motion_bank/直行2步态
+  原地左转: model/supermimic_motion_bank/原地左转
+  原地右转: model/supermimic_motion_bank/原地右转
+  X1_Xiao360_100HZ: model/supermimic_motion_bank/X1_Xiao360_100HZ
+  X1_1000HZ: model/supermimic_motion_bank/X1_1000HZ
+  walk1_subject2: model/supermimic_motion_bank/walk1_subject2
+  dance1_subject2: model/supermimic_motion_bank/dance1_subject2
+  walk1_subject1: model/supermimic_motion_bank/walk1_subject1
+  walk2_subject4: model/supermimic_motion_bank/walk2_subject4
+  walk3_subject1: model/supermimic_motion_bank/walk3_subject1
+  walk4_subject1: model/supermimic_motion_bank/walk4_subject1
+  dance1_subject3: model/supermimic_motion_bank/dance1_subject3
+
+require_anchor_obs: false
+# SDK joystick: release X to play NEXT motion; B finishes and returns.
+# LB/RB/BACK chords remain exclusively owned by the SDK.
+joystick_enabled: true
+joystick_topic: /joystick_events
+# Keep the console readable; detailed status still publishes at 1 Hz over ROS.
+console_full_status: false
+joystick_motion_order: [walk1_subject2, 原地左转, X1_1000HZ, 后退, 直行2步态, 踏步, 原地右转, X1_Xiao360_100HZ, 直行1步态, dance1_subject2, walk1_subject1, walk2_subject4, walk3_subject1, walk4_subject1, dance1_subject3]
+# One automatic attempt: queried ZERO/STAND (class 2/3), then fresh raw topic mode 7.
+# SDK service class 4 includes debug and is NOT raw mode 7.
+# Stop, fault, mode exit, completion or manual services do not re-arm it.
+auto_start_on_mode7: true
+auto_sensor_ready_seconds: 0.5
+auto_start_timeout_seconds: 5.0
+start_frame: 0
+# 0: play to the last reference frame; a positive value caps RUN wall time.
+preview_seconds: 0.0
+# At natural clip end, keep 50 Hz policy control on a stationary last-frame reference.
+# X still bridges to the next clip. B / ~/finish retain the return-and-HOLD path.
+hold_last_frame_on_finish: true
+# 0 skips the preparation pose; keep the 1s policy handoff from measured joints.
+prepare_seconds: 0.0
+prepare_pose: default
+# Preparation pose only. Preserve the actor q0 stored in its manifest.
+prepare_joint_pos:
+  leg_l1_joint: -0.185
+  leg_l2_joint: 0.0
+  leg_l3_joint: 0.0
+  leg_l4_joint: 0.36
+  leg_l5_joint: -0.175
+  leg_l6_joint: 0.0
+  leg_r1_joint: -0.185
+  leg_r2_joint: 0.0
+  leg_r3_joint: 0.0
+  leg_r4_joint: 0.36
+  leg_r5_joint: -0.175
+  leg_r6_joint: 0.0
+  waist_yaw_joint: 0.0
+  upper_left_1_joint: 0.1
+  upper_left_2_joint: 0.175
+  upper_left_3_joint: 0.0
+  upper_left_4_joint: -0.35
+  upper_left_5_joint: 0.0
+  upper_left_6_joint: 0.0
+  upper_left_7_joint: 0.0
+  upper_right_1_joint: 0.1
+  upper_right_2_joint: -0.175
+  upper_right_3_joint: 0.0
+  upper_right_4_joint: -0.35
+  upper_right_5_joint: 0.0
+  upper_right_6_joint: 0.0
+  upper_right_7_joint: 0.0
+# Hold the starting reference pose during handoff; clip time starts afterwards.
+# Explicit B / ~/finish returns to the pre-prepare measured pose, then holds PD.
+entry_blend_seconds: 1.0
+# RUN + X: bridge references with the policy continuously active; no return/prepare.
+switch_blend_seconds: 0.8
+return_seconds: 3.0
+max_sensor_age: 0.10
+max_sensor_skew: 0.04
+joint_start_tolerance: 0.15
+# 50 Hz is the nominal cadence, not a single-call fault threshold.
+max_inference_seconds: 0.04
+late_inference_seconds: 0.025
+max_consecutive_late_updates: 20
+max_target_age: 0.06
+base_frame: base_link
+imu_frame: ""
+imu_to_base_quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+joint_topic: /motion/debug/joint_state
+standard_joint_topic: /motion/joint_state
+imu_topic: /motion/imu
+mode_topic: /motion/current_mode
+command_topic: /motion/debug/joint_cmd
+# Measured IMU orientation supplies gravity; root position is not an input.

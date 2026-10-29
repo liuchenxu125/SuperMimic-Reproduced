@@ -1,0 +1,29 @@
+{
+  "selection_basis": "Legacy training curve plateau; exhaustive checkpoint ranking stopped at user request. No exact-best claim.",
+  "checkpoint": "logs/casbot02_lafan1_proprio_codex_fixed/ckpt_0260000.pt",
+  "checkpoint_iteration_unit": "env_step",
+  "checkpoint_outer_updates": 103984,
+  "checkpoint_sha256": "007cc9e094000fd3ffd6b2fd5e0b0b4e5c9f3ae2c23d82c36feb0d03921916d8",
+  "config": "rl_controller/config/supermimic_walk1_subject2_proprio.yaml",
+  "bundle": "rl_controller/config/model/supermimic_walk1_subject2_proprio",
+  "clip": "walk1_subject2",
+  "frames": 13061,
+  "preview_seconds": 10,
+  "anchor_obs": false,
+  "io": {
+    "obs_history": 870,
+    "goal": 640,
+    "actions": 27
+  },
+  "validation": {
+    "closed_loop_report": "outputs/casbot02_hardware/proprio_260000_walk1_subject2_effort_10s.json",
+    "seconds": 10,
+    "full_clip_validated": false,
+    "real_robot_tested": false,
+    "native_build_passed": true,
+    "bundle_hashes_verified": true
+  },
+  "default_run_script": "rl_controller/scripts/run_supermimic.sh",
+  "default_dry_run": true,
+  "training_convergence_report": "outputs/casbot02_old_selection/convergence.json"
+}

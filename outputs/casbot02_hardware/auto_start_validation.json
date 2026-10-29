@@ -1,0 +1,77 @@
+{
+  "created_at": "2026-10-27T15:21:17.014541+08:00",
+  "tests": [
+    {
+      "auto_case": "normal",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "stop",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "fault",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "pose_timeout",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "missing",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "normal",
+      "dry_run": true,
+      "checks": "passed"
+    },
+    {
+      "auto_case": "mode_exit",
+      "dry_run": false,
+      "checks": "passed"
+    },
+    {
+      "dry_run": true,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 835,
+      "last_status": "FAULT dry_run=true frame=0 inference_ms=1.004212 sensors=OK fault=Policy target timeout joint_rx=4539 imu_rx=3656 mode=7 mode_rx=3787 joint_debug_rx=3669 joint_standard_rx=870 joint_source=debug auto_start=disabled auto_reason= max_control_gap_ms=350.271464 max_control_lock_ms=0.045493 max_publish_ms=350.174008 max_report_io_ms=350.166472 max_policy_commit_lock_ms=0.035996 max_debug_gap_ms=1140.588246 max_standard_gap_ms=4917.821544 max_imu_gap_ms=1211.677417 max_mode_gap_ms=124.118404 max_debug_lock_ms=0.020011 max_imu_lock_ms=0.018440 debug_gaps_over100=1 standard_gaps_over100=1 imu_gaps_over100=1 mode_gaps_over100=1"
+    },
+    {
+      "dry_run": false,
+      "anchor_obs": false,
+      "checks": "passed",
+      "messages_checked": 2305,
+      "last_status": "FAULT dry_run=false frame=0 inference_ms=0.965816 sensors=OK fault=Policy target timeout joint_rx=5663 imu_rx=4541 mode=7 mode_rx=4705 joint_debug_rx=4552 joint_standard_rx=1111 joint_source=debug auto_start=disabled auto_reason= max_control_gap_ms=350.350325 max_control_lock_ms=0.047130 max_publish_ms=350.197721 max_report_io_ms=350.154747 max_policy_commit_lock_ms=0.037373 max_debug_gap_ms=1137.034233 max_standard_gap_ms=4920.226465 max_imu_gap_ms=1213.648805 max_mode_gap_ms=125.166060 max_debug_lock_ms=0.042892 max_imu_lock_ms=0.033635 debug_gaps_over100=1 standard_gaps_over100=1 imu_gaps_over100=1 mode_gaps_over100=1"
+    }
+  ],
+  "logs": [
+    "/tmp/sm_auto_test.log",
+    "/tmp/sm_auto_mode_exit.log",
+    "/tmp/sm_auto_manual_regression.log"
+  ],
+  "native_build_passed": true,
+  "arm64_build_passed": true,
+  "arm64_runner_sha256": "d9312348373b57b59507aefb721fb8d88519db7c55235ad485c23e257173231e",
+  "auto_start": {
+    "enabled_in_default_walk1_config": true,
+    "requires_observed_non7_to7": true,
+    "one_attempt_per_process": true,
+    "sensor_stable_seconds": 0.5,
+    "prepare_seconds": 2.0,
+    "handoff_seconds": 1.0,
+    "preview_seconds": 10.0,
+    "return_seconds": 3.0,
+    "startup_wait_timeout_seconds": 5.0,
+    "pose_wait_timeout_seconds": 5.0,
+    "dry_run_default": true
+  },
+  "uploaded_to_orin": false,
+  "robot_tested": false
+}

@@ -1,0 +1,26 @@
+{
+  "behavior": "Natural clip end -> END_HOLD: stationary final-frame reference, zero reference velocities over all 10 future frames, 50 Hz feedback policy, unchanged measured and action history. X switches continuously; B and finish return; stop/fault retain damping protections.",
+  "config": "/home/casbot/Desktop/SuperMimic-Reproduced/rl_controller/config/supermimic_walk1_subject2_proprio.yaml",
+  "config_sha256": "89ccfa5238942f0adeebf3c9e86c866b6531aefc0770e245e1e1dba59855f3f9",
+  "native_ctest_passed": 4,
+  "isolated_ros_cases_passed": [
+    "end_hold",
+    "manual"
+  ],
+  "checks": [
+    "Final reference frame remains fixed after policy finished",
+    "Measured/action history continues while holding",
+    "Live X bridge out of END_HOLD without reset",
+    "B and finish return-and-HOLD",
+    "IMU loss in END_HOLD faults and damps",
+    "Legacy configuration behavior preserved"
+  ],
+  "arm64_built": true,
+  "arm64_runner_sha256": "ac7095538820b2fc83da179059947ed49cc3371c1389b4df063ce41cd55d0bef",
+  "package_model_files_verified": 33,
+  "checkpoint_iteration": 80000,
+  "initial_motion": "walk1_subject2",
+  "uploaded_to_orin": false,
+  "hardware_tested": false,
+  "limitation": "Synthetic ROS tests verify control/state/communication contracts, not physical balance or real SDK/firmware dynamics. Final-pose physical stability has not been verified."
+}

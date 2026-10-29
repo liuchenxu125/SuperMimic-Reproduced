@@ -1,5 +1,47 @@
 # Casbot02 接触 / 约束容量验证
 
+## 2026-10-28：G1 风格简单碰撞体（当前新训练默认）
+
+新增独立模型 `xml/casbot02_primitives.xml`，将 24 个碰撞 mesh 替换为 29 个简单几何体（28 条胶囊、1 个球），保留原视觉 mesh、27 个关节、质量、惯量、身体坐标系和电机参数。双脚各 7 条细胶囊，保留源脚网格的最低点和近似支撑范围；非脚接触 `condim=1`，脚部 `condim=3`。保留非相邻身体自碰撞，排除 6 组机械相邻身体对。默认准备姿态无虚假自碰撞。它是新的接触近似，不能视为原网格碰撞动力学完全等价；必须新开训练。
+
+新训练默认 `env.collision_model=primitive`。Casbot02 在 >=32 个环境时默认 `48/256`，小环境 viewer 为 `128/256`；原 `mesh` 模型仍用 `128/500`，G1 保持 `35/250`。旧 checkpoint 未记录 collision_model 时，play/benchmark/export 按 mesh 兼容；续训不允许静默切换碰撞模型。
+
+当前 40 条清洗数据，441,093 帧；每个 5 ms 物理子步及 forward 均监测溢出位：
+
+| 验证 | 缓冲 | 结果 |
+|---|---|---|
+| 全参考帧，4096 环境 | 35/200 | 通过；参考帧最大约束 93，含初始化/重置监测峰值 120；单世界最多 24 个接触 |
+| 随机动作，4096 环境 × 1000 控制步 | 48/256 | 通过；最大约束 177；92,456 次重置 |
+| 从头训练，4096 环境 / batch4096 / H32 | 48/256 | 100 次外层更新、290 环境步通过；最大约束 182；参数全部有限；无 OOM |
+| 单环境随机动作 × 1000 步 | 128/256 | 通过；最大约束 100 |
+
+本轮训练使用 TF32、启动时随机化、逐物理步 0/5/10 ms 执行器延迟，以及采集前动作噪声；**未调用额外的 Torch 缓存释放**。上述测试的接触池、约束数与稀疏 Jacobian 容量溢出均为 0。求解器迭代/线搜索上限位仍有出现，与容量溢出区分统计；没有为了通过测试增大 solver 迭代数。
+
+相同 `48/256`、4096 环境、独立 GPU 进程、相同参考帧审计设置下：
+
+| 模型 | 进程显存 | 最大约束 |
+|---|---:|---:|
+| 原 mesh | 4670 MiB | 207 |
+| 简单几何体 | 1660 MiB | 120（全程监测，含初始化） |
+
+审计进程减少 3010 MiB，约 2.94 GiB；这不是整个训练显存的同比例下降。640 维目标的 batch4096 训练结束时进程显存为 20494 MiB；Torch 活跃峰值约 18110 MiB、保留峰值 19468 MiB，仍需给训练激活和桌面等进程预留空间。独立进程审计显存为阶段结束观测值，不是峰值采样。
+
+可重复验证：
+
+```bash
+env -u PYTHONPATH uv run python scripts/validate_sim_capacity.py \
+  --mode audit --collision-model primitive --nconmax 48 --njmax 256 \
+  --num-envs 4096 --out outputs/casbot02_primitive_collision/reference_repeat.json
+
+env -u PYTHONPATH uv run python scripts/validate_sim_capacity.py \
+  --mode train --collision-model primitive \
+  --nconmax 48 --njmax 256 --num-envs 4096 --batch-size 4096 --iterations 100 \
+  --out outputs/casbot02_primitive_collision/proprio_batch4096_repeat.json
+```
+
+原始报告和几何预览见 [本次验证目录](../outputs/casbot02_primitive_collision/)。这是容量、显存及短程数值检查，**不能保证任意姿态和长期训练永不溢出，也不代表新模型已收敛或可部署**。正式长训尚未启动。以下保留旧网格模型的历史检查记录。
+
+
 2026-10-24，RTX 4090 D，当前 40 条清洗 LAFAN1（441,093 帧），4096 个环境。结论：**96/320 通过本次参考帧、动态压力与真实训练短测，可作为当前配置的减小候选。正式训练默认值仍为 128/500，本次只在验证进程内覆盖。**
 
 ## 测试与结果

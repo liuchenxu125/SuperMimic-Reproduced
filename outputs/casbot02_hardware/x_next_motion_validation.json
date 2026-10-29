@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-28",
+  "controls": {
+    "X_release": "advance from loaded motion to next configured clip and play",
+    "B_release": "return and cancel queued motion",
+    "D_pad": "unused"
+  },
+  "transition": "RUN -> RETURN -> PREPARE -> HANDOFF -> RUN; redundant X ignored during transitions",
+  "wrap": "last configured clip -> first configured clip",
+  "console": "brief status changes and immediate X current->next notice; full 1Hz ROS status preserved",
+  "native_ctest": [
+    "joystick release/chord/gap/next-order/wrap passed",
+    "seven-clip actor/reference parity passed"
+  ],
+  "isolated_ros_test": {
+    "case": "joystick",
+    "dry_run": false,
+    "checks": "passed",
+    "commands": 9634
+  },
+  "ros_checks": [
+    "X advances without selection",
+    "D-pad has no effect",
+    "long hold does not repeat",
+    "X during RETURN does not skip clips",
+    "B returns without restart",
+    "final->first wrap",
+    "FAULT not cleared by X",
+    "receipt gap requires neutral",
+    "quiet console with full ROS statuses"
+  ],
+  "native_build": "passed",
+  "arm64_build_and_install": "passed",
+  "uploaded_to_orin": false,
+  "hardware_tested": false,
+  "source_sha256": {
+    "supermimic/runner.cpp": "a9be7ef8bb7765cdc17b0ce853e609140cca543e610af6069132b2952ee5cd21",
+    "supermimic/joystick.hpp": "4fe13d8f150be27ff174e40478ad40ef1b90df1916856ef8c882db759e4fae7b",
+    "config/supermimic_walk1_subject2_proprio.yaml": "798be82d786b7c0a4345a4e17b234a741a00fdb0a05a0578d94a7c5d6ed77d3d"
+  },
+  "arm64_runner_sha256": "4a375662a037214005bd45c26c73281292ccf143d7a416ec56454ca5547e44b9"
+}

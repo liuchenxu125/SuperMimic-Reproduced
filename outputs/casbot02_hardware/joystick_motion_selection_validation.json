@@ -1,0 +1,75 @@
+{
+  "date": "2026-10-28",
+  "purpose": "SDK gamepad motion selection without terminal commands",
+  "sdk": "hl_motion 2.2.37",
+  "joystick_message_source": {
+    "repository": "sh/casbot/motion/crb_ros_msg",
+    "commit": "3228d83f5629727eb2a8440bf9fd46c9f9fcedbf",
+    "path": "msg/JoystickCmdReport.msg"
+  },
+  "topic": "/joystick_events",
+  "message_type": "crb_ros_msg/msg/JoystickCmdReport",
+  "controls": {
+    "axis_x_1_release": "next selection",
+    "axis_x_minus1_release": "previous selection",
+    "X_2_release": "finish active RUN if needed, RETURN then prepare/handoff/play choice",
+    "B_1_release": "finish and return; cancel queued joystick playback"
+  },
+  "motion_order": [
+    "walk1_subject2",
+    "walk1_subject1",
+    "walk2_subject4",
+    "walk3_subject1",
+    "walk4_subject1",
+    "dance1_subject3"
+  ],
+  "initial_auto_start_preserved": true,
+  "verification": {
+    "native_build": "passed",
+    "arm64_build": "passed",
+    "installed_config_matches_source": true,
+    "ctest": [
+      "supermimic_joystick_check passed",
+      "supermimic_motion_bank_check passed"
+    ],
+    "isolated_ros": [
+      {
+        "case": "joystick",
+        "dry_run": false,
+        "checks": "passed",
+        "commands": 8190
+      },
+      {
+        "case": "auto",
+        "dry_run": false,
+        "checks": "passed",
+        "commands": 3178
+      }
+    ],
+    "ros_scope": "ROS_DOMAIN_ID=186, localhost, synthetic mode/sensors/PD feedback and gamepad; real actor; capped 2s test RUNs, no robot",
+    "checks": [
+      "initial held X ignored",
+      "D-pad changes choice only",
+      "SDK modifier chords ignored",
+      "long hold fires only on release",
+      "X starts and switches clips via return/prepare/handoff",
+      "B returns without replay",
+      "same clip can replay",
+      "FAULT is not cleared by gamepad",
+      "receipt gap requires neutral and a new press",
+      "original automatic startup regression passed"
+    ]
+  },
+  "deployed_to_orin": false,
+  "hardware_tested": false,
+  "source_sha256": {
+    "supermimic/runner.cpp": "56063ba1f4366ad59c94d388abe3b8ddef03745d58a540ee2c0242d2b0cafcf5",
+    "supermimic/joystick.hpp": "0ebe3c896c57d0d2b27aa872871908a33a453c13a208bd76f224ce35b668df14",
+    "config/supermimic_walk1_subject2_proprio.yaml": "5d9a5e658576e370fdb233c88f9e585c71eaccf0305e009eacc6959179c9768f",
+    "cmake/crb_ros_msg_compat/msg/JoystickCmdReport.msg": "6bb843321f31e1ffa8e9e9af0030d6712c613a373318213f596bbaf9d4da9710",
+    "make.sh": "f9492b76c39aa221273108e1ea2c37ed911df4938b175f75e3886a7b0f3ee247",
+    "build_in_docker.sh": "7a20bd9cfa86a3548cb1779c60045ddf3501e9932eef45361e96f7f4a1f9989a",
+    "scripts/build_supermimic.sh": "e485563fa71aa52dbdb20a6f9704cac41f66d1c9a4edd74ff1b9ae4b718e1b28"
+  },
+  "arm64_runner_sha256": "e7e85f0817d643c41902c5641e9d8a03e3cfdb67a389962b37d645d659b8ed25"
+}

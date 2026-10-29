@@ -1,0 +1,305 @@
+{
+  "source_sha256": "1cfc8d558969d8335a496b0d400239c6d084108fb4cdeaac7ce8af0204b0bf3f",
+  "removed_collision_meshes": 24,
+  "primitive_geoms": [
+    {
+      "body": "base_link",
+      "name": "pelvis_collision",
+      "class": "primitive_collision",
+      "size": "0.07",
+      "fromto": "0 0 0.025 0 0 0.105"
+    },
+    {
+      "body": "waist_yaw_link",
+      "name": "torso_collision",
+      "class": "primitive_collision",
+      "size": "0.11",
+      "fromto": "0.015 0 0.055 0.015 0 0.255"
+    },
+    {
+      "body": "head_pitch_link",
+      "name": "head_collision",
+      "class": "primitive_collision",
+      "size": "0.095",
+      "type": "sphere",
+      "pos": "0.02 0 0.075"
+    },
+    {
+      "body": "left_leg_pelvic_yaw_link",
+      "name": "left_thigh_collision",
+      "class": "primitive_collision",
+      "size": "0.06",
+      "fromto": "-0.005 0 -0.045 -0.02 0 -0.28"
+    },
+    {
+      "body": "left_leg_knee_pitch_link",
+      "name": "left_shin_collision",
+      "class": "primitive_collision",
+      "size": "0.045",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
+    },
+    {
+      "body": "left_shoulder_yaw_link",
+      "name": "left_upper_arm_collision",
+      "class": "primitive_collision",
+      "size": "0.04",
+      "fromto": "0 0 0.005 0 0 -0.065"
+    },
+    {
+      "body": "left_elbow_pitch_link",
+      "name": "left_elbow_collision",
+      "class": "primitive_collision",
+      "size": "0.035",
+      "fromto": "0 0 0.005 0 0 -0.055"
+    },
+    {
+      "body": "left_wrist_yaw_link",
+      "name": "left_forearm_collision",
+      "class": "primitive_collision",
+      "size": "0.035",
+      "fromto": "0 0 -0.02 0 0 -0.135"
+    },
+    {
+      "body": "left_wrist_roll_link",
+      "name": "left_hand_collision",
+      "class": "primitive_collision",
+      "size": "0.03",
+      "fromto": "0 0 -0.005 0 0 -0.135"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot1_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0744810428 -0.0515188383 -0.0548000026 0.145334217 -0.0515188383 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot2_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0842122185 -0.034396603 -0.0548000026 0.155065392 -0.034396603 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot3_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0900509239 -0.0172743676 -0.0548000026 0.160904098 -0.0172743676 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot4_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0919971591 -0.000152132195 -0.0548000026 0.162850333 -0.000152132195 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot5_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0900509239 0.0169701032 -0.0548000026 0.160904098 0.0169701032 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot6_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0842122185 0.0340923386 -0.0548000026 0.155065392 0.0340923386 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "left_leg_ankle_roll_link",
+      "name": "left_foot7_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0744810428 0.0512145739 -0.0548000026 0.145334217 0.0512145739 -0.0548000026",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_pelvic_yaw_link",
+      "name": "right_thigh_collision",
+      "class": "primitive_collision",
+      "size": "0.06",
+      "fromto": "-0.005 0 -0.045 -0.02 0 -0.28"
+    },
+    {
+      "body": "right_leg_knee_pitch_link",
+      "name": "right_shin_collision",
+      "class": "primitive_collision",
+      "size": "0.045",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
+    },
+    {
+      "body": "right_shoulder_yaw_link",
+      "name": "right_upper_arm_collision",
+      "class": "primitive_collision",
+      "size": "0.04",
+      "fromto": "0 0 0.005 0 0 -0.065"
+    },
+    {
+      "body": "right_elbow_pitch_link",
+      "name": "right_elbow_collision",
+      "class": "primitive_collision",
+      "size": "0.035",
+      "fromto": "0 0 0.005 0 0 -0.055"
+    },
+    {
+      "body": "right_wrist_yaw_link",
+      "name": "right_forearm_collision",
+      "class": "primitive_collision",
+      "size": "0.035",
+      "fromto": "0 0 -0.02 0 0 -0.135"
+    },
+    {
+      "body": "right_wrist_roll_link",
+      "name": "right_hand_collision",
+      "class": "primitive_collision",
+      "size": "0.03",
+      "fromto": "0 0 -0.005 0 0 -0.135"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot1_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0744810328 -0.0512145729 -0.0548000027 0.145334214 -0.0512145729 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot2_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0842122083 -0.034092338 -0.0548000027 0.15506539 -0.034092338 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot3_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0900509137 -0.0169701031 -0.0548000027 0.160904095 -0.0169701031 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot4_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0919971488 0.000152131853 -0.0548000027 0.16285033 0.000152131853 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot5_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0900509137 0.0172743668 -0.0548000027 0.160904095 0.0172743668 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot6_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0842122083 0.0343966017 -0.0548000027 0.15506539 0.0343966017 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    },
+    {
+      "body": "right_leg_ankle_roll_link",
+      "name": "right_foot7_collision",
+      "class": "primitive_collision",
+      "size": "0.01",
+      "fromto": "-0.0744810328 0.0515188366 -0.0548000027 0.145334214 0.0515188366 -0.0548000027",
+      "condim": "3",
+      "priority": "1",
+      "friction": "0.9 0.2 0.2"
+    }
+  ],
+  "foot_mesh_bounds": {
+    "left": {
+      "min": [
+        -0.10199715905143805,
+        -0.061518838338190544,
+        -0.06480000261050424
+      ],
+      "max": [
+        0.1728503330313587,
+        0.06121457394860988,
+        0.012500003806512436
+      ]
+    },
+    "right": {
+      "min": [
+        -0.10199714881519027,
+        -0.061214572898830144,
+        -0.06480000265973461
+      ],
+      "max": [
+        0.17285033026023383,
+        0.06151883660508013,
+        0.012500002695378098
+      ]
+    }
+  },
+  "exclusions": [
+    [
+      "base_link",
+      "left_leg_pelvic_yaw_link"
+    ],
+    [
+      "base_link",
+      "right_leg_pelvic_yaw_link"
+    ],
+    [
+      "left_elbow_pitch_link",
+      "left_wrist_roll_link"
+    ],
+    [
+      "right_elbow_pitch_link",
+      "right_wrist_roll_link"
+    ],
+    [
+      "left_wrist_yaw_link",
+      "left_wrist_roll_link"
+    ],
+    [
+      "right_wrist_yaw_link",
+      "right_wrist_roll_link"
+    ]
+  ],
+  "source": "Hand-sized anatomical capsules following mjlab G1 collision structure; sole dimensions measured from Casbot02 source meshes."
+}

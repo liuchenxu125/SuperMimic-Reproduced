@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-28",
+  "purpose": "Full clip playback and sequential motion selection without restarting the controller",
+  "deployed_to_robot": false,
+  "hardware_tested": false,
+  "interface": {
+    "obs_history": 870,
+    "goal": 640,
+    "actions": 27,
+    "checkpoint_iteration": 48000
+  },
+  "playback": {
+    "preview_seconds": 0.0,
+    "zero_means": "No wall-time clip cap; end at final reference frame",
+    "transition": "finish current -> RETURN/HOLD -> select -> PREPARE -> HANDOFF -> RUN",
+    "fault_checks": "unchanged; no automatic fault clearing",
+    "history": "reset on every new playback; fixed start reference during HANDOFF"
+  },
+  "available_motions": [
+    "walk1_subject2",
+    "walk1_subject1",
+    "walk2_subject4",
+    "walk3_subject1",
+    "walk4_subject1",
+    "dance1_subject3"
+  ],
+  "verification": {
+    "cpp": "All six real reference bundles: switched obs/goal/action agree with a fresh Policy; terminal frame ends once",
+    "ros": [
+      {
+        "case": "motion_switch",
+        "dry_run": false,
+        "checks": "passed",
+        "commands": 6567
+      },
+      {
+        "case": "auto",
+        "dry_run": false,
+        "checks": "passed",
+        "commands": 3195
+      },
+      {
+        "case": "auto",
+        "dry_run": true,
+        "checks": "passed",
+        "commands": 562
+      },
+      {
+        "case": "manual",
+        "dry_run": false,
+        "checks": "passed",
+        "commands": 3732
+      }
+    ],
+    "ros_scope": "Synthetic SDK in isolated local ROS domain; 201/81-frame truncated test fixtures using the real actor/reference prefixes; not physical closed-loop verification",
+    "negative_checks": [
+      "reject mismatched motor contract",
+      "reject actual actor bytes mismatch",
+      "reject negative preview_seconds"
+    ],
+    "positive_preview_over_30_seconds": "120-second configuration accepted at startup; no long playback performed",
+    "native_build": "passed",
+    "arm64_build": "passed",
+    "python_ruff": "passed"
+  },
+  "source_sha256": {
+    "supermimic/core.hpp": "866737f4a45a40efc3aa0ce26dbb02f28a9d3651ba28e2052746abfd249137dc",
+    "supermimic/core.cpp": "2755c6ef4f78b97e2370ede2cb0b0c08de2a34c7ac28220a1d4127cfe2dea3c5",
+    "supermimic/runner.cpp": "e897004548f1fde1abdefe5a2461021bc5c72d3a1be62875cba1c1895eb7ffaa",
+    "scripts/supermimic_motion.py": "af371f9f326bb4a4e75c680d98c1d83835005f1435fea6ba343ebd67bd8e92a8",
+    "config/supermimic_walk1_subject2_proprio.yaml": "0dd06ed986bf1e059466e217dc9e1ffad55882ab795ccb0c008089e2ddcbfb73"
+  },
+  "arm64_runner_sha256": "8547dced1d48d8c8a95739dccdd435b55a71ca85e70f393c6a579af92b3be0bf",
+  "installed_config_and_helper_match_source": true,
+  "morphmimic_sources": [
+    "https://github.com/lzyang2000/morphmimic/blob/main/deploy/sim2sim/policy_node.py",
+    "https://github.com/lzyang2000/morphmimic/blob/main/deploy/hardware/g1_node.py"
+  ]
+}

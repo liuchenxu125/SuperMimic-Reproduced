@@ -21,7 +21,8 @@ def test_trim_clip_and_rebuild_dependent_arrays():
     frames, dt = 24, 0.02
     q = np.tile(model.qpos0[7:], (frames, 1))
     elbow = [model.joint(i).name for i in range(1, model.njnt)].index("upper_left_4_joint")
-    q[:, elbow] = np.linspace(-2.26, -1.5, frames)
+    elbow_lower = model.jnt_range[model.joint('upper_left_4_joint').id, 0]
+    q[:, elbow] = np.linspace(elbow_lower - .65, elbow_lower + .5, frames)
     root = np.tile([0.0, 0.0, 0.9], (frames, 1))
     root[:, 0] = np.arange(frames) * 0.002
     root[0, 0] = 10.0  # Bad startup sample must not leak into repaired derivatives.

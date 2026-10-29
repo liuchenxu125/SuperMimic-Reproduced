@@ -1,0 +1,166 @@
+{
+  "results": [
+    {
+      "source": "walk1_subject2",
+      "destination": "dance1_subject2",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 6.67572021484375e-06,
+        "height_error_m": 0.1164085143601542,
+        "tilt_error": 0.3597838912098864,
+        "joint_rmse_rad": 1.3067481146388076,
+        "target_step_rad": 0.5130313634872437
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "dance1_subject2",
+      "destination": "walk1_subject1",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 8.58306884765625e-06,
+        "height_error_m": 0.0372238630645525,
+        "tilt_error": 0.05296869869193188,
+        "joint_rmse_rad": 0.43549106427128437,
+        "target_step_rad": 0.31007713079452515
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "walk1_subject1",
+      "destination": "walk2_subject4",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 8.58306884765625e-06,
+        "height_error_m": 0.10466018619217343,
+        "tilt_error": 0.25199778486789903,
+        "joint_rmse_rad": 1.1588600133209366,
+        "target_step_rad": 0.5387524962425232
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "walk2_subject4",
+      "destination": "walk3_subject1",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 8.58306884765625e-06,
+        "height_error_m": 0.03625655192416677,
+        "tilt_error": 0.0284116051809018,
+        "joint_rmse_rad": 0.3261678570745151,
+        "target_step_rad": 0.2818681001663208
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "walk3_subject1",
+      "destination": "walk4_subject1",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 9.5367431640625e-06,
+        "height_error_m": 0.034794595704206066,
+        "tilt_error": 0.04498698439627791,
+        "joint_rmse_rad": 0.7094822379617859,
+        "target_step_rad": 0.2207251489162445
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "walk4_subject1",
+      "destination": "dance1_subject3",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 1.1444091796875e-05,
+        "height_error_m": 0.06788638134198222,
+        "tilt_error": 0.2518577459503746,
+        "joint_rmse_rad": 0.44172406961467525,
+        "target_step_rad": 0.2551835775375366
+      },
+      "root_position_supplied": false
+    },
+    {
+      "source": "dance1_subject3",
+      "destination": "walk1_subject2",
+      "explicit_pd": true,
+      "checkpoint_sha256": "d21537a7d965b807d1816d74dc70c3b38461b96b1faa7d68fe922a2695aa17d1",
+      "start_frame": 0,
+      "before_seconds": 5.0,
+      "switch_seconds": 0.8,
+      "after_seconds": 10.0,
+      "completed": true,
+      "failed": null,
+      "simulated_seconds": 15.8,
+      "bridge_updates": 40,
+      "maxima": {
+        "observation_error": 0.0,
+        "actor_error": 9.5367431640625e-06,
+        "height_error_m": 0.0715282549309244,
+        "tilt_error": 0.2539057821125391,
+        "joint_rmse_rad": 0.39166123025671684,
+        "target_step_rad": 0.35446813702583313
+      },
+      "root_position_supplied": false
+    }
+  ],
+  "all_completed": true
+}

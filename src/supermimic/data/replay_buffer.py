@@ -18,7 +18,7 @@ from supermimic.robots.layout import RobotLayout
 @dataclass
 class WindowBatch:
     states: torch.Tensor  # (k+1, B, 71)
-    a_clean: torch.Tensor  # (k, B, 29)
+    a_clean: torch.Tensor  # (k, B, 29); legacy name: env input (already noisy in collection mode)
     a_exec: torch.Tensor  # (k, B, 29)
     xi: torch.Tensor  # (B, 33), constant within an episode
     done: torch.Tensor  # (k, B), physical termination, excluding timeouts
@@ -32,7 +32,7 @@ class StartBatch:
     frame: torch.Tensor
     prev_action: torch.Tensor
     hist_states: torch.Tensor  # (hist, B, 71), oldest first
-    hist_actions: torch.Tensor  # previous clean action at each historical state
+    hist_actions: torch.Tensor  # previous env-input action at each historical state
 
 
 class ReplayBuffer:

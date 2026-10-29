@@ -37,7 +37,14 @@ def test_native_observation_and_history_match_training():
     np.testing.assert_allclose(h.packed(), repeated)
 
 
-@pytest.fixture(scope="module", params=[True, False], ids=["anchor", "proprio"])
+@pytest.fixture(scope="module", params=[(True, False, False, "mesh"),
+                                        (False, False, False, "mesh"),
+                                        (False, True, False, "mesh"),
+                                        (False, False, True, "mesh"),
+                                        (False, False, "step", "mesh"),
+                                        (False, False, "step", "primitive")],
+                ids=["anchor", "proprio", "orientation", "delayed-proprio",
+                     "step-delayed-proprio", "primitive"])
 def bundle(tmp_path_factory, request):
     from mjlab.entity import Entity
 
@@ -76,16 +83,21 @@ def bundle(tmp_path_factory, request):
         body_lin_vel_w=np.tile([0.1, 0, 0], (20, m.nbody - 1, 1)).astype(np.float32),
         body_ang_vel_w=np.zeros((20, m.nbody - 1, 3), np.float32),
     )
-    anchor = request.param
+    anchor, anchor_ori, delay, collision = request.param
     pc = PolicyCfg(
-        num_joints=27, goal_dim=649 if anchor else 640, encoder_hidden=(32,), decoder_hidden=(32,)
+        num_joints=27, goal_dim=649 if anchor else 646 if anchor_ori else 640,
+        encoder_hidden=(32,), decoder_hidden=(32,)
     )
     torch.manual_seed(17)
     p = Policy(pc)
     cfg = {
         "robot": "casbot02",
         "policy": asdict(pc),
-        "env": {"future_frames": 10, "anchor_obs": anchor},
+        "env": {"future_frames": 10, "anchor_obs": anchor,
+                **({"actuator_delay": True} if delay else {}),
+                **({"actuator_delay_mode": "step"} if delay == "step" else {}),
+                **({"collision_model": "primitive"} if collision == "primitive" else {}),
+                **({"anchor_ori_obs": True} if anchor_ori else {})},
         "world_model": {"height_threshold": 0.25, "tilt_threshold": 0.8},
     }
     ck = root / "checkpoint.pt"
@@ -147,6 +159,12 @@ def test_export_actor_and_motor_order(bundle):
     path, policy, meta, _ = bundle
     sim = Sim2Sim(path)
     sim.reset("small")
+    assert sim.command_delay.max_lag == (2 if meta["actuator_delay"] else 0)
+    assert sim.command_delay.mode == meta["actuator_delay_mode"]
+    source = torch.load(path.parent / "checkpoint.pt", weights_only=False)["config"]["env"]
+    assert sim.command_delay.mode == source.get("actuator_delay_mode", "episode")
+    assert meta["collision_model"] == source.get("collision_model", "mesh")
+    assert len(meta["foot_geom_names"]) == (14 if meta["collision_model"] == "primitive" else 2)
     assert sim.target_frame == 1
     assert meta["joint_names"][12] == "waist_yaw_joint"
     assert sim.actuator_to_joint[-1] == 12  # XML actuator order is different.
@@ -154,6 +172,7 @@ def test_export_actor_and_motor_order(bundle):
     assert sim.decimation == 4
     for f in [0, 1, 4]:
         obs, goal = sim.inputs()
+        assert obs.shape == (870,) and goal.shape == (meta["goal_dim"],)
         with torch.inference_mode():
             expected = policy(torch.from_numpy(obs[None]), torch.from_numpy(goal[None]))
             actual = sim.actor(torch.from_numpy(obs[None]), torch.from_numpy(goal[None]))
@@ -166,6 +185,8 @@ def test_export_actor_and_motor_order(bundle):
         p = meta["motors"][joint]
         assert target[joint] == pytest.approx(p["q0"] + p["scale"] * a[joint])
         assert sim.model.actuator_gainprm[actuator, 0] == p["kp"]
+        np.testing.assert_array_equal(sim.model.actuator_biasprm[actuator, :3], [0, -p["kp"], -p["kd"]])
+        np.testing.assert_array_equal(sim.model.actuator_forcerange[actuator], [-p["effort_limit_nm"], p["effort_limit_nm"]])
     sim.completed = True
     sim.reset("small")
     assert not sim.completed
@@ -212,6 +233,26 @@ def test_proprio_goal_ignores_unavailable_root_pose(bundle):
     unavailable = sim.reference.goal(1, np.full(3, np.nan), np.full(4, np.nan), False)
     np.testing.assert_array_equal(goal, unavailable)
     assert goal.shape == (640,)
+
+
+def test_orientation_goal_preserves_reference_and_needs_no_position(bundle):
+    path, _, _, _ = bundle
+    sim = Sim2Sim(path)
+    sim.reset("small")
+    ref = sim.reference
+    frame = 4
+    quat = np.array([np.cos(0.3), 0, 0, np.sin(0.3)])
+    expected = (rotation(quat).T @ rotation(ref.root_quat[frame]))[:, :2].reshape(-1)
+    goal = ref.goal(frame, None, quat, False, True)
+    unavailable = ref.goal(frame, np.full(3, np.nan), quat, False, True)
+    assert goal.shape == (646,)
+    np.testing.assert_array_equal(goal[:640], ref.goal(frame, None, None, False))
+    np.testing.assert_array_equal(goal, unavailable)
+    np.testing.assert_allclose(goal[640:], expected, atol=1e-7)
+    # Full anchor mode already includes orientation: enabling both must not duplicate it.
+    full = ref.goal(frame, np.zeros(3), quat, True, True)
+    assert full.shape == (649,)
+    np.testing.assert_array_equal(full[-6:], goal[-6:])
 
 
 def test_reference_overlay_geometry_without_gl_context(bundle):

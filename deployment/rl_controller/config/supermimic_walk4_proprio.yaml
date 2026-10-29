@@ -1,0 +1,30 @@
+# SDK 2.2.37 position + integer Kp/Kd interface (29 commanded joints including head).
+# Real launch checks this file AND live debug gain feedback; SDK must be restarted after changing it.
+sdk_config_file: /workspace/hl_motion/hl_config/motion_params.yaml
+mode_service: /get_robot_mode
+# Casbot02 proprio policy: 870 history + 640 reference -> 27 actions, 50 Hz.
+# casbot02_lafan1_proprio_codex_fixed / ckpt_0280000.pt, walk4_subject1.
+# Reference height/velocity are offline targets; no measured root pose is used.
+bundle: model/supermimic_walk4_proprio
+require_anchor_obs: false
+start_frame: 0
+preview_seconds: 10.0
+prepare_seconds: 6.0
+max_sensor_age: 0.10
+max_sensor_skew: 0.04
+joint_start_tolerance: 0.15
+# 50 Hz is the nominal cadence, not a single-call fault threshold.
+max_inference_seconds: 0.04
+late_inference_seconds: 0.025
+max_consecutive_late_updates: 20
+max_target_age: 0.06
+base_frame: base_link
+imu_frame: base_link
+imu_to_base_quat_wxyz: [1.0, 0.0, 0.0, 0.0]
+joint_topic: /motion/debug/joint_state
+standard_joint_topic: /motion/joint_state
+imu_topic: /motion/imu
+mode_topic: /motion/current_mode
+command_topic: /motion/debug/joint_cmd
+# No pose_topic: gravity comes from the measured IMU orientation.
+# No root height/position guard: these quantities are not measured.

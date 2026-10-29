@@ -108,6 +108,7 @@ def test_resume_rejection_preserves_existing_run_before_simulator_init(tmp_path)
 def test_precision_is_explicit_without_autocast(monkeypatch):
     monkeypatch.delenv("NVIDIA_TF32_OVERRIDE", raising=False)
     monkeypatch.delenv("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE", raising=False)
+    configure_precision(False)  # Recover precision state left by mjlab script imports.
     original = torch.get_float32_matmul_precision()
     cudnn = torch.backends.cudnn.allow_tf32
     try:
@@ -131,6 +132,7 @@ def test_environment_setup_respects_requested_precision(monkeypatch, tf32):
 
     monkeypatch.delenv("NVIDIA_TF32_OVERRIDE", raising=False)
     monkeypatch.delenv("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE", raising=False)
+    configure_precision(False)
     original = torch.get_float32_matmul_precision()
     cudnn = torch.backends.cudnn.allow_tf32
     benchmark = torch.backends.cudnn.benchmark
@@ -149,6 +151,20 @@ def test_environment_setup_respects_requested_precision(monkeypatch, tf32):
         torch.backends.cudnn.allow_tf32 = cudnn
         torch.backends.cudnn.benchmark = benchmark
         torch.backends.cudnn.deterministic = deterministic
+
+
+@pytest.mark.parametrize("tf32", [False, True])
+def test_precision_recovers_from_mjlab_backend_overrides(monkeypatch, tf32):
+    from mjlab.utils.torch import configure_torch_backends
+
+    monkeypatch.delenv("NVIDIA_TF32_OVERRIDE", raising=False)
+    monkeypatch.delenv("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE", raising=False)
+    configure_torch_backends(allow_tf32=not tf32)
+    info = configure_precision(tf32)
+    assert info["float32_matmul_precision"] == ("high" if tf32 else "highest")
+    assert info["cuda_matmul_allow_tf32"] is tf32
+    assert info["cudnn_allow_tf32"] is tf32
+    assert not info["autocast"]
 
 
 def test_actor_uses_time_sum_before_gradient_clipping(monkeypatch):

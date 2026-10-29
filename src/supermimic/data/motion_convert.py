@@ -2,12 +2,14 @@
 
 Reimplemented from the repository's conversion tests and the installed mjlab
 MotionLoader conventions. This is not a recovery of the missing upstream file.
-CSV quaternions are xyzw; output quaternions are wxyz. Positions are metres,
-joint angles are radians, and body velocities refer to link frame origins.
+Headerless LAFAN1 uses xyz metres, xyzw quaternions and joint radians.
+BONES-SEED headers use xyz centimetres, xyz Euler degrees and joint degrees.
+Output quaternions are wxyz, and body velocities refer to link frame origins.
 """
 
 from __future__ import annotations
 
+import csv
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -73,9 +75,61 @@ class BodyMotion:
     body_names: tuple[str, ...]
 
 
-def load_csv(path: str | Path, num_joints: int = 29) -> np.ndarray:
-    """Read a headerless CSV: xyz, xyzw, then num_joints hinge angles."""
-    raw = np.loadtxt(Path(path).expanduser(), delimiter=",", ndmin=2)
+def csv_format(path: str | Path) -> str:
+    """Detect the named BONES-SEED schema, including UTF-8 BOM/whitespace."""
+    with Path(path).expanduser().open(encoding="utf-8-sig", newline="") as stream:
+        first = next(csv.reader(stream), [])
+    fields = [field.strip() for field in first]
+    return "bones" if fields[:2] == ["Frame", "root_translateX"] else "lafan1"
+
+
+def load_csv(
+    path: str | Path, num_joints: int = 29, *, joint_names: tuple[str, ...] | None = None
+) -> np.ndarray:
+    """Return xyz metres, xyzw quaternion and joint radians in model order.
+
+    BONES columns must match the model's order exactly; never silently reorder
+    or interpret Euler degrees as LAFAN1 quaternions/radians.
+    """
+    path = Path(path).expanduser()
+    if csv_format(path) == "bones":
+        names = G1_JOINT_NAMES if joint_names is None and num_joints == 29 else joint_names
+        if names is None or len(names) != num_joints:
+            raise ValueError("Named BONES CSVs require the model joint names")
+        with path.open(encoding="utf-8-sig", newline="") as stream:
+            reader = csv.reader(stream)
+            header = [field.strip() for field in next(reader)]
+            if len(set(header)) != len(header):
+                raise ValueError(f"{path}: duplicate CSV column names")
+            expected = [f"{name}_dof" for name in names]
+            if [name for name in header if name.endswith("_joint_dof")] != expected:
+                raise ValueError(f"{path}: BONES joint columns differ from model joint order")
+            columns = [f"root_translate{axis}" for axis in "XYZ"]
+            columns += [f"root_rotate{axis}" for axis in "XYZ"]
+            try:
+                indices = [header.index(name) for name in columns + expected]
+            except ValueError as exc:
+                raise ValueError(f"{path}: missing BONES root or joint columns") from exc
+            rows = []
+            for line, fields in enumerate(reader, 2):
+                if not fields or all(not field.strip() for field in fields):
+                    continue
+                if len(fields) != len(header):
+                    raise ValueError(f"{path}:{line}: CSV row width differs from header")
+                try:
+                    rows.append([float(fields[index]) for index in indices])
+                except ValueError as exc:
+                    raise ValueError(f"{path}:{line}: nonnumeric BONES motion") from exc
+        values = np.asarray(rows, dtype=np.float64).reshape(-1, 6 + num_joints)
+        if len(values) < 2 or not np.isfinite(values).all():
+            raise ValueError(f"{path}: need at least two finite motion frames")
+        raw = np.concatenate(
+            [values[:, :3] / 100.0,
+             Rotation.from_euler("xyz", values[:, 3:6], degrees=True).as_quat(),
+             np.deg2rad(values[:, 6:])], axis=1
+        )
+    else:
+        raw = np.loadtxt(path, delimiter=",", ndmin=2, encoding="utf-8-sig")
     _validate_motion(raw, num_joints)
     return raw
 
@@ -186,7 +240,12 @@ def convert_csv(
 
     profile = get_robot(robot)
     model = profile.model() if model is None else model
-    motion = resample_motion(load_csv(source, profile.num_joints), input_fps, output_fps)
+    names = tuple(model.joint(i).name for i in range(1, model.njnt))
+    if (model.nq, model.nv) != (7 + profile.num_joints, 6 + profile.num_joints):
+        raise ValueError("Conversion model dimensions differ from selected robot")
+    motion = resample_motion(
+        load_csv(source, profile.num_joints, joint_names=names), input_fps, output_fps
+    )
     bodies = forward_kinematics(model, motion)
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -120,6 +120,7 @@ def factory(args):
         configure_precision(tf32)
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = False
+        env_args.collision_model = args.collision_model
         cfg = make_env_cfg(env_args)
         cfg.sim.nconmax, cfg.sim.njmax = args.nconmax, args.njmax
         return ManagerBasedRlEnv(cfg, device=device)
@@ -180,6 +181,8 @@ def main():
     p.add_argument("--steps", type=int, default=1000)
     p.add_argument("--iterations", type=int, default=100)
     p.add_argument("--batch-size", type=int, default=2048)
+    p.add_argument("--collision-model", choices=["mesh", "primitive"], default="mesh")
+    p.add_argument("--anchor-ori-obs", action="store_true")
     p.add_argument(
         "--trim-torch-cache",
         action="store_true",
@@ -216,6 +219,8 @@ def main():
             cfg = TrainConfig(robot="casbot02", run_name=args.out.stem, seed=args.seed)
             cfg.data.npz_dir = args.npz_dir
             cfg.env.num_envs = args.num_envs
+            cfg.env.collision_model = args.collision_model
+            cfg.env.anchor_ori_obs = args.anchor_ori_obs
             cfg.policy_trainer.batch_size = args.batch_size
             cfg.schedule.total_iterations = args.iterations
             cfg.schedule.checkpoint_interval = args.iterations
@@ -234,7 +239,9 @@ def main():
                     obs_noise=training,
                     reset_noise=training,
                     domain_randomization=training,
-                    action_noise_std=0.1 if training else 0.0,
+                    action_noise_std=0.0,  # rollout noise is injected before env.step
+                    actuator_delay=training,
+                    actuator_delay_mode="step",
                     record_transitions=False,
                     seed=args.seed,
                 )
@@ -302,6 +309,7 @@ def main():
                                 else torch.zeros(env.num_envs, 27, device=env.device)
                             )
                         )
+                        action = action + 0.1 * torch.randn_like(action)
                         obs, reward, term, tout, _ = env.step(action)
                     if not torch.isfinite(reward).all() or not torch.isfinite(obs["policy"]).all():
                         raise FloatingPointError("Nonfinite rollout observation/reward")

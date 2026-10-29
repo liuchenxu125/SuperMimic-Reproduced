@@ -1,0 +1,1026 @@
+{
+  "source_dir": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv",
+  "target_dir": "/home/casbot/Desktop/SuperMimic-Reproduced/data/npz/lafan1_casbot02_codex",
+  "input_fps": 30,
+  "output_fps": 50,
+  "robot": "casbot02",
+  "joint_names": [
+    "leg_l1_joint",
+    "leg_l2_joint",
+    "leg_l3_joint",
+    "leg_l4_joint",
+    "leg_l5_joint",
+    "leg_l6_joint",
+    "leg_r1_joint",
+    "leg_r2_joint",
+    "leg_r3_joint",
+    "leg_r4_joint",
+    "leg_r5_joint",
+    "leg_r6_joint",
+    "waist_yaw_joint",
+    "upper_left_1_joint",
+    "upper_left_2_joint",
+    "upper_left_3_joint",
+    "upper_left_4_joint",
+    "upper_left_5_joint",
+    "upper_left_6_joint",
+    "upper_left_7_joint",
+    "upper_right_1_joint",
+    "upper_right_2_joint",
+    "upper_right_3_joint",
+    "upper_right_4_joint",
+    "upper_right_5_joint",
+    "upper_right_6_joint",
+    "upper_right_7_joint"
+  ],
+  "xml_path": "/home/casbot/Desktop/SuperMimic-Reproduced/src/supermimic/robots/assets/casbot02/xml/casbot02.xml",
+  "xml_sha256": "1cfc8d558969d8335a496b0d400239c6d084108fb4cdeaac7ce8af0204b0bf3f",
+  "source_clips": [
+    {
+      "name": "dance1_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject1.csv",
+      "source_sha256": "3d8d76e2722d6c05bfd7788598eb40d3025b0b5e5c2dbf44fd23b53eff0a119d",
+      "source_frames": 3945,
+      "output_frames": 6574,
+      "raw_limit_statistics": {
+        "frames": 3945,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 6574,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.566014481596994e-11
+    },
+    {
+      "name": "dance1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject2.csv",
+      "source_sha256": "3ef95f8ef524818dbca9a9b7375abf4990e9912c5a23c22c379ea048dbb7c4c2",
+      "source_frames": 3945,
+      "output_frames": 6574,
+      "raw_limit_statistics": {
+        "frames": 3945,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 6574,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.179412619962022e-11
+    },
+    {
+      "name": "dance1_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject3.csv",
+      "source_sha256": "e2fd901f25048e2fba8ae54b81c382f0be6b62c507eb6e03fac5de65100c301e",
+      "source_frames": 3945,
+      "output_frames": 6574,
+      "raw_limit_statistics": {
+        "frames": 3945,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 6574,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.38031857849819e-11
+    },
+    {
+      "name": "dance2_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject1.csv",
+      "source_sha256": "607572daac17e370651eca3f6ebe41b7e1f5a569a539ec04b9593f4897173a8d",
+      "source_frames": 6771,
+      "output_frames": 11284,
+      "raw_limit_statistics": {
+        "frames": 6771,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11284,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.126854744716638e-11
+    },
+    {
+      "name": "dance2_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject2.csv",
+      "source_sha256": "c282e84d45c01a2af58166fc28f507ad3187c66ad71bde1e6efbf24f1add9c42",
+      "source_frames": 6771,
+      "output_frames": 11284,
+      "raw_limit_statistics": {
+        "frames": 6771,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11284,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 4.440892098500626e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.6915807056821e-11
+    },
+    {
+      "name": "dance2_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject3.csv",
+      "source_sha256": "4479702e5ed6e1be2409d9c7d14b87a0957ae6f5601d1a01fbd87304e0c2dd1f",
+      "source_frames": 6771,
+      "output_frames": 11284,
+      "raw_limit_statistics": {
+        "frames": 6771,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11284,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.358269631969506e-11
+    },
+    {
+      "name": "dance2_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject4.csv",
+      "source_sha256": "422b0dbbe7dddf9f5313811da286c42e44725e01c19f62f170ae845c0374458d",
+      "source_frames": 6771,
+      "output_frames": 11284,
+      "raw_limit_statistics": {
+        "frames": 6771,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11284,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.413625269236945e-11
+    },
+    {
+      "name": "dance2_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject5.csv",
+      "source_sha256": "c5b8b848e224fdbf6aefa085093d9e48ef9e6fb919daacf0de0135926ac089b1",
+      "source_frames": 6771,
+      "output_frames": 11284,
+      "raw_limit_statistics": {
+        "frames": 6771,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11284,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 4.440892098500626e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.334244322976247e-11
+    },
+    {
+      "name": "fallAndGetUp1_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject1.csv",
+      "source_sha256": "9a8deab347e0abd67c84ff62d87865935be3d91ff1c338d66c9715bf4fa52dc4",
+      "source_frames": 5046,
+      "output_frames": 8409,
+      "raw_limit_statistics": {
+        "frames": 5046,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8409,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.090816905337306e-11
+    },
+    {
+      "name": "fallAndGetUp1_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject4.csv",
+      "source_sha256": "46e56d10b5d048c63c1c48d6ef92b46387f801a263d6dc99553c1655e9ec5836",
+      "source_frames": 5047,
+      "output_frames": 8411,
+      "raw_limit_statistics": {
+        "frames": 5047,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8411,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.004896745461565e-11
+    },
+    {
+      "name": "fallAndGetUp1_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject5.csv",
+      "source_sha256": "7a7f62fc97be7fa639935f8614294008eb5114c9547f0020861a3f2c1d2247f6",
+      "source_frames": 5047,
+      "output_frames": 8411,
+      "raw_limit_statistics": {
+        "frames": 5047,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8411,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.866785001198195e-11
+    },
+    {
+      "name": "fallAndGetUp2_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp2_subject2.csv",
+      "source_sha256": "cb673315bca324b51431bb1c996c35e0b58c9ab9aa3fda779424f5eeebb5b99e",
+      "source_frames": 4918,
+      "output_frames": 8196,
+      "raw_limit_statistics": {
+        "frames": 4918,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8196,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.421385810919446e-11
+    },
+    {
+      "name": "fallAndGetUp2_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp2_subject3.csv",
+      "source_sha256": "4274e411a2a558463b1d30ea0576b5187432ab48bcee687866ef49946576ea97",
+      "source_frames": 4918,
+      "output_frames": 8196,
+      "raw_limit_statistics": {
+        "frames": 4918,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8196,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.074807489322211e-11
+    },
+    {
+      "name": "fallAndGetUp3_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp3_subject1.csv",
+      "source_sha256": "4557992b88e9df4ae6c3edab7469c6dc8363dff6041898659049ed816681ad51",
+      "source_frames": 3066,
+      "output_frames": 5109,
+      "raw_limit_statistics": {
+        "frames": 3066,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 5109,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.345368757682991e-11
+    },
+    {
+      "name": "fight1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject2.csv",
+      "source_sha256": "31e15257a812eefb172cf72a28339f6293734b8ea40c6cddeefa27bb08816b15",
+      "source_frames": 7347,
+      "output_frames": 12244,
+      "raw_limit_statistics": {
+        "frames": 7347,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12244,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.14323053432986e-11
+    },
+    {
+      "name": "fight1_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject3.csv",
+      "source_sha256": "e612db16114c7a416bec18e4bcd4a27f81705f50fcca9e6792ced39e8fc40a2f",
+      "source_frames": 7347,
+      "output_frames": 12244,
+      "raw_limit_statistics": {
+        "frames": 7347,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12244,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.08926259310283e-11
+    },
+    {
+      "name": "fight1_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject5.csv",
+      "source_sha256": "710f80a76a4e1b335ac45af5bf163792ce4aacdd54f320ebac28c4f72fa19813",
+      "source_frames": 7347,
+      "output_frames": 12244,
+      "raw_limit_statistics": {
+        "frames": 7347,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12244,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.99291743902586e-11
+    },
+    {
+      "name": "fightAndSports1_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fightAndSports1_subject1.csv",
+      "source_sha256": "240c1daa61f699e8baa3d9299250b32c3b112204a09a861455e87450da270307",
+      "source_frames": 7355,
+      "output_frames": 12257,
+      "raw_limit_statistics": {
+        "frames": 7355,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12257,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 4.440892098500626e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.560041481724511e-11
+    },
+    {
+      "name": "fightAndSports1_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fightAndSports1_subject4.csv",
+      "source_sha256": "a845bc56f361da360526032b740fced50e3bd0fa4a6c303a1d2eb856a1dc795f",
+      "source_frames": 7355,
+      "output_frames": 12257,
+      "raw_limit_statistics": {
+        "frames": 7355,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12257,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.879907837349265e-11
+    },
+    {
+      "name": "jumps1_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject1.csv",
+      "source_sha256": "6b5d68ad9ccb0fca6abd054bcd12a3c07bfade242a2a0e338321f1c4b7b5f043",
+      "source_frames": 7334,
+      "output_frames": 12222,
+      "raw_limit_statistics": {
+        "frames": 7334,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12222,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.756661979385626e-11
+    },
+    {
+      "name": "jumps1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject2.csv",
+      "source_sha256": "5d1a18f22e5ec1a04807b59b65180f29c48e195994711ea8c90d8ac0e105031a",
+      "source_frames": 7334,
+      "output_frames": 12222,
+      "raw_limit_statistics": {
+        "frames": 7334,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12222,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.679912261693289e-11
+    },
+    {
+      "name": "jumps1_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject5.csv",
+      "source_sha256": "7ed34e7111dbfd811db6eb4b58f6e499fffe08fd180b91422d0cdf568e815d1f",
+      "source_frames": 7334,
+      "output_frames": 12222,
+      "raw_limit_statistics": {
+        "frames": 7334,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12222,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.7755575615628914e-17,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.6138317872676e-11
+    },
+    {
+      "name": "run1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run1_subject2.csv",
+      "source_sha256": "0c6d8b416108617bad290c224a443f310471106a20222fac0e99e5e8226628d7",
+      "source_frames": 7135,
+      "output_frames": 11891,
+      "raw_limit_statistics": {
+        "frames": 7135,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11891,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.936673540598349e-11
+    },
+    {
+      "name": "run1_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run1_subject5.csv",
+      "source_sha256": "fdc9bb02fe31649b8474a579d9d09ea50a70967439892b99dec8bc7498f00150",
+      "source_frames": 7135,
+      "output_frames": 11891,
+      "raw_limit_statistics": {
+        "frames": 7135,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11891,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.53945794684796e-11
+    },
+    {
+      "name": "run2_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run2_subject1.csv",
+      "source_sha256": "91bca358375e740cf8a95e1adcb95793f39f8245611b80468ad702125c2d9266",
+      "source_frames": 7345,
+      "output_frames": 12241,
+      "raw_limit_statistics": {
+        "frames": 7345,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12241,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.147105212685801e-11
+    },
+    {
+      "name": "run2_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run2_subject4.csv",
+      "source_sha256": "af3a7e52ccaf88a104cd77eb28b2c15b5cfcc95fed7044b4feb1fdef8c66a38b",
+      "source_frames": 7345,
+      "output_frames": 12241,
+      "raw_limit_statistics": {
+        "frames": 7345,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12241,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.192369005399769e-11
+    },
+    {
+      "name": "sprint1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/sprint1_subject2.csv",
+      "source_sha256": "e976c7c0fa138bcaa56ccfc7eb2e50bcb2c619be02bf2018caaeb0c4f1ea3cb7",
+      "source_frames": 8194,
+      "output_frames": 13656,
+      "raw_limit_statistics": {
+        "frames": 8194,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 13656,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.81230644012021e-11
+    },
+    {
+      "name": "sprint1_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/sprint1_subject4.csv",
+      "source_sha256": "0c7aedf7b4801d8425efab05e02ef81f742066d1cc42c05e791f8232d334e550",
+      "source_frames": 8194,
+      "output_frames": 13656,
+      "raw_limit_statistics": {
+        "frames": 8194,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 13656,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.377076810006656e-11
+    },
+    {
+      "name": "walk1_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject1.csv",
+      "source_sha256": "c61832aa7f4869012e419b22d1913a69e0dfbfa2690c6ef82da797304a060ae5",
+      "source_frames": 7840,
+      "output_frames": 13066,
+      "raw_limit_statistics": {
+        "frames": 7840,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 13066,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 4.440892098500626e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.324985062950873e-11
+    },
+    {
+      "name": "walk1_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject2.csv",
+      "source_sha256": "60028818a829d5b159ab50bc99d2bb4218c3f7960ad00a05dc8e3906250019cc",
+      "source_frames": 7840,
+      "output_frames": 13066,
+      "raw_limit_statistics": {
+        "frames": 7840,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 13066,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.7755575615628914e-17,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.035227955753953e-11
+    },
+    {
+      "name": "walk1_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject5.csv",
+      "source_sha256": "b5445906e8dd70d0fb92adb38709f83fc094dd064adcab6092318d6268198f79",
+      "source_frames": 7840,
+      "output_frames": 13066,
+      "raw_limit_statistics": {
+        "frames": 7840,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 13066,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 5.551115123125783e-17,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.151812475569841e-11
+    },
+    {
+      "name": "walk2_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject1.csv",
+      "source_sha256": "4e4e3fb484f2a7e220c30fd1d6e44d85940479386b2c49a5b0c75051c1db6f0a",
+      "source_frames": 7146,
+      "output_frames": 11909,
+      "raw_limit_statistics": {
+        "frames": 7146,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11909,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.090594860732381e-11
+    },
+    {
+      "name": "walk2_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject3.csv",
+      "source_sha256": "1f6c753e1017197056cedf7b1a456817e2f99b599a4f1b605f4766a19c3590ac",
+      "source_frames": 7146,
+      "output_frames": 11909,
+      "raw_limit_statistics": {
+        "frames": 7146,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11909,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.382095018077962e-11
+    },
+    {
+      "name": "walk2_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject4.csv",
+      "source_sha256": "ad2df4b6c933449d0279255521c16fe1fa7a8957eeaaa02768107c2f5ba99e3f",
+      "source_frames": 7146,
+      "output_frames": 11909,
+      "raw_limit_statistics": {
+        "frames": 7146,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 11909,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.513112354473606e-11
+    },
+    {
+      "name": "walk3_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject1.csv",
+      "source_sha256": "205f8e8ef29beb60a2fed975d234043375cc43c40e142ebf42166cb423ca5bba",
+      "source_frames": 7399,
+      "output_frames": 12331,
+      "raw_limit_statistics": {
+        "frames": 7399,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12331,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.384159950163394e-11
+    },
+    {
+      "name": "walk3_subject2",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject2.csv",
+      "source_sha256": "e28f1ea2f084cc2b87565c2c34bd6ffaafa7c73774a1411d2a27291f1d429aca",
+      "source_frames": 7399,
+      "output_frames": 12331,
+      "raw_limit_statistics": {
+        "frames": 7399,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12331,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.7755575615628914e-17,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 7.99611488133678e-11
+    },
+    {
+      "name": "walk3_subject3",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject3.csv",
+      "source_sha256": "5f5f019e6995605eae7f073de6882a0b317d4a6c65bcc7c23aa16d7046b5e9ec",
+      "source_frames": 7399,
+      "output_frames": 12331,
+      "raw_limit_statistics": {
+        "frames": 7399,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12331,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.328471245988567e-11
+    },
+    {
+      "name": "walk3_subject4",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject4.csv",
+      "source_sha256": "3e82d31d2f8bd4c902f481f6f53502a1f4143cdf103fafcd491c7b812a047928",
+      "source_frames": 7399,
+      "output_frames": 12331,
+      "raw_limit_statistics": {
+        "frames": 7399,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12331,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 4.440892098500626e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.413270080609436e-11
+    },
+    {
+      "name": "walk3_subject5",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject5.csv",
+      "source_sha256": "4a8527fb2e684b70338285d421b1af906d97a7c3c5a0d523215393a3410ab8e1",
+      "source_frames": 7399,
+      "output_frames": 12331,
+      "raw_limit_statistics": {
+        "frames": 7399,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 12331,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.86775097796999e-11
+    },
+    {
+      "name": "walk4_subject1",
+      "source_path": "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk4_subject1.csv",
+      "source_sha256": "65ae920f02182323de3b32259ee907b0bd03137ddde3ccc4438c9c0fefe57d0f",
+      "source_frames": 4918,
+      "output_frames": 8196,
+      "raw_limit_statistics": {
+        "frames": 4918,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 0.0,
+        "joints": {}
+      },
+      "resampled_limit_statistics": {
+        "frames": 8196,
+        "frames_outside_hard_limits": 0,
+        "joint_values_outside_hard_limits": 0,
+        "max_excess_rad": 2.220446049250313e-16,
+        "joints": {}
+      },
+      "quaternion_max_norm_error": 8.143530294546508e-11
+    }
+  ],
+  "source_files_sha256": {
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject1.csv": "3d8d76e2722d6c05bfd7788598eb40d3025b0b5e5c2dbf44fd23b53eff0a119d",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject2.csv": "3ef95f8ef524818dbca9a9b7375abf4990e9912c5a23c22c379ea048dbb7c4c2",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance1_subject3.csv": "e2fd901f25048e2fba8ae54b81c382f0be6b62c507eb6e03fac5de65100c301e",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject1.csv": "607572daac17e370651eca3f6ebe41b7e1f5a569a539ec04b9593f4897173a8d",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject2.csv": "c282e84d45c01a2af58166fc28f507ad3187c66ad71bde1e6efbf24f1add9c42",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject3.csv": "4479702e5ed6e1be2409d9c7d14b87a0957ae6f5601d1a01fbd87304e0c2dd1f",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject4.csv": "422b0dbbe7dddf9f5313811da286c42e44725e01c19f62f170ae845c0374458d",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/dance2_subject5.csv": "c5b8b848e224fdbf6aefa085093d9e48ef9e6fb919daacf0de0135926ac089b1",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject1.csv": "9a8deab347e0abd67c84ff62d87865935be3d91ff1c338d66c9715bf4fa52dc4",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject4.csv": "46e56d10b5d048c63c1c48d6ef92b46387f801a263d6dc99553c1655e9ec5836",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp1_subject5.csv": "7a7f62fc97be7fa639935f8614294008eb5114c9547f0020861a3f2c1d2247f6",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp2_subject2.csv": "cb673315bca324b51431bb1c996c35e0b58c9ab9aa3fda779424f5eeebb5b99e",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp2_subject3.csv": "4274e411a2a558463b1d30ea0576b5187432ab48bcee687866ef49946576ea97",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fallAndGetUp3_subject1.csv": "4557992b88e9df4ae6c3edab7469c6dc8363dff6041898659049ed816681ad51",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject2.csv": "31e15257a812eefb172cf72a28339f6293734b8ea40c6cddeefa27bb08816b15",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject3.csv": "e612db16114c7a416bec18e4bcd4a27f81705f50fcca9e6792ced39e8fc40a2f",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fight1_subject5.csv": "710f80a76a4e1b335ac45af5bf163792ce4aacdd54f320ebac28c4f72fa19813",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fightAndSports1_subject1.csv": "240c1daa61f699e8baa3d9299250b32c3b112204a09a861455e87450da270307",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/fightAndSports1_subject4.csv": "a845bc56f361da360526032b740fced50e3bd0fa4a6c303a1d2eb856a1dc795f",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject1.csv": "6b5d68ad9ccb0fca6abd054bcd12a3c07bfade242a2a0e338321f1c4b7b5f043",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject2.csv": "5d1a18f22e5ec1a04807b59b65180f29c48e195994711ea8c90d8ac0e105031a",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/jumps1_subject5.csv": "7ed34e7111dbfd811db6eb4b58f6e499fffe08fd180b91422d0cdf568e815d1f",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run1_subject2.csv": "0c6d8b416108617bad290c224a443f310471106a20222fac0e99e5e8226628d7",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run1_subject5.csv": "fdc9bb02fe31649b8474a579d9d09ea50a70967439892b99dec8bc7498f00150",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run2_subject1.csv": "91bca358375e740cf8a95e1adcb95793f39f8245611b80468ad702125c2d9266",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/run2_subject4.csv": "af3a7e52ccaf88a104cd77eb28b2c15b5cfcc95fed7044b4feb1fdef8c66a38b",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/sprint1_subject2.csv": "e976c7c0fa138bcaa56ccfc7eb2e50bcb2c619be02bf2018caaeb0c4f1ea3cb7",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/sprint1_subject4.csv": "0c7aedf7b4801d8425efab05e02ef81f742066d1cc42c05e791f8232d334e550",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject1.csv": "c61832aa7f4869012e419b22d1913a69e0dfbfa2690c6ef82da797304a060ae5",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject2.csv": "60028818a829d5b159ab50bc99d2bb4218c3f7960ad00a05dc8e3906250019cc",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk1_subject5.csv": "b5445906e8dd70d0fb92adb38709f83fc094dd064adcab6092318d6268198f79",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject1.csv": "4e4e3fb484f2a7e220c30fd1d6e44d85940479386b2c49a5b0c75051c1db6f0a",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject3.csv": "1f6c753e1017197056cedf7b1a456817e2f99b599a4f1b605f4766a19c3590ac",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk2_subject4.csv": "ad2df4b6c933449d0279255521c16fe1fa7a8957eeaaa02768107c2f5ba99e3f",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject1.csv": "205f8e8ef29beb60a2fed975d234043375cc43c40e142ebf42166cb423ca5bba",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject2.csv": "e28f1ea2f084cc2b87565c2c34bd6ffaafa7c73774a1411d2a27291f1d429aca",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject3.csv": "5f5f019e6995605eae7f073de6882a0b317d4a6c65bcc7c23aa16d7046b5e9ec",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject4.csv": "3e82d31d2f8bd4c902f481f6f53502a1f4143cdf103fafcd491c7b812a047928",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk3_subject5.csv": "4a8527fb2e684b70338285d421b1af906d97a7c3c5a0d523215393a3410ab8e1",
+    "/home/casbot/Desktop/SuperMimic-Reproduced/data/raw/lafan1/lafan1_casbot02_27dof_tuned_csv/csv/walk4_subject1.csv": "65ae920f02182323de3b32259ee907b0bd03137ddde3ccc4438c9c0fefe57d0f"
+  },
+  "before_npz_sha256": {
+    "X1_1000HZ.npz": "fa5998881d606d5b39f8eecdfe6fe1042fa8f5cc647311fbf9df8387311ac85c",
+    "walk4_subject1.npz": "9e259bf32a9c2a07507ca6874b2bd6b72ffdf37b325d0c84bdf03a44c7ba6935",
+    "sprint1_subject2.npz": "b5769187e362a31f6129139b79d854db6e046a3078cce9320deaa6a0f7a8e8dd",
+    "walk1_subject1.npz": "50e43a839d7c60fea3d6e20ab0d5e219c0931c5413228c6c12b3640a536e50a2",
+    "dance2_subject2.npz": "618c78ddbd5aa37dba829d12d20eb75be9c8994e692ffa2bc905c58392cca9f1",
+    "fight1_subject3.npz": "712b2b983f253a7aff3f7b4447dcb199d7d654a1eda4babe2bf6740021431a78",
+    "jumps1_subject1.npz": "85b222bf9e13964eeac764813e250d6f61b248d3565adb5d5af1cbe55ad107ca",
+    "fight1_subject5.npz": "2397e7d87264be9a6a3f67d4303d9d0d7286f78122f2972f3d846f78d651f5b8",
+    "fallAndGetUp2_subject3.npz": "b2f22958e8d00966a93adce47d51bb61c36ae1c67bd536596c258514060cb3ab",
+    "X1_Xiao360_100HZ.npz": "0d41b1694e3882c004345b7a737d03f8051dc5dda87a17c05d208800f1a96462",
+    "fallAndGetUp2_subject2.npz": "b295d4f9e999c16a69ba114916992ae5559cc3034728fb0ff9857afef4315782",
+    "jumps1_subject2.npz": "a12f81fa4d2a0a898c5c5b509b2e5fa4f97125161603a891bbb0ceb9889a60bd",
+    "直行2步态.npz": "7af8906e45f0aeeb66ade66243f39515713f993a573ccf90322e99b0895b2e99",
+    "walk3_subject2.npz": "0600c0ed81366ddab281bc818bd484e7ca0ce342604cfb9b7a5d57d357b0d84c",
+    "dance2_subject4.npz": "f4f58eb1ce6657d8006409a88abec17b9476e9c27ff027f4f187d2138a0f2893",
+    "dance2_subject3.npz": "26506f9c18ea245e6e63e97ded02727616d78be3feb250e19db1add74d16b737",
+    "fightAndSports1_subject4.npz": "0e11177d2708d7c72f1dd5fe9ebd4b36322d07bc5405afbcbb2ecf4a305a481a",
+    "原地左转.npz": "a2c18b5ace0d32c3de5e843b523af6edf88ad2a8e15fbe2728bedc60ce6f345c",
+    "fight1_subject2.npz": "366c493bee8e9d7de553f7f0bf0e0f457e0a5bdf380f3b98ab466c16d33aebe0",
+    "踏步.npz": "7eeadac7b5d0bcf82874c009df059d026f8a25282f783e7864fff6561747ffab",
+    "walk1_subject2.npz": "bfb4734adf0a41e6a40b3d7e519cab98d6cd7e1b6fe1cb2b425fa6396687133b",
+    "dance1_subject1.npz": "158f175b0844b798f2cb480afa9112f661ccfcbb4046a978f1f65e6548c915b8",
+    "run1_subject5.npz": "ab94ff8eed55ee7742505d458cd7297790a97af7e36342249244fc6f82ccd4c2",
+    "dance1_subject2.npz": "07182fbffbcecfc06ac4133407de7b0e2f4aed3a0ac4a6be2c15fb26ad326aa8",
+    "walk3_subject4.npz": "3c32ccbedf09e0c63027197655c9c60736ebf74206593e31a2d55063f806c64a",
+    "walk1_subject5.npz": "43068fba1f768a2c73829b01440be94de3f231ae2f7f55442ac32a88f4d17fe6",
+    "run2_subject4.npz": "883efa736fd23f8ac2a14f1bea123490b1781740a2a5b17e6bf9f6a74773ffdb",
+    "walk3_subject3.npz": "3b1cc78ad8d16cc3d2e465bcae1f23d5777a8d54c37c2a6ba5f22cc2fc05ab7b",
+    "fallAndGetUp1_subject5.npz": "b3078dba3d8c6d62259abe7d6a158558243eb42ac3083cfb52c18256750244a5",
+    "fallAndGetUp1_subject4.npz": "4f475f4a1f3dd05a9cf0bcda7f8c6ac344b6cf68b04a86a34147ea760a8d28fa",
+    "run2_subject1.npz": "bd597cc32cd83bf2ebaf28554d5ddb3ef6bba2c3f9568ea45fe32352a47ef448",
+    "walk2_subject3.npz": "0be859e1d5a5d6829fc677f441b5ae33feeba71b0d0276fd89fea8f8b1063b39",
+    "run1_subject2.npz": "dcd64233aa1c5b79710258f4d7c559783d9ed82c642f263e762245f2dfcbb91b",
+    "直行1步态.npz": "b5f4b3573c6d5a00ea274e0f0c339137bb40130a7ee8971e08f5558e7898ab9f",
+    "fallAndGetUp3_subject1.npz": "dede7c2dd88c4e466f4bec9c869cc7b6582b1357801bfa59e135c072bdde9339",
+    "dance2_subject1.npz": "126b3c61eefb6f6f30c86ca32ae0d5396c9d8248298f0e429d766418db83c4d5",
+    "walk3_subject5.npz": "3db6faf9c55ba8aa635a85527a20af1290915eee0617efb90188e82324b7725e",
+    "walk2_subject1.npz": "861afd199aeff4c0e5d417f0d92024a9f86ec3652916f1212aa24c575206a37a",
+    "后退.npz": "f38a3eef5590505056d25a58d01653c554fd9d794832106caf8c78ea086e319e",
+    "walk2_subject4.npz": "d3d1e294bc25c4c2679ea1a12ed87235539d4b9fb9c4f2d5135d338581de9ddc",
+    "dance1_subject3.npz": "b0a513ad408d3847b47dd62faf226b719e2b26032b131cd83011bfb807ed393a",
+    "walk3_subject1.npz": "0116a11feea81865c3c6e94c0fce4bed7003e1fd3b2baf8c340f2c99171cfa4f",
+    "dance2_subject5.npz": "563e10c0a71735a7b3b5549661e39abb8ee16fa11d0f085fc207ffa4bf74076a",
+    "jumps1_subject5.npz": "ab0eb15c3a9fdd91558e7f4abe86cfb291b1650c0aed64ee395c573420024353",
+    "fallAndGetUp1_subject1.npz": "0511f25bd2ce7f178afba7212c26cc98580e5ebab647f459a94a405012ec29bf",
+    "fightAndSports1_subject1.npz": "290ac3510e0fcba9f03e780a46c7c06be5649c4d7e07c7fd2c141bc3eb1ed5b2",
+    "sprint1_subject4.npz": "f4c412e04a708ec88e7e5bd5a759d7cb860c53bd1e465eaabbb36fbe6bc466b4",
+    "原地右转.npz": "31c3c9da705a5af4d078264393e7725e4e98a78756dc1e681d26ebaa161b69aa"
+  },
+  "sdk_names": [
+    "X1_1000HZ",
+    "X1_Xiao360_100HZ",
+    "原地右转",
+    "原地左转",
+    "后退",
+    "直行1步态",
+    "直行2步态",
+    "踏步"
+  ],
+  "source_frames_total": 264704,
+  "output_frames_total": 441138,
+  "raw_out_of_limit_frames": 0,
+  "resampled_out_of_limit_frames": 0
+}
