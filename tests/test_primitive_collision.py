@@ -1,6 +1,4 @@
 """Primitive collisions preserve morphology while keeping feet and self contacts."""
-import json
-
 import mujoco
 import numpy as np
 import pytest
@@ -34,15 +32,39 @@ def test_primitive_model_preserves_inertia_actuators_and_fk():
 def test_primitive_geometry_soles_and_default_clearance():
     m = Entity(get_robot("casbot02").entity_cfg(collision_model="primitive")).spec.compile()
     active = np.where((m.geom_contype != 0) | (m.geom_conaffinity != 0))[0]
-    assert len(active) == 29
-    assert set(m.geom_type[active]) <= {int(mujoco.mjtGeom.mjGEOM_SPHERE), int(mujoco.mjtGeom.mjGEOM_CAPSULE)}
-    assert (m.geom_contype[active] == 1).all() and (m.geom_conaffinity[active] == 1).all()
-    bounds = json.loads((CASBOT_ASSETS / "primitive_collision.json").read_text())["foot_mesh_bounds"]
+    assert len(active) == 19
+    assert set(m.geom_type[active]) <= {int(mujoco.mjtGeom.mjGEOM_SPHERE), int(mujoco.mjtGeom.mjGEOM_CAPSULE),
+                                        int(mujoco.mjtGeom.mjGEOM_MESH)}
+    source = mujoco.MjModel.from_xml_path(str(CASBOT_ASSETS / "xml/casbot02.xml"))
     for side in ("left", "right"):
-        for i in range(1, 8):
-            g = m.geom(f"{side}_foot{i}_collision")
-            assert m.geom_condim[g.id] == 3 and m.geom_priority[g.id] == 1
-            np.testing.assert_allclose(g.pos[2] - g.size[0], bounds[side]["min"][2], atol=1e-9)
+        foot, original = m.geom(f"{side}_foot_collision"), source.geom(f"{side}_foot_collision")
+        assert m.geom_type[foot.id] == mujoco.mjtGeom.mjGEOM_MESH
+        assert m.geom_condim[foot.id] == source.geom_condim[original.id] == 3
+        assert (m.geom_contype[foot.id], m.geom_conaffinity[foot.id]) == (
+            source.geom_contype[original.id], source.geom_conaffinity[original.id])
+        np.testing.assert_allclose(foot.friction[:3], original.friction[:3])
+        np.testing.assert_allclose(foot.solref[:2], original.solref[:2])
+        hip = m.geom(f"{side}_hip_collision")
+        assert m.body(m.geom_bodyid[hip.id]).name == f"{side}_leg_pelvic_pitch_link"
+        assert m.geom_type[hip.id] == mujoco.mjtGeom.mjGEOM_CAPSULE
+        visual = next(g for g in range(source.ngeom)
+                      if source.body(source.geom_bodyid[g]).name == f"{side}_leg_pelvic_pitch_link"
+                      and source.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH
+                      and source.geom_contype[g] == 0)
+        mesh = int(source.geom_dataid[visual])
+        start, count = int(source.mesh_vertadr[mesh]), int(source.mesh_vertnum[mesh])
+        rotation = np.empty(9)
+        mujoco.mju_quat2Mat(rotation, source.geom_quat[visual])
+        points = source.mesh_vert[start:start + count] @ rotation.reshape(3, 3).T + source.geom_pos[visual]
+        quat_matrix = np.empty(9)
+        mujoco.mju_quat2Mat(quat_matrix, hip.quat)
+        direction = quat_matrix.reshape(3, 3)[:, 2]
+        start_point = hip.pos - direction * hip.size[1]
+        end_point = hip.pos + direction * hip.size[1]
+        segment = end_point - start_point
+        along = np.clip(((points - start_point) @ segment) / (segment @ segment), 0, 1)
+        distance = np.linalg.norm(points - (start_point + along[:, None] * segment), axis=1)
+        assert (distance <= hip.size[0] + 1e-8).mean() >= 0.99
     d = mujoco.MjData(m)
     d.qpos[:] = m.key_qpos[0]
     mujoco.mj_forward(m, d)
@@ -90,7 +112,7 @@ def test_resume_cannot_silently_change_collision_model(tmp_path):
     cfg.env.collision_model = "primitive"
     saved = asdict(cfg)
     saved["env"].pop("collision_model")
-    saved["policy"]["goal_dim"] = 640
+    saved["policy"]["goal_dim"] = 690
     p = tmp_path / "legacy.pt"
     torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,
                 "num_updates": 10, "collection_accumulator": 0., "config": saved}, p)

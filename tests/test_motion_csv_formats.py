@@ -1,6 +1,9 @@
 """Units, joint order and quaternion conventions for both retarget CSV formats."""
 
 import csv
+import subprocess
+import sys
+from pathlib import Path
 
 import mujoco
 import numpy as np
@@ -72,6 +75,31 @@ def test_bones_joint_column_order_is_not_silently_reinterpreted(tmp_path):
     bones_csv(path, reverse_joints=True)
     with pytest.raises(ValueError, match="joint order"):
         load_csv(path)
+
+
+def test_recursive_bones_batch_prefilters_names_and_exports_120_fps(tmp_path):
+    source = tmp_path / "csv" / "date"
+    source.mkdir(parents=True)
+    bones_csv(source / "walk_001.csv")
+    # This intentionally invalid CSV must be rejected before conversion.
+    (source / "handstand_001.csv").write_text("invalid motion")
+    output = tmp_path / "npz"
+    script = Path(__file__).resolve().parents[1] / "scripts/data/csv_to_npz_batch.py"
+    subprocess.run(
+        [sys.executable, str(script), "--input-dir", str(source.parent),
+         "--pattern", "**/*.csv", "--output-dir", str(output), "--input-fps", "120",
+         "--workers", "1", "--bones-name-filter", "--progress-every", "1000"],
+        check=True, capture_output=True, text=True,
+    )
+    assert sorted(path.name for path in output.glob("*.npz")) == ["walk_001.npz"]
+    with np.load(output / "walk_001.npz") as motion:
+        assert float(motion["input_fps"][0]) == 120
+        assert float(motion["fps"][0]) == 50
+        assert len(motion["joint_pos"]) == 3
+    with (output / "manifest_name_filter.csv").open() as stream:
+        rows = {row["name"]: row for row in csv.DictReader(stream)}
+    assert rows["walk_001"]["keep"] == "1"
+    assert rows["handstand_001"]["reason"].startswith("name:handstand")
 
 
 @pytest.mark.parametrize("robot", ["g1", "casbot02"])

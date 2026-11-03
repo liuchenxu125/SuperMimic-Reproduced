@@ -23,8 +23,8 @@ def evaluate(args, source, destination, cfg):
         for key in ('checkpoint_sha256', 'motors', 'joint_names', 'goal_dim', 'control_dt'):
             if metadata[key] != sim.meta[key]:
                 raise ValueError(f'Sim/hardware contract mismatch: {name}/{key}')
-        if metadata['anchor_obs'] or metadata['goal_dim'] != 640:
-            raise ValueError('Live transition test requires the proprio-only 640-goal actor')
+        if metadata['anchor_obs'] or metadata.get('anchor_ori_obs', False) or metadata['goal_dim'] not in (640, 690):
+            raise ValueError('Live transition test requires a supported proprio-only actor')
     # Frame 0 is the bridge endpoint; frames 1..L-1 then play exactly once.
     # A short destination normally finishes before the requested 10 seconds.
     after_steps = min(round(args.after_seconds/sim.dt), metadata['frames']-1)
@@ -50,11 +50,12 @@ def evaluate(args, source, destination, cfg):
             record = np.r_[sim.data.qpos[7:], sim.data.qvel[6:], [np.nan]*3,
                            sim.data.qpos[3:7], sim.data.qvel[3:6]].astype('<f8')
             process.stdin.write(record.tobytes()); process.stdin.flush()
-            raw = process.stdout.read((870 + 640 + 54 + 36)*4)
-            if len(raw) != (870 + 640 + 54 + 36)*4:
+            goal_end = 870 + sim.meta['goal_dim']
+            raw = process.stdout.read((goal_end + 54 + 36)*4)
+            if len(raw) != (goal_end + 54 + 36)*4:
                 raise RuntimeError(f'C++ probe stopped: {process.poll()}')
             out = np.frombuffer(raw, dtype='<f4')
-            obs, goal, action, target, ref = out[:870], out[870:1510], out[1510:1537], out[1537:1564], out[1564:]
+            obs, goal, action, target, ref = out[:870], out[870:goal_end], out[goal_end:goal_end+27], out[goal_end+27:goal_end+54], out[goal_end+54:]
             error = float(np.max(np.abs(sim.history.packed() - obs)))
             maxima['observation_error'] = max(maxima['observation_error'], error)
             np.testing.assert_allclose(obs, sim.history.packed(), atol=2e-5, rtol=3e-6)
@@ -68,8 +69,7 @@ def evaluate(args, source, destination, cfg):
                 maxima['target_step_rad'] = max(maxima['target_step_rad'], float(np.max(np.abs(target-previous_target))))
             previous_target = target.copy()
             for substep in range(sim.decimation):
-                # Keep the exported delay's 5 ms sampling period even when PD
-                # is evaluated at 1 kHz (0/5/10 ms, rather than 0/1/2 ms).
+                # Hold the current 50 Hz target across physics substeps.
                 if not args.explicit_pd or substep % 5 == 0:
                     delayed = sim.command_delay.apply(target)
                 if args.explicit_pd:

@@ -60,8 +60,8 @@ def main(
         future_frames=cfg["env"]["future_frames"],
         anchor_obs=cfg["env"].get("anchor_obs", False),
         anchor_ori_obs=cfg["env"].get("anchor_ori_obs", False),
-        actuator_delay=cfg["env"].get("actuator_delay", False),
-        actuator_delay_mode=cfg["env"].get("actuator_delay_mode", "episode"),
+        compact_library=cfg["env"].get("compact_library", False),
+        library_device=cfg["env"].get("library_device", "device"),
         collision_model=cfg["env"].get("collision_model", "mesh"),
         robot=cfg.get("robot", "g1"),
     )
@@ -83,9 +83,10 @@ def main(
     out.parent.mkdir(parents=True, exist_ok=True)
     evaluation = {
         "robot": cfg.get("robot", "g1"), "future_frames": cfg["env"]["future_frames"],
+        "actuator_delay": False,
         **{key: cfg["env"].get(key, default) for key, default in (
-            ("anchor_obs", False), ("anchor_ori_obs", False), ("actuator_delay", False),
-            ("actuator_delay_mode", "episode"), ("collision_model", "mesh"))},
+            ("anchor_obs", False), ("anchor_ori_obs", False), ("collision_model", "mesh"),
+            ("compact_library", False), ("library_device", "device"))},
     }
     save_results(results, out,
                  meta={**cfg.get("_checkpoint", {}), "sha256": checkpoint_sha256},

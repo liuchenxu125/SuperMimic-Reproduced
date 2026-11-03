@@ -1,5 +1,5 @@
 {
-  "README.md": "785ddaf727a6ebe3f41aad26a28ff68a105d7fffae176c966232882b9e448475",
+  "README.md": "1825b30f3fab1801ffcc0cb107e4d77b939eb38224eb4459af75d64f74d8f276",
   "meshes/base_link.STL": "e9f1c06ae8cabed1fe5466fe976960995ce01fae2c53b68a951e0c655967dc56",
   "meshes/head_pitch_link.STL": "6d40af3b6ef64bd09c387aec4c826542c103e2f6a25f0ad211c48871eddf31cc",
   "meshes/head_yaw_link.STL": "9025045b6cf183dea130e699521a2bd5b8fa77861929f94c34490febf94b5e6a",
@@ -36,6 +36,6 @@
   "meshes/waist_yaw_link.STL": "f1af2cfce5e7227400e17b77af1d78bcfd85e60208d806cc258b4c3f4b99b81a",
   "source_manifest.json": "fd23a76ee8919c9888c0a520ef8ec8dcd3fa41f98adc85c3bc9ab60a010c90b7",
   "xml/casbot02.xml": "1cfc8d558969d8335a496b0d400239c6d084108fb4cdeaac7ce8af0204b0bf3f",
-  "xml/casbot02_primitives.xml": "79e26dc9033b48433494bc0d8642c6961ea4f3b7e8c6e391520d4a76f838482f",
-  "primitive_collision.json": "03a98d8b30253894a1b9aed21356b22c7156d3b15be2187f73bd99c84502e294"
+  "xml/casbot02_primitives.xml": "16b8513311fe1ebb48325b7c094bab0c71ef5ca30afddfb9e3b1c69503260931",
+  "primitive_collision.json": "3f7542cc92916e31da08488cd227a43ab5a040ee95cbf32e44afce195f867377"
 }

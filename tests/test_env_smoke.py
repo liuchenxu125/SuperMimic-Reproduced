@@ -30,7 +30,7 @@ def env():
 def test_spaces_and_step(env):
     obs, _ = env.reset()
     assert obs["policy"].shape == (32, 930)
-    assert obs["goal"].shape == (32, 680)
+    assert obs["goal"].shape == (32, 730)
     assert env.action_manager.total_action_dim == 29
     for _ in range(40):
         act = 0.3 * torch.randn(32, 29, device=env.device)
@@ -45,13 +45,10 @@ def test_goal_matches_library(env):
     cmd = env.command_manager.get_term("motion")
     goal = cmd.goal
     lib = cmd.library
-    f = cmd.frame
-    direct = lib.goal_feat[f]
-    np.testing.assert_allclose(goal[:, :68].cpu().numpy(), direct.cpu().numpy(), atol=1e-6)
-    # Clamping at the clip end.
-    last = lib.last_frame_of(f)
-    k9 = torch.minimum(f + 9, last)
-    np.testing.assert_allclose(goal[:, 9 * 68 :].cpu().numpy(), lib.goal_feat[k9].cpu().numpy(), atol=1e-6)
+    direct = lib.goal_window(cmd.frame, 10)
+    np.testing.assert_allclose(goal.cpu().numpy(), direct.cpu().numpy(), atol=1e-6)
+    # The current reference frame is the heading origin, so its displacement is zero.
+    np.testing.assert_allclose(goal[:, 2 * 29 : 2 * 29 + 3].cpu().numpy(), 0, atol=1e-5)
 
 
 def test_replay_rows_and_windows(env):

@@ -13,6 +13,7 @@ import tyro
 
 from supermimic.config import TrainConfig
 from supermimic.goal_spec import anchor_goal_dim
+from supermimic.robots import get_robot
 
 
 def make_config(
@@ -32,7 +33,10 @@ def make_config(
     cfg.env.actuator_delay = actuator_delay
     cfg.env.num_envs = num_envs
     cfg.policy.num_joints = 27
-    cfg.policy.goal_dim = 640 + anchor_goal_dim(False, anchor_ori_obs)
+    cfg.policy.goal_dim = (
+        cfg.env.future_frames * get_robot("casbot02").layout.goal_dim
+        + anchor_goal_dim(False, anchor_ori_obs)
+    )
     cfg.policy_trainer.anchor_obs = False
     cfg.policy_trainer.anchor_ori_obs = anchor_ori_obs
     cfg.policy_trainer.batch_size = policy_batch_size

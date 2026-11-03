@@ -33,8 +33,12 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
     bundle = (config.parent / cfg['bundle']).resolve()
     cfg['motions'] = {name: str((config.parent / path).resolve())
                       for name, path in cfg.get('motions', {}).items()}
-    automatic = case in ('auto', 'auto_skip_prepare')
+    lb_a_case = case in ('auto_lb_a_direct', 'auto_lb_a_before_mode7', 'auto_lb_a_missing_imu')
+    mode7_case = case in ('auto_mode7_direct', 'auto_mode7_existing', 'auto_mode7_missing_imu')
+    automatic = case in ('auto', 'auto_skip_prepare') or lb_a_case or mode7_case
     cfg.update(bundle=str(bundle), auto_start_on_mode7=automatic,
+               auto_start_trigger='mode7' if mode7_case else ('lb_a' if lb_a_case else 'mode_edge'),
+               auto_direct_start=lb_a_case or mode7_case,
                prepare_seconds=0. if case in ('auto_skip_prepare', 'end_hold') else 2., entry_blend_seconds=1.2,
                hold_last_frame_on_finish=case == 'end_hold',
                preview_seconds=.3, return_seconds=1., auto_start_timeout_seconds=2.)
@@ -42,9 +46,13 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
     for key in ('joint', 'standard_joint', 'imu', 'pose', 'mode', 'command'):
         cfg[key + '_topic'] = prefix + '/' + key
     cfg['mode_service'] = prefix + '/get_robot_mode'
-    cfg['joystick_enabled'] = case in ('joystick', 'end_hold')
+    # Automatic startup must also exercise the real, enabled joystick subset.
+    # Otherwise constructor validation bugs disappear from the auto tests.
+    cfg['joystick_enabled'] = case in ('joystick', 'end_hold') or lb_a_case or mode7_case
     cfg['joystick_topic'] = prefix + '/joystick'
     if case == 'joystick': cfg['preview_seconds'] = 0.
+    if lb_a_case or mode7_case:
+        cfg.update(prepare_seconds=2., entry_blend_seconds=1.2, preview_seconds=4.)
     manifest = json.loads((bundle / 'manifest.json').read_text())
     names = manifest['sdk_joint_names'] + ['head_pitch_joint', 'head_yaw_joint']
     kp = np.r_[np.trunc([m['kp'] for m in manifest['motors']]), [30., 30.]]
@@ -54,7 +62,7 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
                      np.array(manifest['soft_joint_limits'])[:, 1]), [.13, -.21]]
     if cfg.get('prepare_pose') == 'default':
         q[:27] = [cfg['prepare_joint_pos'][n] for n in manifest['joint_names']]
-    if case == 'auto_skip_prepare':
+    if case == 'auto_skip_prepare' or lb_a_case or mode7_case:
         # Exceed the old default-pose start tolerance: a skipped preparation
         # must hold measured joints, not move or wait for the unused default.
         q[3] += .2
@@ -70,6 +78,9 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
     state = dict(mode=7, enabled=True, imu=True, debug=True, head=True,
                  feedback=True, bad_pd=False, dq=0., query=True, mode_topic=True,
                  joy=True, joy_pressed=[2] if case == 'joystick' else [], joy_held=[], joy_axis=0)
+    if mode7_case:
+        # No joystick input at all: SDK may consume LB+A before forwarding it.
+        state.update(mode=7 if case == 'auto_mode7_existing' else 6, joy=False)
     received, statuses = [], []
     def mode_reply(request, response):
         # Exact switch from hl_motion 2.2.37 Motion::get_robot_mode:
@@ -123,10 +134,10 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
                     pose.pose.orientation.w, pose.pose.orientation.x, pose.pose.orientation.y, pose.pose.orientation.z = map(float, row[3:7])
                     pubs['pose'].publish(pose)
                 if state['mode_topic']: pubs['mode'].publish(Int32(data=7))  # NEVER publish a non-7 topic sample
-                if state['joy']:
-                    joy = JoystickCmdReport(); joy.pressed_buttons = state['joy_pressed']
-                    joy.long_pressed = state['joy_held']; joy.axis_x = state['joy_axis']
-                    pubs['joystick'].publish(joy)
+            if state['enabled'] and state['joy'] and (state['mode'] == 7 or lb_a_case):
+                joy = JoystickCmdReport(); joy.pressed_buttons = state['joy_pressed']
+                joy.long_pressed = state['joy_held']; joy.axis_x = state['joy_axis']
+                pubs['joystick'].publish(joy)
             rclpy.spin_once(node, timeout_sec=.002)
             time.sleep(.003)
 
@@ -167,7 +178,8 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
                 folder = tmp / name; folder.mkdir()
                 meta.update(frames=count, actor_file=str((source / meta['actor_file']).resolve()))
                 (folder / 'manifest.json').write_text(json.dumps(meta))
-                (folder / 'motion.bin').write_bytes(b'SMREF001' + struct.pack('<II', count, 125) + blob[16:16 + count * 500])
+                width = struct.unpack('<II', blob[8:16])[1]
+                (folder / 'motion.bin').write_bytes(blob[:8] + struct.pack('<II', count, width) + blob[16:16 + count * width * 4])
                 fixtures[name] = str(folder)
             cfg.update(bundle=fixtures[manifest['clip']], motions=fixtures, preview_seconds=0.)
         path = tmp / 'test.yaml'; path.write_text(yaml.safe_dump(cfg))
@@ -187,7 +199,11 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
                                        stderr=subprocess.STDOUT, env=child_env)
             try:
                 assert clients['prepare'].wait_for_service(timeout_sec=10), log_path.read_text()
-                latest('IDLE', 1.5); damping()
+                if case == 'auto_mode7_existing':
+                    latest('RUN', 1.5)
+                else:
+                    latest('IDLE', 1.5)
+                    if not mode7_case: damping()
                 assert 'command_mode=sdk237_position_pd' in statuses[-1]
                 assert node.count_publishers('/motion/debug/joint_cmd') == 0
                 assert node.count_publishers('/motion/joint_cmd') == 0
@@ -332,6 +348,69 @@ def test(runner, config, dry, case, block_publish=None, delay_policy=None):
                     for name in cfg['motions']:
                         assert select(name).successful, name
                     assert call('stop').success; pump(.1); damping()
+                elif mode7_case:
+                    assert 'mode_class=4' in statuses[-1], statuses[-1]
+                    if case != 'auto_mode7_existing':
+                        # Ordinary RL is also class 4. It must not activate us;
+                        # neither ZERO/STAND nor a joystick chord is published.
+                        assert 'auto_start=waiting_mode7' in statuses[-1], statuses[-1]
+                        assert not received, 'Commands sent outside raw mode 7'
+                        if case == 'auto_mode7_missing_imu': state['imu'] = False
+                        state['mode'] = 7
+                    if case == 'auto_mode7_missing_imu':
+                        latest('FAULT', 2.5); damping()
+                        assert not any(any(msg.kp) for msg in received)
+                        state['imu'] = True; latest('FAULT', 1.)
+                    else:
+                        latest('RUN', .7)
+                        assert ' motion=' + manifest['clip'] + ' ' in statuses[-1], statuses[-1]
+                        assert 'frame=0 ' not in statuses[-1], statuses[-1]
+                        assert 'auto_start=consumed' in statuses[-1]
+                        assert 'joystick_rx=0 ' in statuses[-1], statuses[-1]
+                        assert not any(s.startswith(('PREPARE','READY','HANDOFF')) for s in statuses), statuses
+                        assert any(any(msg.kp) for msg in received), 'No position PD in direct RUN'
+                        log_text = log_path.read_text()
+                        assert 'Raw mode 7 startup requested' in log_text and 'RUN directly' in log_text
+                        assert call('stop').success; latest('IDLE', .8); damping()
+                        state['mode'] = 2; pump(.4)
+                        state['mode'] = 7; latest('IDLE', 1.)
+                        damping()  # no automatic replay after stop or mode re-entry
+                elif lb_a_case:
+                    assert 'auto_start=waiting_lb_a' in statuses[-1], statuses[-1]
+                    assert 'mode_class=4' in statuses[-1], statuses[-1]
+                    # Already receiving raw 7 and coarse class 4 does not start.
+                    assert not any(any(msg.kp) for msg in received)
+                    state['joy_pressed'] = [4, 2]; pump(.1)
+                    state['joy_pressed'] = []; latest('IDLE', .4)
+                    if case == 'auto_lb_a_before_mode7':
+                        state['mode'] = 6; pump(.2)  # class 4; no ZERO/STAND baseline
+                    if case == 'auto_lb_a_missing_imu':
+                        state['imu'] = False; pump(.15)
+                    mark = len(statuses)
+                    state['joy_pressed'] = [4, 0]; state['joy_held'] = [4]; pump(.15)
+                    state['joy_pressed'] = []; state['joy_held'] = []
+                    if case == 'auto_lb_a_before_mode7':
+                        pump(.25)
+                        assert not any(any(msg.kp) for msg in received), 'Policy started without fresh mode 7'
+                        state['mode'] = 7
+                    if case == 'auto_lb_a_missing_imu':
+                        latest('FAULT', 2.5); damping()
+                        assert not any(any(msg.kp) for msg in received), 'Missing IMU allowed position control'
+                        state['imu'] = True; latest('FAULT', 1.)
+                    else:
+                        latest('RUN', 1.3)
+                        assert ' motion=' + manifest['clip'] + ' ' in statuses[-1], statuses[-1]
+                        assert 'frame=0 ' not in statuses[-1], statuses[-1]
+                        assert 'auto_start=consumed' in statuses[-1]
+                        assert not any(s.startswith(('PREPARE','READY','HANDOFF')) for s in statuses[mark:]), statuses[mark:]
+                        assert any(any(msg.kp) for msg in received), 'Direct RUN never sent position PD'
+                        log_text = log_path.read_text()
+                        assert 'LB+A startup requested' in log_text and 'RUN directly' in log_text
+                        # A held/repeated chord cannot restart or switch motion.
+                        state['joy_pressed'] = [4,0]; pump(.2); state['joy_pressed'] = []
+                        assert call('stop').success; latest('IDLE', .8); damping()
+                        state['joy_pressed'] = [4,0]; pump(.15); state['joy_pressed'] = []
+                        latest('IDLE', .8)
                 elif automatic:
                     assert 'auto_start=waiting_mode_edge' in statuses[-1]
                     # Service class 4 also describes navigation. It must not
@@ -465,7 +544,7 @@ if __name__ == '__main__':
     p.add_argument('--block-publish', type=Path)
     p.add_argument('--auto-tests', action='store_true')
     p.add_argument('--delay-policy', type=Path, help='Test-only ORT Run delay interposer')
-    p.add_argument('--case', choices=['manual', 'pd_fault', 'query_loss', 'shutdown', 'auto', 'auto_skip_prepare', 'target_envelope', 'topic_loss', 'jitter', 'below_late_threshold', 'slow_policy', 'sustained_late', 'motion_switch', 'joystick', 'end_hold'])
+    p.add_argument('--case', choices=['manual', 'pd_fault', 'query_loss', 'shutdown', 'auto', 'auto_skip_prepare', 'auto_mode7_direct', 'auto_mode7_existing', 'auto_mode7_missing_imu', 'auto_lb_a_direct', 'auto_lb_a_before_mode7', 'auto_lb_a_missing_imu', 'target_envelope', 'topic_loss', 'jitter', 'below_late_threshold', 'slow_policy', 'sustained_late', 'motion_switch', 'joystick', 'end_hold'])
     args = p.parse_args()
     os.environ['ROS_DOMAIN_ID'] = '186'; os.environ['ROS_LOCALHOST_ONLY'] = '1'
     cases = [('auto', False), ('auto', True)] if args.auto_tests else [

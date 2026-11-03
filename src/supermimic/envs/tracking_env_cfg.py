@@ -91,12 +91,13 @@ class SuperMimicEnvCfgArgs:
     joint_limit_weight: float = -2.0
     bin_frames: int = 50
     compact_library: bool = False
+    library_device: str = "device"  # CPU storage requires compact_library
     anchor_obs: bool = (
         False  # add BeyondMimic anchor-relative pose (9) to the goal group (plan D5 alt.)
     )
     anchor_ori_obs: bool = False  # relative rot6d only (6), appended once to the goal
     actuator_delay: bool = False  # explicit opt-in here preserves legacy checkpoint callers
-    actuator_delay_mode: str = "episode"  # missing checkpoint field means the old mechanism
+    actuator_delay_mode: str = "episode"  # one draw per episode; a missing field stays here
     training_floor_friction: float = 0.3
     collision_model: str = "mesh"  # old checkpoints/callers retain original contacts
     debug_vis: bool = False  # draw the reference ghost in the viewer (scripts/play.py)
@@ -204,6 +205,7 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
             joint_position_range=(-0.1, 0.1) if a.reset_noise else (0.0, 0.0),
             sampling_mode=a.sampling_mode,  # type: ignore[arg-type]
             compact_library=a.compact_library,
+            library_device=a.library_device,
             debug_vis=a.debug_vis,
             **a.extra_command_kwargs,
         )

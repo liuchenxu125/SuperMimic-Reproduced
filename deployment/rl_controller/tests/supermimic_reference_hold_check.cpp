@@ -8,6 +8,7 @@ int main(int argc,char** argv) {
   try {
     check(argc==2,"Supply hardware bundle path");
     supermimic::Policy policy(argv[1]);
+    const int width=policy.goal_frame_dim(), velocity=width==69?63:57;
     supermimic::State state;
     state.q=policy.q0;
     if(!policy.requires_root_pose()) state.position.setConstant(std::nan(""));
@@ -18,9 +19,10 @@ int main(int argc,char** argv) {
       const auto out=policy.step(state,false);
       check(out.frame==0,"Frozen calls advanced the reference");
       for(int k=0;k<10;++k) {
-        for(int j=0;j<64;++j) check(out.goal[k*64+j]==out.goal[j],"Future window is not stationary");
-        for(int j=27;j<54;++j) check(out.goal[k*64+j]==0.,"Held reference has joint velocity");
-        for(int j=57;j<63;++j) check(out.goal[k*64+j]==0.,"Held reference has base velocity");
+        for(int j=0;j<width;++j) check(out.goal[k*width+j]==out.goal[j],"Future window is not stationary");
+        for(int j=27;j<54;++j) check(out.goal[k*width+j]==0.,"Held reference has joint velocity");
+        for(int j=velocity;j<velocity+6;++j) check(out.goal[k*width+j]==0.,"Held reference has base velocity");
+        if(width==69) for(int j=54;j<57;++j) check(out.goal[k*width+j]==0.,"Held reference has displacement");
       }
       if(step) {
         check(std::abs(out.obs[9*27]-(state.q[0]-policy.q0[0]))<1.e-7,"Measured history stopped updating");
@@ -46,9 +48,10 @@ int main(int argc,char** argv) {
       check((out.reference.q-end_reference.q).norm()==0.,"Final hold changed reference pose");
       check(out.reference.dq.isZero(),"Final hold retained reference joint velocity");
       for(int k=0;k<10;++k) {
-        for(int j=0;j<64;++j) check(out.goal[k*64+j]==out.goal[j],"Final hold future window is not stationary");
-        for(int j=27;j<54;++j) check(out.goal[k*64+j]==0.,"Final hold goal has joint velocity");
-        for(int j=57;j<63;++j) check(out.goal[k*64+j]==0.,"Final hold goal has base velocity");
+        for(int j=0;j<width;++j) check(out.goal[k*width+j]==out.goal[j],"Final hold future window is not stationary");
+        for(int j=27;j<54;++j) check(out.goal[k*width+j]==0.,"Final hold goal has joint velocity");
+        for(int j=velocity;j<velocity+6;++j) check(out.goal[k*width+j]==0.,"Final hold goal has base velocity");
+        if(width==69) for(int j=54;j<57;++j) check(out.goal[k*width+j]==0.,"Final hold has displacement");
       }
       check(std::abs(out.obs[9*27]-(state.q[0]-policy.q0[0]))<1.e-7,"Final hold stopped measured history");
       for(int j=0;j<27;++j)

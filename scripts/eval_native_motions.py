@@ -23,12 +23,7 @@ def initialize(bundle):
 
 
 def evaluate(name):
-    import numpy as np
-
     began = time.perf_counter()
-    # Reset the delay RNG independently for every clip. Worker scheduling must
-    # not change a clip's latency sequence or outcome.
-    _sim.command_delay.rng = np.random.default_rng(0)
     _sim.reset(name)
     while not _sim.finished:
         _sim.step()
@@ -69,8 +64,7 @@ def main():
                       sampled_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(),
                       backend='native MuJoCo CPU / TorchScript; not GPU Warp benchmark',
                       protocol=dict(start_frame=0,reset_to_reference_pose_and_velocity=True,
-                                    delay_seed_per_clip=0,actuator_delay=metadata.get('actuator_delay',False),
-                                    actuator_delay_mode=metadata.get('actuator_delay_mode','episode'),
+                                    actuator_delay=False,
                                     observation_noise=False,action_noise=False,domain_randomization=False,
                                     foot_friction=1.,height_threshold=metadata['height_threshold'],
                                     tilt_threshold=metadata['tilt_threshold'],

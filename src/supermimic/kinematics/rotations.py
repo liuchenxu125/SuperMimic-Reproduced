@@ -95,6 +95,24 @@ def heading_quat(q: torch.Tensor) -> torch.Tensor:
     return quat_from_yaw(heading_yaw(q))
 
 
+def heading_matrix(q: torch.Tensor) -> torch.Tensor:
+    """Yaw-only rotation from the root x-axis projected onto the world xy plane.
+
+    This is the reference heading used for pelvis displacement and orientation.
+    A pitched or rolled root keeps that projected heading; it is not the
+    quaternion Euler yaw.
+    """
+    rotation = matrix_from_quat(q)
+    forward_x, forward_y = rotation[..., 0, 0], rotation[..., 1, 0]
+    norm = torch.sqrt(forward_x * forward_x + forward_y * forward_y + 1e-9)
+    cosine, sine = forward_x / norm, forward_y / norm
+    zero = torch.zeros_like(cosine)
+    one = torch.ones_like(cosine)
+    return torch.stack(
+        (cosine, -sine, zero, sine, cosine, zero, zero, zero, one), -1
+    ).reshape(q.shape[:-1] + (3, 3))
+
+
 def wrap_to_pi(a: torch.Tensor) -> torch.Tensor:
     return (a + math.pi) % (2.0 * math.pi) - math.pi
 

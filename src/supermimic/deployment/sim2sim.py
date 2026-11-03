@@ -62,6 +62,43 @@ def yaw(q: np.ndarray) -> np.ndarray:
     return np.arctan2(r[..., 1, 0], r[..., 0, 0])
 
 
+def heading_from_rotation(r: np.ndarray) -> np.ndarray:
+    """Yaw-only matrix from the projected root x-axis."""
+    forward_x, forward_y = r[0, 0], r[1, 0]
+    norm = np.sqrt(forward_x * forward_x + forward_y * forward_y + 1e-9)
+    cosine, sine = forward_x / norm, forward_y / norm
+    return np.array(
+        [[cosine, -sine, 0.0], [sine, cosine, 0.0], [0.0, 0.0, 1.0]], dtype=np.float64
+    )
+
+
+def reference_heading_goal(
+    root_pos, root_quat, root_lin, root_ang, joint_pos, joint_vel, q0, frame: int, count: int
+) -> np.ndarray:
+    """Frames frame..frame+count-1 relative to the heading at frame."""
+    last = len(root_pos) - 1
+    index = np.minimum(frame + np.arange(count), last)
+    heading = heading_from_rotation(rotation(root_quat[frame]))
+    displacement = (root_pos[index] - root_pos[frame]) @ heading
+    future_rotation = rotation(root_quat[index])
+    relative = np.matmul(heading.T, future_rotation)
+    orientation = relative[:, :, :2].reshape(count, 6)
+    linear = np.einsum("ki,kij->kj", root_lin[index], future_rotation)
+    angular = np.einsum("ki,kij->kj", root_ang[index], future_rotation)
+    features = np.concatenate(
+        (
+            joint_pos[index] - q0,
+            joint_vel[index],
+            displacement,
+            orientation,
+            linear,
+            angular,
+        ),
+        axis=-1,
+    )
+    return features.reshape(-1).astype(np.float32)
+
+
 def observation(qpos, qvel, previous_action, q0) -> np.ndarray:
     """Single raw proprioception frame. Free-joint angular qvel is body-local."""
     n = len(q0)
@@ -104,7 +141,17 @@ class Reference:
             self.root_quat = raw["root_quat_w"].astype(np.float64)
             self.root_lin = raw["root_lin_vel_w"].astype(np.float64)
             self.root_ang = raw["root_ang_vel_w"].astype(np.float64)
-            self.features = raw["goal_features"].astype(np.float32)
+            self.goal_mode = (
+                str(raw["goal_mode"].item()) if "goal_mode" in raw.files else "per_frame"
+            )
+            if self.goal_mode == "per_frame":
+                self.features = raw["goal_features"].astype(np.float32)
+                self.q0 = None
+            elif self.goal_mode == "reference_heading":
+                self.features = None
+                self.q0 = raw["default_joint_pos"].astype(np.float64)
+            else:
+                raise ValueError(f"{path}: unknown goal mode {self.goal_mode!r}")
             if raw["joint_names"].tolist() != joint_names:
                 raise ValueError(f"{path}: reference joint order does not match actor")
             if not np.isclose(float(raw["fps"].item()), 1 / dt):
@@ -112,15 +159,19 @@ class Reference:
         self.name, self.goal_frames = path.stem, goal_frames
         self.length = len(self.joint_pos)
         n = len(joint_names)
-        for name, width in [
+        fields = [
             ("joint_pos", n),
             ("joint_vel", n),
             ("root_pos", 3),
             ("root_quat", 4),
             ("root_lin", 3),
             ("root_ang", 3),
-            ("features", 2 * n + 10),
-        ]:
+        ]
+        if self.goal_mode == "per_frame":
+            fields.append(("features", 2 * n + 10))
+        elif self.q0.shape != (n,) or not np.isfinite(self.q0).all():
+            raise ValueError(f"{path}: invalid default joint position")
+        for name, width in fields:
             a = getattr(self, name)
             if a.shape != (self.length, width) or not np.isfinite(a).all():
                 raise ValueError(f"{path}: invalid {name}")
@@ -143,13 +194,27 @@ class Reference:
         self.root_quat = quat_multiply(dq, self.root_quat)
         self.root_lin = self.root_lin @ r.T
         self.root_ang = self.root_ang @ r.T
-        # Stored features are invariant under global XY/yaw transforms.
+        # Both stored per-frame features and the heading-relative goal are
+        # invariant under one global XY/yaw transform.
 
     def goal(
         self, frame: int, robot_pos, robot_quat, anchor_obs: bool, anchor_ori_obs: bool = False
     ) -> np.ndarray:
-        idx = np.minimum(frame + np.arange(self.goal_frames), self.length - 1)
-        result = self.features[idx].reshape(-1)
+        if self.goal_mode == "reference_heading":
+            result = reference_heading_goal(
+                self.root_pos,
+                self.root_quat,
+                self.root_lin,
+                self.root_ang,
+                self.joint_pos,
+                self.joint_vel,
+                self.q0,
+                frame,
+                self.goal_frames,
+            )
+        else:
+            idx = np.minimum(frame + np.arange(self.goal_frames), self.length - 1)
+            result = self.features[idx].reshape(-1)
         if anchor_obs or anchor_ori_obs:
             r = rotation(robot_quat)
             if anchor_obs:
@@ -206,6 +271,8 @@ def load_model(bundle: Path, metadata: dict):
 class PositionCommandDelay:
     """Command bus latency, advanced once per physics step.
 
+    Episode mode draws one lag at reset and holds it, matching the training
+    buffer's once-per-episode delay. Step mode draws again on every physics step.
     Like mjlab, clamp to available history after reset instead of replaying
     zero targets or targets from the previous episode. Feedback is not delayed.
     """
@@ -254,10 +321,8 @@ class Sim2Sim:
         if not np.isclose(self.dt, self.model.opt.timestep * self.decimation):
             raise ValueError("Control timing does not match physics decimation")
         self.previous_action = np.zeros(len(self.q0), dtype=np.float32)
-        self.command_delay = PositionCommandDelay(
-            2 if self.meta.get("actuator_delay", False) else 0,
-            mode=self.meta.get("actuator_delay_mode", "episode"),
-        )
+        # The bundle records the training delay. Playback does not apply it.
+        self.command_delay = PositionCommandDelay(0)
         self.root_id = self.model.body(self.meta["root_body_name"]).id
 
     def reset(self, clip: str, start_frame: int = 0, start_xy=None, start_yaw=None):
@@ -315,8 +380,6 @@ class Sim2Sim:
         targets = self.position_targets(action)
         self.data.ctrl[:] = targets[self.actuator_to_joint]
         for _ in range(self.decimation):
-            if self.meta.get("actuator_delay", False):
-                self.data.ctrl[:] = self.command_delay.apply(targets)[self.actuator_to_joint]
             mujoco.mj_step(self.model, self.data)
         if not np.isfinite(self.data.qpos).all() or not np.isfinite(self.data.qvel).all():
             raise FloatingPointError("MuJoCo state became nonfinite")
@@ -437,6 +500,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--bundle", type=Path, default=default)
     p.add_argument("--clip", help="Clip name in the bundle; default is its first clip")
+    p.add_argument("--motion-order", nargs="+", help="Limit/reorder selectable clips; default is the bundle order")
     p.add_argument("--list-clips", action="store_true")
     p.add_argument("--render", action="store_true", help="Native MuJoCo viewer")
     p.add_argument("--no-realtime", action="store_true")
@@ -465,7 +529,9 @@ def main():
     if a.seconds is not None and (not math.isfinite(a.seconds) or a.seconds <= 0):
         p.error("--seconds must be positive and finite")
     sim = Sim2Sim(a.bundle, a.threads)
-    clips = list(sim.meta["motions"])
+    clips = a.motion_order or list(sim.meta["motions"])
+    if len(set(clips)) != len(clips) or any(name not in sim.meta["motions"] for name in clips):
+        p.error("--motion-order must contain unique clip names present in the bundle")
     if a.list_clips:
         print("\n".join(clips))
         return

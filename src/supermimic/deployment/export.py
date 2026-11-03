@@ -16,11 +16,11 @@ import torch
 from mjlab.scene import Scene
 from torch import nn
 
-from supermimic.envs.mdp.motion_library import RefState, goal_features
 from supermimic.envs.tracking_env_cfg import SuperMimicEnvCfgArgs, make_env_cfg
 from supermimic.goal_spec import anchor_goal_dim
 from supermimic.policy.nets import Policy, PolicyCfg
 from supermimic.robots import get_robot
+from supermimic.robots.layout import RobotLayout
 
 
 class ActorOnly(nn.Module):
@@ -86,7 +86,7 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
     anchor = cfg["env"].get("anchor_obs", False)
     anchor_ori = cfg["env"].get("anchor_ori_obs", False)
     obs_dim = (3 * n + 6) * pcfg.history
-    if n != 27 or pcfg.goal_dim != k * (2 * n + 10) + anchor_goal_dim(anchor, anchor_ori):
+    if n != 27 or pcfg.goal_dim != k * RobotLayout(n).goal_dim + anchor_goal_dim(anchor, anchor_ori):
         raise ValueError("Checkpoint dimensions are inconsistent with the selected robot/interface")
     output.mkdir(parents=True, exist_ok=True)
     profile = get_robot("casbot02")
@@ -188,14 +188,6 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
             root_quat = data["body_quat_w"][:, root_idx]
             root_lin = data["body_lin_vel_w"][:, root_idx]
             root_ang = data["body_ang_vel_w"][:, root_idx]
-            ref = RefState(
-                *[
-                    torch.from_numpy(a.copy()).float()
-                    for a in (root_pos, root_quat, q, root_lin, root_ang, qd)
-                ]
-            )
-            with torch.inference_mode():
-                features = goal_features(ref, torch.from_numpy(q0)).numpy()
             dest = output / "motions" / f"{path.stem}.npz"
             np.savez_compressed(
                 dest,
@@ -207,7 +199,8 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
                 root_quat_w=root_quat,
                 root_lin_vel_w=root_lin,
                 root_ang_vel_w=root_ang,
-                goal_features=features,
+                goal_mode=np.array("reference_heading"),
+                default_joint_pos=q0,
             )
         clip_files[path.stem] = str(dest.relative_to(output))
         source_motions[path.stem] = {
@@ -247,6 +240,10 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
         "soft_joint_limits": np.stack((mid - half, mid + half), -1).tolist(),
         "obs_dim": obs_dim,
         "goal_dim": pcfg.goal_dim,
+        "goal_encoding": "reference_heading_v1",
+        "goal_frame_dim": RobotLayout(n).goal_dim,
+        "goal_terms": ["joint_pos_minus_q0:27", "joint_vel:27", "heading_displacement:3",
+                       "heading_rot6d_row_major:6", "pelvis_linear_velocity:3", "pelvis_angular_velocity:3"],
         "history": pcfg.history,
         "future_frames": k,
         "anchor_obs": anchor,

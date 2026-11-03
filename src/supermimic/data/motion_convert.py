@@ -227,15 +227,14 @@ def forward_kinematics(model: mujoco.MjModel, motion: ResampledMotion) -> BodyMo
     return BodyMotion(pos, quat, lin, ang, tuple(model.body(i).name for i in range(1, model.nbody)))
 
 
-def convert_csv(
+def csv_motion_arrays(
     source: str | Path,
-    output: str | Path,
     input_fps: float = 30,
     output_fps: float = 50,
     model: mujoco.MjModel | None = None,
     robot: str = "g1",
-) -> int:
-    """Write all motion-library keys, including names, as a compressed NPZ."""
+) -> dict[str, np.ndarray]:
+    """Convert on CPU; let dataset preparation filter before writing to disk."""
     from supermimic.robots import get_robot
 
     profile = get_robot(robot)
@@ -247,9 +246,7 @@ def convert_csv(
         load_csv(source, profile.num_joints, joint_names=names), input_fps, output_fps
     )
     bodies = forward_kinematics(model, motion)
-    output = Path(output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    arrays = {
+    return {
         "fps": np.array([output_fps], dtype=np.float32),
         "joint_pos": motion.joint_pos.astype(np.float32),
         "joint_vel": motion.joint_vel.astype(np.float32),
@@ -263,11 +260,16 @@ def convert_csv(
         "source": np.array(str(source)),
         "input_fps": np.array([input_fps], dtype=np.float32),
     }
-    # A failed write must not leave a partial file that a rerun would skip.
+
+
+def write_motion_npz(output: str | Path, arrays: dict[str, np.ndarray]) -> None:
+    """Atomic compressed NPZ; a rerun never mistakes a partial file for a clip."""
     import os
     import tempfile
 
-    fd, temporary = tempfile.mkstemp(dir=output.parent, suffix=".npz")
+    output = Path(output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(dir=output.parent, suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as stream:
             np.savez_compressed(stream, **arrays)
@@ -275,4 +277,17 @@ def convert_csv(
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
-    return motion.num_frames
+
+
+def convert_csv(
+    source: str | Path,
+    output: str | Path,
+    input_fps: float = 30,
+    output_fps: float = 50,
+    model: mujoco.MjModel | None = None,
+    robot: str = "g1",
+) -> int:
+    """Write all motion-library keys, including names, as a compressed NPZ."""
+    arrays = csv_motion_arrays(source, input_fps, output_fps, model, robot)
+    write_motion_npz(output, arrays)
+    return len(arrays["joint_pos"])

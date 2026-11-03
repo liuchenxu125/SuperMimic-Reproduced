@@ -121,6 +121,8 @@ def factory(args):
         torch.backends.cudnn.benchmark = True
         torch.backends.cudnn.deterministic = False
         env_args.collision_model = args.collision_model
+        env_args.compact_library = args.compact_library
+        env_args.library_device = args.library_device
         cfg = make_env_cfg(env_args)
         cfg.sim.nconmax, cfg.sim.njmax = args.nconmax, args.njmax
         return ManagerBasedRlEnv(cfg, device=device)
@@ -178,6 +180,9 @@ def main():
     p.add_argument("--njmax", type=int, default=320)
     p.add_argument("--num-envs", type=int, default=4096)
     p.add_argument("--npz-dir", type=Path, default=Path("data/npz/lafan1_casbot02_codex"))
+    p.add_argument("--manifest", type=Path)
+    p.add_argument("--compact-library", action="store_true")
+    p.add_argument("--library-device", choices=["device", "cpu"], default="device")
     p.add_argument("--steps", type=int, default=1000)
     p.add_argument("--iterations", type=int, default=100)
     p.add_argument("--batch-size", type=int, default=2048)
@@ -218,6 +223,9 @@ def main():
 
             cfg = TrainConfig(robot="casbot02", run_name=args.out.stem, seed=args.seed)
             cfg.data.npz_dir = args.npz_dir
+            cfg.data.manifest = args.manifest
+            cfg.env.compact_library = args.compact_library
+            cfg.env.library_device = args.library_device
             cfg.env.num_envs = args.num_envs
             cfg.env.collision_model = args.collision_model
             cfg.env.anchor_ori_obs = args.anchor_ori_obs
@@ -229,7 +237,7 @@ def main():
                 trainer = Trainer(cfg)
             env = trainer.env
         else:
-            files = discover_npz(args.npz_dir)
+            files = discover_npz(args.npz_dir, manifest=args.manifest)
             training = args.mode == "rollout"
             env = factory(args)(
                 SuperMimicEnvCfgArgs(
@@ -241,7 +249,7 @@ def main():
                     domain_randomization=training,
                     action_noise_std=0.0,  # rollout noise is injected before env.step
                     actuator_delay=training,
-                    actuator_delay_mode="step",
+                    actuator_delay_mode="episode",
                     record_transitions=False,
                     seed=args.seed,
                 )
@@ -271,6 +279,14 @@ def main():
         report["cache_trims"] = cache_trims
         if trainer is not None:
             trainer.run()
+            reference = trainer.lib._ref
+            report["reference_library"] = {
+                "clips": trainer.lib.num_clips,
+                "frames": trainer.lib.num_frames,
+                "storage_device": str(reference.device),
+                "compute_device": str(trainer.lib.device),
+                "reference_mib": reference.numel() * reference.element_size() / 2**20,
+            }
             report["training"] = {
                 "iterations": trainer.iteration,
                 "env_steps": trainer.env_steps,
@@ -294,7 +310,7 @@ def main():
                     if args.ckpt is None:
                         p.error("policy rollout needs --ckpt")
                     policy, cfg = load_policy_from_checkpoint(args.ckpt, str(env.device))
-                    if cfg.get("robot") != "casbot02" or cfg["policy"]["goal_dim"] != 640:
+                    if cfg.get("robot") != "casbot02" or cfg["policy"]["goal_dim"] != 690:
                         raise ValueError("Use a Casbot02 proprio checkpoint")
                 n_done = 0
                 returns = 0.0

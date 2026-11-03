@@ -85,7 +85,7 @@ def bundle(tmp_path_factory, request):
     )
     anchor, anchor_ori, delay, collision = request.param
     pc = PolicyCfg(
-        num_joints=27, goal_dim=649 if anchor else 646 if anchor_ori else 640,
+        num_joints=27, goal_dim=699 if anchor else 696 if anchor_ori else 690,
         encoder_hidden=(32,), decoder_hidden=(32,)
     )
     torch.manual_seed(17)
@@ -159,12 +159,10 @@ def test_export_actor_and_motor_order(bundle):
     path, policy, meta, _ = bundle
     sim = Sim2Sim(path)
     sim.reset("small")
-    assert sim.command_delay.max_lag == (2 if meta["actuator_delay"] else 0)
-    assert sim.command_delay.mode == meta["actuator_delay_mode"]
+    assert sim.command_delay.max_lag == 0
     source = torch.load(path.parent / "checkpoint.pt", weights_only=False)["config"]["env"]
-    assert sim.command_delay.mode == source.get("actuator_delay_mode", "episode")
     assert meta["collision_model"] == source.get("collision_model", "mesh")
-    assert len(meta["foot_geom_names"]) == (14 if meta["collision_model"] == "primitive" else 2)
+    assert len(meta["foot_geom_names"]) == 2
     assert sim.target_frame == 1
     assert meta["joint_names"][12] == "waist_yaw_joint"
     assert sim.actuator_to_joint[-1] == 12  # XML actuator order is different.
@@ -232,7 +230,7 @@ def test_proprio_goal_ignores_unavailable_root_pose(bundle):
     goal = sim.reference.goal(1, None, None, False)
     unavailable = sim.reference.goal(1, np.full(3, np.nan), np.full(4, np.nan), False)
     np.testing.assert_array_equal(goal, unavailable)
-    assert goal.shape == (640,)
+    assert goal.shape == (690,)
 
 
 def test_orientation_goal_preserves_reference_and_needs_no_position(bundle):
@@ -245,13 +243,13 @@ def test_orientation_goal_preserves_reference_and_needs_no_position(bundle):
     expected = (rotation(quat).T @ rotation(ref.root_quat[frame]))[:, :2].reshape(-1)
     goal = ref.goal(frame, None, quat, False, True)
     unavailable = ref.goal(frame, np.full(3, np.nan), quat, False, True)
-    assert goal.shape == (646,)
-    np.testing.assert_array_equal(goal[:640], ref.goal(frame, None, None, False))
+    assert goal.shape == (696,)
+    np.testing.assert_array_equal(goal[:690], ref.goal(frame, None, None, False))
     np.testing.assert_array_equal(goal, unavailable)
-    np.testing.assert_allclose(goal[640:], expected, atol=1e-7)
+    np.testing.assert_allclose(goal[690:], expected, atol=1e-7)
     # Full anchor mode already includes orientation: enabling both must not duplicate it.
     full = ref.goal(frame, np.zeros(3), quat, True, True)
-    assert full.shape == (649,)
+    assert full.shape == (699,)
     np.testing.assert_array_equal(full[-6:], goal[-6:])
 
 

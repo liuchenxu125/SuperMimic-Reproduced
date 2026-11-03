@@ -7,7 +7,7 @@ frequency is 20 Hz. No guessed sensor_msgs/Joy button mapping is used.
 
 The SDK consumes `/joystick_events`. Button IDs: A=0, B=1, X=2, Y=3,
 LB=4, RB=5, BACK=6, START=7, LT=11, RT=12. The SDK owns modifier chords
-and mode changes. SuperMimic uses unmodified X (advance and play next clip) and B (return) release events. D-pad input does not select motions.
+and mode changes. SuperMimic uses unmodified X (advance and play next clip) and B (return) release events. The default `auto_start_trigger: mode7` starts once on fresh raw mode 7 and valid sensor/PD feedback without depending on receiving LB+A. The optional `lb_a` trigger still requires observing the chord. It does not issue the mode change itself. D-pad input does not select motions.
 
 The build uses this package when an external SDK installation is missing any
 required JointStateData, GetRobotMode or JoystickCmdReport C++ interface.

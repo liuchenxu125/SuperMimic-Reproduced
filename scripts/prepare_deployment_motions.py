@@ -9,12 +9,13 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
-import struct
 
 import numpy as np
 import torch
 
-from supermimic.envs.mdp.motion_library import RefState, goal_features
+from supermimic.envs.mdp.motion_library import RefState
+from supermimic.deployment.motion_binary import encode_motion
+from supermimic.kinematics.rotations import projected_gravity, quat_apply_inverse, yaw_quat
 
 
 DEFAULT_CLIPS = ['walk1_subject2', 'walk1_subject1', 'walk2_subject4',
@@ -23,6 +24,22 @@ DEFAULT_CLIPS = ['walk1_subject2', 'walk1_subject1', 'walk2_subject4',
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def legacy_goal_features(ref, q0):
+    """Per-frame goal stored by the existing 640-dim hardware actor."""
+    quat = ref.root_quat_w
+    return torch.cat(
+        [
+            ref.joint_pos - q0,
+            ref.joint_vel,
+            projected_gravity(quat),
+            quat_apply_inverse(quat, ref.root_ang_vel_w),
+            quat_apply_inverse(yaw_quat(quat), ref.root_lin_vel_w),
+            ref.root_pos_w[..., 2:3],
+        ],
+        dim=-1,
+    )
 
 
 def main():
@@ -43,6 +60,7 @@ def main():
     if len(set(args.clips)) != len(args.clips) or any(Path(c).name != c or c in ('.', '..') for c in args.clips):
         raise ValueError('Clip names must be unique plain filenames without extensions')
     q0 = torch.tensor([m['q0'] for m in meta['motors']], dtype=torch.float32)
+    encoding = meta.get('goal_encoding', 'per_frame_v1')
     pending = []
     for clip in args.clips:
         path = args.npz_dir / f'{clip}.npz'
@@ -56,19 +74,17 @@ def main():
                       data['joint_pos'], data['body_lin_vel_w'][:, root],
                       data['body_ang_vel_w'][:, root], data['joint_vel']]
             ref = RefState(*[torch.from_numpy(a.copy()).float() for a in arrays])
-            with torch.inference_mode():
-                features = goal_features(ref, q0).numpy()
-            records = np.concatenate([arrays[0], arrays[1], arrays[2], arrays[5], features], axis=1).astype('<f4')
-        if records.shape[1] != 125 or len(records) < 2 or not np.isfinite(records).all():
-            raise ValueError(f'{clip}: invalid motion shape/data')
-        if not np.allclose(np.linalg.norm(records[:, 3:7], axis=1), 1., atol=.01):
-            raise ValueError(f'{clip}: invalid root quaternion')
-        blob = b'SMREF001' + struct.pack('<II', len(records), 125) + records.tobytes()
+            fields = dict(zip(('root_pos_w', 'root_quat_w', 'joint_pos', 'root_lin_vel_w',
+                               'root_ang_vel_w', 'joint_vel'), arrays))
+            if encoding == 'per_frame_v1':
+                with torch.inference_mode():
+                    fields['goal_features'] = legacy_goal_features(ref, q0).numpy()
+            blob, frames = encode_motion(fields, encoding)
         # The original successful clip must remain byte-identical to its deployment.
         if clip == meta['clip'] and blob != (args.base_bundle / meta['motion_file']).read_bytes():
             raise ValueError(f'{clip}: reference differs from existing deployment; check source dataset')
         motion_meta = copy.deepcopy(meta)
-        motion_meta.update(clip=clip, frames=len(records), actor_file='../policy/actor.onnx',
+        motion_meta.update(clip=clip, frames=frames, actor_file='../policy/actor.onnx',
                            motion_file='motion.bin', motion_sha256=hashlib.sha256(blob).hexdigest(),
                            source_motion=str(path.resolve()), source_motion_sha256=digest(path))
         pending.append((clip, blob, motion_meta))

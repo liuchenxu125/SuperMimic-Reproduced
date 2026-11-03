@@ -4,7 +4,7 @@
   uv run python scripts/play.py --ckpt logs/e3_lafan1_40_anchor/ckpt_latest.pt --npz-dir data/npz/lafan1 --num-envs 4
 
 The grey/blue translucent robot is the reference pose; the solid robot is the policy.
-Deterministic evaluation settings (no noise, no DR); every reset starts the clip from its first frame.
+Deterministic evaluation settings (no noise, no DR, no actuator delay); every reset starts the clip from its first frame.
 Native MuJoCo viewer when a display is available, otherwise viser (browser, http://localhost:8080).
 Keys (native): space pause, right-arrow single step, +/- speed, backspace reset.
 """
@@ -63,9 +63,10 @@ def main(
         seed=0,
         anchor_obs=cfg["env"].get("anchor_obs", False),
         anchor_ori_obs=cfg["env"].get("anchor_ori_obs", False),
-        actuator_delay=cfg["env"].get("actuator_delay", False),
-        actuator_delay_mode=cfg["env"].get("actuator_delay_mode", "episode"),
+        actuator_delay=False,
         collision_model=cfg["env"].get("collision_model", "mesh"),
+        compact_library=cfg["env"].get("compact_library", False),
+        library_device=cfg["env"].get("library_device", "device"),
         debug_vis=ghost,
     )
     env = RslRlVecEnvWrapper(make_env(args, device=device))

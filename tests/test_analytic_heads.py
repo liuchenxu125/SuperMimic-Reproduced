@@ -157,7 +157,7 @@ def test_anchor_relative_obs_matches_env():
         heads = AnalyticHeads(G1Kinematics(load_g1_model(), device=env.device), TRACKED_BODIES, ANCHOR_BODY, ROOT_BODY, robot.data.soft_joint_pos_limits[0].clone(), robot.data.default_joint_pos[0].clone())
         io = StateIO(env)
         obs, _ = env.reset()
-        assert obs["goal"].shape == (8, 689)
+        assert obs["goal"].shape == (8, 739)
         cmd = env.command_manager.get_term("motion")
         for _ in range(5):
             obs, *_ = env.step(0.3 * torch.randn(8, 29, device=env.device))
@@ -166,6 +166,6 @@ def test_anchor_relative_obs_matches_env():
             ai = heads.anchor_index
             ref = _ref_from_command(cmd)
             ours = anchor_relative_obs(b["pos"][:, ai], b["quat"][:, ai], ref.body_pos_w[:, ai], ref.body_quat_w[:, ai])
-            np.testing.assert_allclose(ours.cpu().numpy(), obs["goal"][:, 680:].cpu().numpy(), atol=3e-5)
+            np.testing.assert_allclose(ours.cpu().numpy(), obs["goal"][:, 730:].cpu().numpy(), atol=3e-5)
     finally:
         env.close()

@@ -32,7 +32,7 @@ class ImagRollout:
     rewards: torch.Tensor  # (H, n)      r_{t+1}
     dhat: torch.Tensor  # (H+1, n)    predicted termination prob of s_t (d_0 = 0)
     survival: torch.Tensor  # (H+1, n)    c_t
-    goals: torch.Tensor  # (H+1, n, 680)
+    goals: torch.Tensor  # (H+1, n, goal)
     e_root: torch.Tensor  # (H+1, n, 4)
     frames: torch.Tensor  # (H+1, n)
     reward_terms: dict  # mean of each reward term over the rollout (diagnostics)

@@ -106,7 +106,7 @@ def test_conversion_library_and_network_dimensions(casbot_clip):
 
     profile = get_robot("casbot02")
     layout = profile.layout
-    assert (layout.state_dim, layout.obs_dim, layout.goal_dim, layout.xi_dim) == (67, 87, 64, 31)
+    assert (layout.state_dim, layout.obs_dim, layout.goal_dim, layout.xi_dim) == (67, 87, 69, 31)
     q0 = torch.zeros(27)
     kwargs = {"root_body_name": "base_link", "robot_name": "casbot02", "device": "cpu"}
     full = MotionLibrary([casbot_clip], profile.tracked_bodies, q0, **kwargs)
@@ -128,7 +128,7 @@ def test_conversion_library_and_network_dimensions(casbot_clip):
     obs = analytic_observation(state, torch.zeros(20, 27), xi, q0)
     hist = flatten_history_term_major(obs[None].expand(10, -1, -1))
     assert hist.shape == (20, 870)
-    cfg = PolicyCfg(num_joints=27, goal_dim=640, encoder_hidden=(64,), decoder_hidden=(64,))
+    cfg = PolicyCfg(num_joints=27, goal_dim=690, encoder_hidden=(64,), decoder_hidden=(64,))
     policy = Policy(cfg)
     assert policy(hist, full.goal_window(frames, 10)).shape == (20, 27)
     critic = Critic(CriticCfg(hidden=(64,)), pcfg=cfg)
@@ -167,7 +167,7 @@ def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_n
     )
     wm = WorldModel(WorldModelCfg(hidden=(32,), term_hidden=(16,),
                                  state_spec=StateSpecCfg(num_joints=27)), heads, "cpu")
-    pc = PolicyCfg(num_joints=27, goal_dim=646, encoder_hidden=(32,), decoder_hidden=(32,))
+    pc = PolicyCfg(num_joints=27, goal_dim=696, encoder_hidden=(32,), decoder_hidden=(32,))
     policy, critic = Policy(pc), Critic(CriticCfg(hidden=(32,)), pcfg=pc)
     frames = torch.tensor([5, 15])
     qp, qv = lib.ref_qpos_qvel(frames)
@@ -178,19 +178,19 @@ def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_n
         hist_actions=torch.zeros(10, 2, 27),
     )
     ro = imagine(wm, policy, lib, start, horizon=2, anchor_ori_obs=True, obs_noise=obs_noise)
-    assert ro.goals.shape == (3, 2, 646) and ro.actions.shape == (2, 2, 27)
+    assert ro.goals.shape == (3, 2, 696) and ro.actions.shape == (2, 2, 27)
     for t in range(3):
-        torch.testing.assert_close(ro.goals[t, :, :640], lib.goal_window(ro.frames[t], 10),
+        torch.testing.assert_close(ro.goals[t, :, :690], lib.goal_window(ro.frames[t], 10),
                                    atol=0, rtol=0)
         ref = reference_at(lib, ro.frames[t])
         actual_quat = heads.robot_bodies(ro.states[t])["quat"][:, heads.anchor_index]
         expected = anchor_relative_orientation(actual_quat, ref.body_quat_w[:, heads.anchor_index])
-        difference = (ro.goals[t, :, 640:] - expected).abs()
+        difference = (ro.goals[t, :, 690:] - expected).abs()
         if obs_noise:
             assert difference.max() <= 0.050001 and difference.max() > 0
         else:
-            torch.testing.assert_close(ro.goals[t, :, 640:], expected)
-    grad = torch.autograd.grad(ro.goals[0, :, 641].sum(), state)[0]
+            torch.testing.assert_close(ro.goals[t, :, 690:], expected)
+    grad = torch.autograd.grad(ro.goals[0, :, 691].sum(), state)[0]
     assert torch.isfinite(grad).all() and grad[:, 3:7].abs().sum() > 0
 
     # Exercise the real policy/critic update on a detached replay seed.
@@ -243,9 +243,9 @@ def test_casbot02_training_and_checkpoint(casbot_clip, tmp_path):
         policy, saved = load_policy_from_checkpoint(ckpt, "cuda:0")
         assert saved["robot"] == "casbot02"
         assert saved["env"]["actuator_delay"] is True
-        assert saved["policy"]["goal_dim"] == 649
+        assert saved["policy"]["goal_dim"] == 699
         assert torch.isfinite(
-            policy(torch.zeros(1, 870, device="cuda"), torch.zeros(1, 649, device="cuda"))
+            policy(torch.zeros(1, 870, device="cuda"), torch.zeros(1, 699, device="cuda"))
         ).all()
     finally:
         trainer.env.close()
@@ -273,7 +273,7 @@ def test_casbot02_downloaded_lafan1_env():
     )
     try:
         obs, _ = env.reset()
-        assert obs["policy"].shape == (8, 870) and obs["goal"].shape == (8, 649)
+        assert obs["policy"].shape == (8, 870) and obs["goal"].shape == (8, 699)
         for _ in range(100):
             obs, reward, *_ = env.step(torch.randn(8, 27, device=env.device) * 0.1)
             assert torch.isfinite(obs["policy"]).all() and torch.isfinite(reward).all()

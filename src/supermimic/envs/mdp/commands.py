@@ -4,7 +4,7 @@ Exposes the same attribute API as mjlab's ``MotionCommand`` (``anchor_pos_w``,
 ``robot_body_pos_w``, ``body_pos_relative_w`` ...) so mjlab's tracking reward
 functions work unchanged, plus:
 
-* ``goal``        (N, K*68) future-frame goal features (plan D5)
+* ``goal``        future-frame pelvis and joint features
 * ``root_*``      reference pelvis quantities for the paper's root terminations
 * ``clip_end``    (N,) True once the clip's last frame has been reached (time-out)
 * return-based reset sampling over 1 s bins of the whole library (plan D14)
@@ -60,6 +60,7 @@ class MultiClipMotionCommand(CommandTerm):
             device=self.device,
             bin_frames=cfg.bin_frames,
             compact=cfg.compact_library,
+            library_device=cfg.library_device,
             store_dtype=torch.float16 if cfg.library_fp16 else torch.float32,
             root_body_name=cfg.root_body_name,
             robot_name=cfg.robot_name,
@@ -484,6 +485,7 @@ class MultiClipMotionCommandCfg(CommandTermCfg):
     min_remaining_steps: int = 100
     max_logged_steps: int = 1024
     compact_library: bool = False
+    library_device: Literal["device", "cpu"] = "device"
     library_fp16: bool = True
     resampling_time_range: tuple[float, float] = (1.0e9, 1.0e9)
 

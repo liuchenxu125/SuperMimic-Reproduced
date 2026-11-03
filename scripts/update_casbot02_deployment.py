@@ -58,6 +58,29 @@ def menu_text(text, motions, order):
     return text
 
 
+def verify_contract(new_meta, old_meta, accept_joint_limit_update=False, accept_goal_update=False):
+    """Keep actuator/interface guards, with an explicit opt-in for new limits."""
+    for key in ('motors', 'joint_names', 'sdk_joint_names', 'obs_dim',
+                'history', 'future_frames', 'control_dt'):
+        if new_meta[key] != old_meta[key]:
+            raise ValueError(f'Export changed {key}; verify training-time robot constants before updating')
+    before = (old_meta['goal_dim'], old_meta.get('goal_encoding', 'per_frame_v1'))
+    after = (new_meta['goal_dim'], new_meta.get('goal_encoding', 'per_frame_v1'))
+    if before != after:
+        supported = (before == (640, 'per_frame_v1') and after == (690, 'reference_heading_v1')
+                     and not any(meta.get(flag, False) for meta in (new_meta, old_meta)
+                                 for flag in ('anchor_obs', 'anchor_ori_obs')))
+        if not (accept_goal_update and supported):
+            raise ValueError('Export changed goal_dim/encoding; verified 640->690 migration requires --accept-goal-update')
+    changes = {key: {'before': old_meta[key], 'after': new_meta[key]}
+               for key in ('joint_limits', 'soft_joint_limits')
+               if new_meta[key] != old_meta[key]}
+    if changes and not accept_joint_limit_update:
+        raise ValueError('Export changed joint limits; verify training-time XML, then use '
+                         '--accept-joint-limit-update to record and apply these limits')
+    return changes
+
+
 def install_bundles(pairs, config, text, backup):
     """Prepare copies first, then rename each directory; roll back on errors."""
     backup.mkdir()
@@ -99,6 +122,10 @@ def main():
     parser.add_argument('--output', type=Path, help='New, empty export directory; default timestamped under outputs/')
     parser.add_argument('--prepend-motions', nargs='+', help='Add/prepend NPZ clip names to the existing joystick cycle')
     parser.add_argument('--initial-motion', help='Default clip on automatic startup; must be in the resulting motion menu')
+    parser.add_argument('--motion-order', nargs='+', help='Replace the joystick cycle exactly; other configured motions remain available')
+    parser.add_argument('--accept-goal-update', action='store_true', help='Migrate the legacy 640-goal proprio bundle to verified 690-goal heading-relative encoding')
+    parser.add_argument('--accept-joint-limit-update', action='store_true',
+                        help='Accept verified training-time joint limit changes; motor/interface changes still fail')
     parser.add_argument('--apply', action='store_true', help='Back up and update LOCAL deployment bundles after checks')
     parser.add_argument('--build-arm64', action='store_true', help='Also build local ARM64 package; requires --apply and Docker')
     args = parser.parse_args()
@@ -119,6 +146,10 @@ def main():
         bank_relative = Path(cfg['motions'][old_meta['clip']]).parent
         cfg['motions'] = {**{name:cfg['motions'].get(name,str(bank_relative/name)) for name in new},**cfg['motions']}
         cfg['joystick_motion_order'] = [*new,*[name for name in cfg['joystick_motion_order'] if name not in new]]
+    if args.motion_order:
+        if len(set(args.motion_order)) != len(args.motion_order) or any(name not in cfg['motions'] for name in args.motion_order):
+            raise ValueError('--motion-order requires unique configured motions')
+        cfg['joystick_motion_order'] = args.motion_order
     initial = args.initial_motion or old_meta['clip']
     if initial not in cfg['joystick_motion_order'] or initial not in cfg['motions']:
         raise ValueError('Initial motion must be included in motions and joystick_motion_order')
@@ -137,10 +168,10 @@ def main():
     source_hash = digest(ckpt)
     payload = torch.load(ckpt, map_location='cpu', weights_only=False)
     saved = payload['config']; policy_cfg = saved['policy']; env_cfg = saved['env']
-    if (saved.get('robot'), policy_cfg['num_joints'], policy_cfg['history'], policy_cfg['goal_dim'],
+    if (saved.get('robot'), policy_cfg['num_joints'], policy_cfg['history'],
         env_cfg.get('anchor_obs', False), env_cfg.get('anchor_ori_obs', False), env_cfg['future_frames']) != (
-            'casbot02', 27, 10, 640, False, False, 10):
-        raise ValueError('This updater requires the current Casbot02 870+640 ->27 proprio interface')
+            'casbot02', 27, 10, False, False, 10) or policy_cfg['goal_dim'] != 690:
+        raise ValueError('This updater requires the current Casbot02 870+690 ->27 proprio interface')
     if not all(torch.isfinite(tensor).all() for tensor in payload['policy'].values()):
         raise ValueError('Actor contains NaN/Inf; choose another checkpoint')
     iteration = payload['iteration']; unit = payload.get('iteration_unit', 'unknown')
@@ -165,10 +196,9 @@ def main():
     new_meta = json.loads((hardware/'manifest.json').read_text())
     # Older checkpoints do not embed motor constants: preserve the known local
     # contract, instead of silently exporting with changed q0/gains/scales.
-    for key in ('motors', 'joint_names', 'sdk_joint_names', 'joint_limits', 'soft_joint_limits',
-                'obs_dim', 'goal_dim', 'history', 'future_frames', 'control_dt'):
-        if new_meta[key] != old_meta[key]:
-            raise ValueError(f'Export changed {key}; verify training-time robot constants before updating')
+    limit_changes = verify_contract(new_meta, old_meta, args.accept_joint_limit_update, args.accept_goal_update)
+    if limit_changes:
+        print('Applying verified new joint limits; actuator/interface contract unchanged', flush=True)
     run([python, ROOT/'scripts/prepare_deployment_motions.py', '--base-bundle', hardware,
          '--npz-dir', npz_dir, '--output', motion_bank, '--clips', *clips], logs/'03_motion_bank.log')
     staged_cfg = copy.deepcopy(cfg)
@@ -190,20 +220,25 @@ def main():
         raise RuntimeError(f'Native transition check failed; deployment not replaced. See {output}/x_transitions.json')
     record = dict(checkpoint=str(ckpt), snapshot=str(snapshot), checkpoint_sha256=source_hash,
                   checkpoint_iteration=iteration, iteration_unit=unit, actor_sha256=new_meta['actor_sha256'],
-                  input_dims=[870, 640], actions=27, clips=clips, npz_dir=str(npz_dir),
+                  input_dims=[870, policy_cfg['goal_dim']], actions=27, clips=clips, npz_dir=str(npz_dir),
+                  goal_encoding=new_meta['goal_encoding'], previous_goal_dim=old_meta['goal_dim'],
                   initial_motion=initial,joystick_motion_order=cfg['joystick_motion_order'],
                   sim_bundle=str(sim), hardware_bundle=str(hardware), motion_bank=str(motion_bank),
                   validation=f'10s C++ parity from rest + {len(transitions["results"])}-edge short transitions; not full-clip success evaluation',
-                  motor_contract_unchanged=True, applied=False, arm64_built=False, uploaded_to_orin=False,
+                  motor_contract_unchanged=True, joint_limit_changes=limit_changes,
+                  applied=False, arm64_built=False, uploaded_to_orin=False,
                   hardware_tested=False, limitations='Fixed switch points and nominal native CPU physics; complete SDK/firmware not modeled')
     record_path = output/'deployment.json'
     record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2)+'\n')
     if args.apply:
         # Abort if another local edit happened during validation.
         if config.read_text() != cfg_text: raise RuntimeError('Deployment config changed during export; retry with a new output')
-        text = menu_text(cfg_text,cfg['motions'],cfg['joystick_motion_order']) if args.prepend_motions else cfg_text
+        text = menu_text(cfg_text,cfg['motions'],cfg['joystick_motion_order']) if args.prepend_motions or args.motion_order else cfg_text
+        text = re.sub(r'^# Casbot02 proprio policy: .+$', f'# Casbot02 proprio policy: 870 history + {policy_cfg["goal_dim"]} reference -> 27 actions, 50 Hz.', text, flags=re.M)
         text = re.sub(r'^# .+ / ckpt_\S+\.pt, .+\.$', f'# {ckpt.parent.name} / {ckpt.name}, {initial}.', text, flags=re.M)
         text = re.sub(r'^# Fixed snapshot exported at update \d+;.*$', f'# Fixed snapshot exported at update {iteration}; collision model: {env_cfg.get("collision_model", "mesh")}.', text, flags=re.M)
+        text = re.sub(r'^# Initial automatic motion: .+$',
+                      f'# Initial automatic motion: {initial} (from this bundle manifest).', text, flags=re.M)
         backup = output/'previous_deployment'
         catalog_path = motion_bank/'catalog.json'
         catalog = json.loads(catalog_path.read_text())
@@ -223,7 +258,7 @@ def main():
                     raise RuntimeError(f'Installed ARM64 bundle differs: {target}')
         record.update(arm64_built=True, arm64_runner_sha256=digest(install/'bin/supermimic_runner'))
         record_path.write_text(json.dumps(record, ensure_ascii=False, indent=2)+'\n')
-    print(f'Done: {record_path}\nCheckpoint: {iteration} {unit}, 870 + 640 -> 27\nNo robot upload or motor commands were sent.', flush=True)
+    print(f'Done: {record_path}\nCheckpoint: {iteration} {unit}, 870 + {policy_cfg["goal_dim"]} -> 27\nNo robot upload or motor commands were sent.', flush=True)
 
 
 if __name__ == '__main__':

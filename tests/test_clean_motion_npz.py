@@ -73,3 +73,34 @@ def test_float32_limits_do_not_round_outside_model():
     lo, hi = cleaner.float32_bounds(model.jnt_range[1:])
     assert (lo.astype(np.float64) >= model.jnt_range[1:, 0]).all()
     assert (hi.astype(np.float64) <= model.jnt_range[1:, 1]).all()
+
+
+def test_trim_only_keeps_joint_values_and_recomputes_start_velocity():
+    profile = get_robot("casbot02")
+    model = profile.model()
+    limits = model.jnt_range[1:]
+    lower = limits[:, 0].astype(np.float32)
+    index = np.flatnonzero(lower.astype(np.float64) < limits[:, 0])[0]
+    frames, dt = 18, .02
+    q = np.zeros((frames, 27), dtype=np.float32)
+    q[:, index] = lower[index]  # Existing float32 roundoff, under 1e-6 rad.
+    root = np.tile([0., 0., .9], (frames, 1))
+    root[0, 0] = 1.
+    quat = np.tile([1., 0., 0., 0.], (frames, 1))
+    motion = ResampledMotion(50., root, quat, q, np.gradient(root, dt, axis=0),
+                             np.zeros((frames, 3)), np.gradient(q, dt, axis=0))
+    body = forward_kinematics(model, motion)
+    arrays = dict(fps=np.array([50.], dtype=np.float32), joint_pos=q,
+                  joint_vel=motion.joint_vel.astype(np.float32),
+                  body_pos_w=body.pos_w.astype(np.float32),
+                  body_quat_w=body.quat_w.astype(np.float32),
+                  body_lin_vel_w=body.lin_vel_w.astype(np.float32),
+                  body_ang_vel_w=body.ang_vel_w.astype(np.float32),
+                  joint_names=np.array([model.joint(i).name for i in range(1, model.njnt)]),
+                  body_names=np.array(body.body_names))
+    cleaned, stats = cleaner.clean_arrays(arrays, model, profile.root_body, 5, clamp_joints=False)
+    np.testing.assert_array_equal(cleaned["joint_pos"], q[5:])
+    assert stats["joint_values_changed"] == 0
+    assert stats["first_root_speed_before_m_s"] > 10
+    assert stats["first_root_speed_after_m_s"] == 0
+    cleaner.validate_arrays(cleaned, model, profile.root_body, limit_tolerance=1e-6)

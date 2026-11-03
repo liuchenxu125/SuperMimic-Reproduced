@@ -51,25 +51,27 @@ retain this project's existing configuration.
 New Casbot02 training enables `env.actuator_delay` by default. Position targets
 pass through mjlab's builtin actuator delay buffer before implicit PD; joint
 feedback and the policy's previous environment-input action are not delayed. At 200 Hz
-physics, the lag is sampled uniformly from 0, 1, 2 substeps (0/5/10 ms) at
-every physics step (`env.actuator_delay_mode=step`). The range is unchanged.
+physics, each environment draws one lag uniformly from 0, 1, 2 substeps (0/5/10 ms)
+on the first physics step of an episode and holds it until reset
+(`env.actuator_delay_mode=episode`). The hold uses MorphMimic's update period,
+`2**40` physics steps, with `delay_hold_prob=0`. The range stays 0/5/10 ms.
 The 50 Hz policy clock and observation/action dimensions are unchanged.
 
 All 27 matching builtin actuators share one command bus per environment in
-mjlab. The resampling mechanism follows MorphMimic; its larger 0-40 ms range
-is not used here. The local BeyondMimic implementation samples independently
-for its four motor groups, whereas this configuration uses a shared bus. `--env.no-actuator-delay`
-disables the added latency. G1's actuator configuration is unaffected.
+mjlab. `--env.actuator-delay-mode step` keeps the previous draw on every physics
+step. `--env.no-actuator-delay` disables the added latency. G1's actuator
+configuration is unaffected.
 
-The flag and mode are stored in new configs/checkpoints. Play, benchmark and native
-sim2sim export interpret a missing flag in old checkpoints as no latency;
-an enabled flag without a mode preserves the old episode-constant latency.
-Native sim2sim reproduces the same physics-step buffering for new delayed
-bundles. This is training/simulation latency; no artificial wait is added to
+The flag and mode are stored in new configs/checkpoints. Benchmark, drift
+diagnosis and play turn the delay off, matching MorphMimic's eval mode; a
+checkpoint trained with latency is still scored without it. A missing flag in
+old checkpoints means training had no latency; an enabled flag without a mode
+preserves the old episode-constant training latency. Native sim2sim playback ignores that flag and sends the current position
+target, including bundles exported while training delay was enabled. This is training/simulation latency; no artificial wait is added to
 the real robot controller or existing deployment bundles. Changing the flag
 requires a new training run. To resume a legacy run, match its original delay
-flag/mode and floor (e.g. `--env.actuator-delay-mode episode
---env.training-floor-friction 1.0`, or `--env.no-actuator-delay` if disabled).
+flag/mode and floor (e.g. `--env.actuator-delay-mode step` for a per-step run,
+`--env.training-floor-friction 1.0`, or `--env.no-actuator-delay` if disabled).
 An already running process does not pick up this code change.
 
 Training with domain randomization now uses floor sliding friction 0.3
@@ -125,23 +127,25 @@ working deployment policy. The original hardware bundle is backed up under
 ## G1-style primitive collisions (2026-10-28)
 
 New Casbot02 training uses `env.collision_model=primitive`. The separate
-`xml/casbot02_primitives.xml` replaces 24 active collision meshes with 29 named
-primitives (28 capsules, one sphere), while preserving visual meshes, joints,
-body frames and explicit inertias. Each sole uses seven radius-0.01 m capsules
-whose footprint and lowest point come from the original Casbot02 foot mesh.
-Non-foot contacts use condim=1 and feet use condim=3, following mjlab G1.
-Non-adjacent self contacts remain enabled; six named joint-neighbour body pairs
-are excluded to avoid mechanical overlaps. The preparation pose has no false
-self intersections. The shin capsules also provide explicit lower-leg contact
-coverage that the old model lacked.
+`xml/casbot02_primitives.xml` replaces the other active collision meshes with
+capsules and one head sphere, while preserving visual meshes, joints, body
+frames and explicit inertias. Each `leg_pelvic_pitch_link` has a hip capsule covering its visual mesh, with
+the outer end pulled 5 cm medially so the zero pose does not touch the arms. Each foot
+uses the same mesh collision as `casbot02.xml`: `left_foot_collision` and
+`right_foot_collision` on `left/right_leg_ankle_roll_link`, with condim=3,
+conaffinity=15, solref and friction taken from that file. Other contacts use
+condim=1. Non-adjacent self contacts remain enabled. Parent-adjacent pairs,
+the two hip capsules against each other and the torso, and each shin capsule
+against its foot mesh are excluded so those approximations do not generate a
+resting self-collision. The preparation pose has no false self intersections.
 
 `primitive_collision.json` records dimensions, exclusions and the source hash.
 Regenerate with `uv run python scripts/build_casbot02_primitive_collision.py`.
 This is a new approximate contact model, not an identical convex hull. The
 original mesh XML remains available with `--env.collision-model mesh`.
 Old checkpoints without this field keep mesh collision in play/benchmark/export;
-resuming with a different collision model is rejected. New primitive exports
-include all 14 sole capsules in the shared foot-friction interface.
+resuming with a different collision model is rejected. New primitive exports include the two source foot meshes in the shared
+foot-friction interface.
 
 For primitive training with >=32 environments, defaults are nconmax=48,
 njmax=256; small viewers retain nconmax=128. Mesh Casbot02 stays at 128/500,

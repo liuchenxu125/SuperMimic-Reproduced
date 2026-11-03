@@ -61,7 +61,7 @@ def test_old_checkpoint_cannot_resume_with_new_orientation_inputs(tmp_path):
     old = TrainConfig(robot="casbot02")
     saved = asdict(old)
     saved["env"].pop("anchor_ori_obs")  # A real legacy schema lacks this field.
-    saved["policy"]["goal_dim"] = 640
+    saved["policy"]["goal_dim"] = 690
     checkpoint = tmp_path / "old.pt"
     torch.save({
         "iteration_unit": "update", "iteration": 10, "env_steps": 65,
@@ -70,7 +70,7 @@ def test_old_checkpoint_cannot_resume_with_new_orientation_inputs(tmp_path):
     cfg = TrainConfig(robot="casbot02", run_name="orientation", log_root=tmp_path,
                       resume=checkpoint)
     cfg.env.anchor_ori_obs = True
-    with pytest.raises(ValueError, match="saved=640, requested=646"):
+    with pytest.raises(ValueError, match="saved=690, requested=696"):
         Trainer(cfg)
     assert not (tmp_path / "orientation").exists()
-    assert cfg.policy_trainer.anchor_ori_obs and cfg.policy.goal_dim == 646
+    assert cfg.policy_trainer.anchor_ori_obs and cfg.policy.goal_dim == 696

@@ -3,7 +3,7 @@ and how much of the world-frame velocity error is just that drift (yaw misalignm
 
   uv run python scripts/diag_drift.py --ckpt logs/e7/ckpt_0020000.pt --npz-dir data/npz/lafan1
 
-Same deterministic protocol as eval_benchmark (first frame start, no noise/DR). Each clip plays once in
+Same deterministic protocol as eval_benchmark (first frame start, no noise/DR, no actuator delay). Each clip plays once in
 its own env. Reports per-clip and aggregate:
   * mean / final anchor xy error [m] and |yaw error| [deg], time until xy error > 0.3 m and |yaw| > 15 deg
   * body linear-velocity error: world frame (what the reward sees) vs after rotating the robot's velocities
@@ -40,9 +40,10 @@ def main(ckpt: Path, npz_dir: Path = Path("data/npz/lafan1"), clips: list[str] |
         action_noise_std=0.0, obs_noise=False, reset_noise=False, domain_randomization=False,
         sampling_mode="start", record_transitions=False, seed=0, anchor_obs=cfg["env"].get("anchor_obs", False),
         anchor_ori_obs=cfg["env"].get("anchor_ori_obs", False), robot=cfg.get("robot", "g1"),
-        actuator_delay=cfg["env"].get("actuator_delay", False),
-        actuator_delay_mode=cfg["env"].get("actuator_delay_mode", "episode"),
+        actuator_delay=False,
         collision_model=cfg["env"].get("collision_model", "mesh"),
+        compact_library=cfg["env"].get("compact_library", False),
+        library_device=cfg["env"].get("library_device", "device"),
     )
     env = make_env(args, device=device)
     try:

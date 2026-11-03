@@ -98,6 +98,14 @@ class Runner : public rclcpp::Node {
     if((sdk_kp_.array()<1).any() || (sdk_kd_.array()<1).any())
       throw std::runtime_error("SDK integer gains must remain positive");
     auto_enabled_=declare_parameter<bool>("auto_start",cfg_["auto_start_on_mode7"].as<bool>(false));
+    const auto trigger=cfg_["auto_start_trigger"].as<std::string>("mode_edge");
+    if(trigger!="mode_edge" && trigger!="lb_a" && trigger!="mode7")
+      throw std::runtime_error("auto_start_trigger must be mode_edge, lb_a or mode7");
+    auto_lb_a_=trigger=="lb_a";
+    auto_mode7_=trigger=="mode7";
+    auto_direct_=cfg_["auto_direct_start"].as<bool>(false);
+    if(auto_enabled_ && auto_lb_a_ && !cfg_["joystick_enabled"].as<bool>(false))
+      throw std::runtime_error("LB+A automatic startup requires joystick_enabled");
     auto_stable_seconds_=cfg_["auto_sensor_ready_seconds"].as<double>(0.5);
     auto_timeout_seconds_=cfg_["auto_start_timeout_seconds"].as<double>(5.0);
     if(!std::isfinite(auto_stable_seconds_) || auto_stable_seconds_<0.1 ||
@@ -195,10 +203,7 @@ class Runner : public rclcpp::Node {
     joystick_enabled_=cfg_["joystick_enabled"].as<bool>(false);
     joystick_order_=cfg_["joystick_motion_order"].as<std::vector<std::string>>(motion_names);
     if(joystick_enabled_) {
-      std::set<std::string> order(joystick_order_.begin(),joystick_order_.end());
-      if(order.size()!=motions_.size() || order.size()!=joystick_order_.size())
-        throw std::runtime_error("Invalid joystick motion order");
-      for(const auto& name:order) if(!motions_.count(name)) throw std::runtime_error("Unknown joystick motion: "+name);
+      sm::validate_motion_order(joystick_order_,motion_names);
       joystick_=create_subscription<crb_ros_msg::msg::JoystickCmdReport>(
           cfg_["joystick_topic"].as<std::string>("/joystick_events"),
           rclcpp::QoS(1).best_effort(),[this](const crb_ros_msg::msg::JoystickCmdReport::SharedPtr msg){
@@ -357,10 +362,14 @@ class Runner : public rclcpp::Node {
     RCLCPP_INFO(get_logger(),"Sensor inputs: debug_joints='%s', standard_joints='%s', imu='%s', expected imu_frame='%s'",
         text("joint_topic").c_str(),standard_joint_topic_.c_str(),text("imu_topic").c_str(),text("imu_frame").c_str());
     RCLCPP_INFO(get_logger(),"SDK 2.2.37 position_pd: 29 joints, zero effort, integer gains, live PD feedback required for real motion");
-    if(joystick_enabled_) RCLCPP_INFO(get_logger(),"Joystick %s: release X to play NEXT motion, B returns; D-pad unused; SDK modifier chords ignored",
-        cfg_["joystick_topic"].as<std::string>("/joystick_events").c_str());
-    RCLCPP_INFO(get_logger(),"SDK mode: topic='%s', control raw mode=7 via topic; get_robot_mode returns class 2/3/4; auto_start=%s; requires confirmed ZERO/STAND -> fresh raw topic 7; one attempt per process; manual services available",
-        text("mode_topic").c_str(),auto_enabled_?"true":"false");
+    if(joystick_enabled_) RCLCPP_INFO(get_logger(),"Joystick %s: release X to play NEXT motion, B returns; D-pad unused; %s",
+        cfg_["joystick_topic"].as<std::string>("/joystick_events").c_str(),
+        auto_lb_a_?"LB+A requests initial startup; other SDK modifier chords ignored":"SDK modifier chords ignored");
+    RCLCPP_INFO(get_logger(),"SDK mode: topic='%s', control raw mode=7 via topic; get_robot_mode returns class 2/3/4; auto_start=%s; trigger=%s; direct_start=%s; one attempt per process; manual services available",
+        text("mode_topic").c_str(),auto_enabled_?"true":"false",
+        auto_lb_a_?"LB+A intent then fresh raw topic 7":
+          (auto_mode7_?"fresh raw topic 7 (no joystick chord required)":"confirmed ZERO/STAND then fresh raw topic 7"),
+        auto_direct_?"true":"false");
   }
   ~Runner() override {quit_=true; if(worker_.joinable())worker_.join();}
   void stop_for_shutdown() {
@@ -426,6 +435,12 @@ class Runner : public rclcpp::Node {
   }
   enum class Phase {Idle,Prepare,Ready,Handoff,Run,Switch,Return,Hold,Done,Fault,EndHold};
   bool policy_active() const {return phase_==Phase::Run || phase_==Phase::Handoff || phase_==Phase::Switch || phase_==Phase::EndHold;}
+  std::string automatic_state() const {
+    if(!auto_enabled_) return "disabled";
+    if(auto_pending_) return "pending";
+    if(auto_consumed_) return "consumed";
+    return auto_lb_a_?"waiting_lb_a":(auto_mode7_?"waiting_mode7":"waiting_mode_edge");
+  }
   void cancel_auto() {auto_consumed_=true;auto_pending_=false;play_pending_=false;auto_reason_.clear();joystick_pending_.clear();switch_requested_.clear();}
   void joystick_message(const crb_ros_msg::msg::JoystickCmdReport& msg) { // default callback group
     const auto received=Clock::now();
@@ -438,6 +453,15 @@ class Runner : public rclcpp::Node {
       const auto modifier=[](const auto& keys){return std::any_of(keys.begin(),keys.end(),[](uint32_t key){return key>=4;});};
       if(modifier(msg.pressed_buttons) || modifier(msg.long_pressed) || modifier(msg.double_clicked))
         joystick_pending_.clear();
+      if(auto_enabled_ && auto_lb_a_ && !auto_consumed_ && phase_==Phase::Idle &&
+         sm::debug_start_chord(msg.pressed_buttons,msg.long_pressed,msg.single_clicked,
+                               msg.double_clicked,msg.axis_x,msg.axis_y)) {
+        auto_consumed_=true;auto_pending_=true;auto_debug_seen_=false;
+        auto_began_=received;auto_stable_since_={};
+        auto_reason_="waiting_for_fresh_mode7_after_LB_A";
+        RCLCPP_INFO(get_logger(),"LB+A startup requested: current=%s; waiting for fresh raw mode 7 and valid sensors/PD; %s",
+            policy_.motion_name().c_str(),auto_direct_?"direct RUN, no PREPARE/HANDOFF":"configured preparation/handoff");
+      }
       if(action==sm::JoyAction::None) return;
       std::string reason;
       if(mode_value_!=7 || phase_==Phase::Fault || !valid(reason))
@@ -489,7 +513,7 @@ class Runner : public rclcpp::Node {
     }
     if(!reason.empty()) RCLCPP_WARN(get_logger(),"Joystick play rejected: %s",reason.c_str());
   }
-  bool prepare_motion(std::string& reason) { // mutex_ held; shared manual/automatic guards
+  bool prepare_motion(std::string& reason,bool direct=false) { // mutex_ held; shared manual/automatic guards
     if(phase_!=Phase::Idle && phase_!=Phase::Hold && phase_!=Phase::Done && phase_!=Phase::Fault)
       {reason="Must stop before preparing again";return false;}
     if(mode_value_!=7) {reason="Requires motion mode 7";return false;}
@@ -501,14 +525,14 @@ class Runner : public rclcpp::Node {
     // With preparation disabled, blend the policy in from measured joints.
     // Do not command the configured preparation pose or reject the measured
     // pose for differing from that unused target in start_motion().
-    prepared_target_=prepare_seconds_==0?initial_:
+    prepared_target_=(direct || prepare_seconds_==0)?initial_:
         preparation.cwiseMax(policy_.soft_lower).cwiseMin(policy_.soft_upper);
     target_=initial_; began_=Clock::now();
-    phase_=prepare_seconds_==0?Phase::Ready:Phase::Prepare;
+    phase_=(direct || prepare_seconds_==0)?Phase::Ready:Phase::Prepare;
     auto_ready_since_=began_; fault_.clear();
     return true;
   }
-  bool start_motion(std::string& reason) { // mutex_ held
+  bool start_motion(std::string& reason,bool direct=false) { // mutex_ held
     if(phase_!=Phase::Ready) {reason="Call prepare and wait for READY; current="+phase_name()+" fault="+fault_;return false;}
     if(mode_value_!=7) {reason="Requires motion mode 7";return false;}
     if(!valid(reason) || !pd_ready(reason)) return false;
@@ -519,7 +543,7 @@ class Runner : public rclcpp::Node {
       {reason="Start height mismatch (check floor and base_link frame)";return false;}
     std::lock_guard<std::mutex> policy_lock(policy_mutex_);
     ++generation_;policy_.reset(state_,start_frame_,policy_.requires_root_pose());
-    phase_=entry_seconds_>0?Phase::Handoff:Phase::Run;
+    phase_=(!direct && entry_seconds_>0)?Phase::Handoff:Phase::Run;
     entry_from_=target_;run_target_=target_;
     began_=Clock::now();play_began_=began_;last_target_=began_;policy_due_=began_;
     consecutive_late_=0;
@@ -530,8 +554,10 @@ class Runner : public rclcpp::Node {
     bool mode_fresh;
     {
       std::lock_guard<std::mutex> sensor_lock(sensor_mutex_);
-      mode_fresh=mode_value_==7 && Seconds(time-mode_received_).count()<=0.25;
+      mode_fresh=mode_value_==7 && Seconds(time-mode_received_).count()<=0.25 &&
+          (!auto_lb_a_ || mode_received_>=auto_began_);
     }
+    if(mode_fresh) auto_debug_seen_=true;
     if(Seconds(time-auto_began_).count()>auto_timeout_seconds_) {
       fail("Automatic startup timed out waiting for fresh sensors/mode");return;
     }
@@ -543,8 +569,8 @@ class Runner : public rclcpp::Node {
     auto_reason_="waiting_for_stable_sensors";
     if(Seconds(time-auto_stable_since_).count()>=auto_stable_seconds_) {
       std::string reason;
-      if(!prepare_motion(reason)) {fail("Automatic prepare: "+reason);return;}
-      auto_reason_="preparing";
+      if(!prepare_motion(reason,auto_direct_)) {fail("Automatic prepare: "+reason);return;}
+      auto_reason_=auto_direct_?"direct_start_pending":"preparing";
     }
   }
   bool position_active() const {
@@ -779,12 +805,27 @@ class Runner : public rclcpp::Node {
     std::lock_guard<std::mutex> lock(mutex_);
     control_lock_wait_.since(entered);
     const auto time=Clock::now();
-    if(auto_enabled_ && !auto_consumed_ && mode_entries_.load()>0) {
+    bool startup_mode7=false;
+    if(auto_enabled_ && auto_mode7_ && !auto_consumed_) {
+      std::lock_guard<std::mutex> sensor_lock(sensor_mutex_);
+      startup_mode7=mode_value_==7 && mode_received_!=Clock::time_point{} &&
+          Seconds(time-mode_received_).count()<=0.25;
+    }
+    // SDK owns LB+A. Its raw debug-mode message is sufficient even when the
+    // chord or preceding non-debug mode was never delivered to this process.
+    if(auto_enabled_ && !auto_consumed_ &&
+       (startup_mode7 || (!auto_lb_a_ && !auto_mode7_ && mode_entries_.load()>0))) {
       auto_consumed_=true;auto_pending_=true;auto_began_=time;auto_stable_since_={};
+      auto_debug_seen_=false;
       auto_reason_="waiting_for_fresh_sensors_and_mode";
+      if(startup_mode7) RCLCPP_INFO(get_logger(),
+          "Raw mode 7 startup requested: current=%s; checking sensors/PD; no joystick chord required",
+          policy_.motion_name().c_str());
     }
     if(mode_value_!=7) {
-      if(position_active() || auto_pending_) fail("Left mode 7");
+      if(position_active() || (auto_pending_ && (!auto_lb_a_ || auto_debug_seen_))) fail("Left mode 7");
+      else if(auto_pending_ && Seconds(time-auto_began_).count()>auto_timeout_seconds_)
+        fail("Automatic startup timed out waiting for fresh sensors/mode");
       return; // no interference with the lower controller's other modes
     }
     std::string reason;
@@ -799,7 +840,11 @@ class Runner : public rclcpp::Node {
     }
     if((auto_pending_ || play_pending_) && phase_==Phase::Ready) {
       std::string start_reason;
-      if(start_motion(start_reason)) {auto_pending_=false;play_pending_=false;auto_reason_.clear();}
+      const bool direct=auto_pending_ && auto_direct_;
+      if(start_motion(start_reason,direct)) {
+        auto_pending_=false;play_pending_=false;auto_reason_.clear();
+        if(direct) RCLCPP_INFO(get_logger(),"Automatic startup: RUN directly, motion=%s; PREPARE/HANDOFF skipped",policy_.motion_name().c_str());
+      }
       else if(Seconds(time-auto_ready_since_).count()>auto_timeout_seconds_)
         fail("Automatic start: "+start_reason);
       else auto_reason_=start_reason;
@@ -887,20 +932,23 @@ class Runner : public rclcpp::Node {
           " mode="+std::to_string(mode_value_.load())+" mode_rx="+std::to_string(mode_messages_)+
           " joint_debug_rx="+std::to_string(debug_input_.messages)+
           " joint_standard_rx="+std::to_string(standard_input_.messages)+" joint_source="+joint_source_+
-          " auto_start="+(!auto_enabled_?std::string("disabled"):auto_pending_?std::string("pending"):
-                         auto_consumed_?std::string("consumed"):std::string("waiting_mode_edge"))+
+          " auto_start="+automatic_state()+
+          " auto_trigger="+(auto_lb_a_?std::string("lb_a"):(auto_mode7_?std::string("mode7"):std::string("mode_edge")))+
+          " auto_direct_start="+(auto_direct_?std::string("true"):std::string("false"))+
           " auto_reason="+auto_reason_+" command_mode=sdk237_position_pd"+
           " mode_query_rx="+std::to_string(mode_query_messages_)+" mode_class="+std::to_string(mode_class_)+
           " pd_feedback="+(dry_?std::string("dry_run_unverified"):pd_matches_locked()?std::string("matched"):std::string("unmatched"));
       // Frame/counter changes stay on the ROS topic. The console shows changes
       // relevant to the operator, leaving each X-switch notice easy to read.
       const auto key=phase_name()+"|"+policy_.motion_name()+"|"+joystick_pending_+"|"+
-          std::to_string(mode_value_.load())+"|"+(ok?"ok":"missing")+"|"+fault_;
+          std::to_string(mode_value_.load())+"|"+(ok?"ok":"missing")+"|"+fault_+"|"+automatic_state()+"|"+auto_reason_;
       if(key!=last_console_key_) {
         last_console_key_=key;
         console="State: "+phase_name()+" | current="+policy_.motion_name()+" | frame="+std::to_string(frame_)+
             " | next="+(joystick_pending_.empty()?std::string("none"):joystick_pending_)+
-            " | sensors="+(ok?std::string("OK"):reason)+" | fault="+(fault_.empty()?std::string("none"):fault_);
+            " | sensors="+(ok?std::string("OK"):reason)+" | auto="+automatic_state()+
+            " | auto_reason="+(auto_reason_.empty()?std::string("none"):auto_reason_)+
+            " | fault="+(fault_.empty()?std::string("none"):fault_);
       }
     }
     const auto add=[&](const char* name,const MaxMs& metric) {
@@ -924,6 +972,7 @@ class Runner : public rclcpp::Node {
   }
   YAML::Node cfg_; sm::Policy policy_;
   bool auto_enabled_=false,auto_consumed_=false,auto_pending_=false,play_pending_=false;
+  bool auto_lb_a_=false,auto_mode7_=false,auto_direct_=false,auto_debug_seen_=false;
   std::map<std::string,std::shared_ptr<const sm::MotionClip>> motions_;
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr motion_callback_;
   sm::JoystickEdges joystick_edges_;

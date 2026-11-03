@@ -10,7 +10,7 @@ from torch import nn
 from supermimic.robots.layout import RobotLayout, observation_terms
 from supermimic.world_model.dynamics import MLP
 
-GOAL_DIM = 680
+GOAL_DIM = 730
 LATENT_DIM = 32
 ACT_DIM = 29
 
@@ -24,10 +24,10 @@ class PolicyCfg:
     history: int = 10
     # Fixed per-term observation scales (divide): joint_pos, joint_vel, base_ang_vel, projected_gravity, actions.
     obs_term_scale: tuple[float, ...] = (1.0, 5.0, 2.0, 1.0, 1.0)
-    # Fixed goal feature scales: joint_pos 29, joint_vel 29, grav 3, ang_vel_b 3, lin_vel_h 3, height 1.
-    goal_term_scale: tuple[float, ...] = (1.0, 5.0, 1.0, 2.0, 1.0, 1.0)
+    # Fixed goal scales: joint_pos, joint_vel, pelvis displacement, rot6d, pelvis linear, pelvis angular.
+    goal_term_scale: tuple[float, ...] = (1.0, 5.0, 1.0, 1.0, 1.0, 2.0)
     decoder_last_gain: float = 0.01
-    goal_dim: int = GOAL_DIM  # G1 680; append 6 orientation-only or 9 full anchor values
+    goal_dim: int = GOAL_DIM  # G1 730; append 6 orientation-only or 9 full anchor values
 
 
 @dataclass
@@ -43,7 +43,9 @@ def _obs_scale_vector(cfg: PolicyCfg) -> torch.Tensor:
 
 
 def _goal_scale_vector(cfg: PolicyCfg, goal_dim: int) -> torch.Tensor:
-    sizes = (cfg.num_joints, cfg.num_joints, 3, 3, 3, 1)
+    sizes = (cfg.num_joints, cfg.num_joints, 3, 6, 3, 3)
+    if len(sizes) != len(cfg.goal_term_scale):
+        raise ValueError("Goal scale count does not match the goal terms")
     per_frame = torch.cat([torch.full((n,), 1.0 / s) for n, s in zip(sizes, cfg.goal_term_scale)])
     k, extra = divmod(goal_dim, RobotLayout(cfg.num_joints).goal_dim)
     return torch.cat([per_frame.repeat(k), torch.ones(extra)])
@@ -92,7 +94,7 @@ class Policy(nn.Module):
 
 
 class Critic(nn.Module):
-    """V(canonical state 71, goal 680, xi 33, root error 4) -> scalar (one per interface)."""
+    """V(canonical state, goal, xi, root error 4) -> scalar (one per interface)."""
 
     def __init__(
         self,

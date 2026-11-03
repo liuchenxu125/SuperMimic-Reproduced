@@ -23,7 +23,9 @@ struct ReferenceFrame {
   Eigen::Vector3d position;
   Eigen::Quaterniond orientation;
   Joints q, dq;
-  std::array<float, 64> features;
+  std::array<float, 64> features{}; // Legacy actors only.
+  Eigen::Vector3d linear_world = Eigen::Vector3d::Zero();
+  Eigen::Vector3d angular_world = Eigen::Vector3d::Zero();
 };
 struct Output {
   std::array<float, kObs> obs;
@@ -58,6 +60,7 @@ class Policy {
   bool finished() const { return frame_ >= length(); }
   int length() const { return static_cast<int>(motion_->frames.size()); }
   int goal_dim() const { return goal_dim_; }
+  int goal_frame_dim() const { return heading_goals_ ? 69 : 64; }
   int checkpoint_iteration() const { return checkpoint_iteration_; }
   const std::string& checkpoint_sha256() const { return checkpoint_sha256_; }
   bool requires_root_pose() const { return anchor_obs_; }
@@ -86,6 +89,7 @@ class Policy {
   bool initialized_ = false, first_ = true;
   int goal_dim_ = 649;
   bool anchor_obs_ = true;
+  bool anchor_ori_obs_ = false, heading_goals_ = false;
   int checkpoint_iteration_ = 0;
   std::string checkpoint_sha256_;
 };

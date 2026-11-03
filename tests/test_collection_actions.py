@@ -104,7 +104,7 @@ def test_legacy_resume_cannot_silently_change_noise_semantics(tmp_path):
     cfg = TrainConfig(robot="casbot02", run_name="new", log_root=tmp_path)
     saved = asdict(cfg)
     saved["env"].pop("action_noise_mode")
-    saved["policy"]["goal_dim"] = 640
+    saved["policy"]["goal_dim"] = 690
     checkpoint = tmp_path / "legacy.pt"
     torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,
                 "num_updates": 10, "collection_accumulator": 0., "config": saved}, checkpoint)

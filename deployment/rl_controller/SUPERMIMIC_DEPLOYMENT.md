@@ -1,6 +1,52 @@
 # Casbot02 SuperMimic 真机部署
 
-## 当前部署权重（2026-10-29）
+## 当前部署权重（2026-11-02）
+
+当前为 `casbot02_bones_seed_proprio_cpu2/ckpt_0096000.pt`，首次仍自动启动 **踏步**。
+本体历史 870 维，参考 690 维，总输入 **1560**，输出 27 维、50 Hz；不需要实测根部位置，也未增加实测相对朝向反馈。
+每个未来帧按训练顺序编码：`q-q0(27), dq(27), 相对当前参考航向的骨盆位移(3), rot6d(6), 骨盆系线速度(3), 骨盆系角速度(3)`，共 69 维，10 帧。
+rot6d 是旋转矩阵前两列按行展开。位移和朝向的基准是当前**参考帧**，不是机器人当前位置。
+新 `SMREF002` 动作文件存原始根部位姿、关节和世界系速度，由 C++ 每次重建目标窗口；不能与旧 SMREF001/640 维演员混用。
+X 桥接末段的未来窗口会跨入新动作，目标轨迹的所有后续帧统一做 XY/航向对齐，防止参考坐标跳变。
+
+手柄顺序：`踏步 → BS_XiaoDongTai_TaiJiaoPanDing_100HZ → X1_1000HZ → SEED_鼓掌 → SEED_看时间 → SEED_思考 → SEED_捂脸 → SEED_扭胯 → SEED_武术 → SEED_摆胯 → SEED_迪斯科 → 后退 → 原地左转 → 原地右转 → 踏步`。`CASBOT02_YKS_04_1000HZ` 仍在动作库中，不在这条 X 循环里。
+原地上肢动作：`SEED_鼓掌`＝`clap_forced_003__A063`（6.46 秒），`SEED_看时间`＝`checking_time_R_002__A413`（6.14 秒），`SEED_思考`＝`thinking_R_004__A072`（4.76 秒）。
+原地小舞：`SEED_捂脸`＝`dance_hiphop_dab_R_fast_001__A317`（5.06 秒），`SEED_扭胯`＝`dance_party_hips_003__A467`（6.42 秒），`SEED_武术`＝`dance_wutang_is_forever_003__A466`（10.06 秒）。三条在 96000 整段评测中都完整播完，当时评测仍带 0/5/10 ms 延迟；骨盆水平跨度约 3–12 厘米，脚水平跨度最大约 3.8 厘米。原始训练数据不改名、不裁剪；仅部署使用短别名。映射见 `outputs/casbot02_seed_dances_20261102/selection.json`。
+下肢会迈步的两条：`SEED_摆胯`＝`dance_vouge_dutty_wine_R_003__A320`（8.16 秒，脚水平约 0.58 米），`SEED_迪斯科`＝`dance_retro_disco_finger_horizontal_R_001__A309`（5.02 秒，脚水平约 0.52 米）。96000 整段回报都是 0.942，当时评测仍带延迟。映射见 `outputs/casbot02_seed_dances_leg_20261102/selection.json`。
+上述三条原地上肢动作通过整段原生仿真及 C++ ONNX / 1 kHz 整数增益、位置包络和硬限位检查，新增 4 组相邻短切换通过；仿真骨盆水平跨度最大约 5.3 厘米。这是骨盆轨迹，不是手臂伸展后的占地尺寸，也不是实际 SDK/真机验证。三条小舞使用同一套 96000 actor 和 SMREF002 编码写入动作库，尚未做相邻切换或真机检查。
+筛选指标、原始 SEED 名称/文件哈希、验证报告和本次更新前配置备份位于 `outputs/casbot02_seed_small_motions_20261102/`。别名参考另存于其中 `reference_npz/`，混合 LAFAN1/SEED 的再次导出入口为 `export_npz/`（仅符号链接，不修改训练目录）。
+第二条已于 2026-11-02 替换；YKS 共 175 帧（3.5 秒），无附加延迟的原生整段仿真和两组受影响相邻切换通过，参考与 YAML 已同步到本地 ARM64 安装目录。记录：`outputs/casbot02_bones_seed_096000_yks_20261102/update.json`。
+同日修正启动时的手柄列表校验：`joystick_motion_order` 可为动作库的非空、无重复子集，不再要求包含全部 16 条。未知动作仍拒绝启动。终端选择循环之外的动作后，松开 X 会回到循环第一条。已在开启手柄的真实 6/16 配置下通过隔离 ROS 自动启动及 X/B 循环测试；此修复需上传重新构建的 ARM64 二进制。
+其余原有动作参考保留，可用终端按名称选择，不进入 X 循环。
+自动直接 RUN、0.8 秒 X 桥接、B 回位、完整播放和末帧策略保持沿用原设置。
+已通过 C++/PyTorch 目标和推理一致性、踏步静止参考起步 10 秒、6 组相邻短切换（整数增益显式 PD、保留延迟）以及末帧保持检查。
+这些是本地仿真检查，不是六条动作全部整段评测或真机结果。记录和旧部署备份：
+`outputs/casbot02_bones_seed_096000_deployment_20261102/`。
+上传时必须使用本次重新构建的 ARM64 程序和新动作包，不能只替换 ONNX。
+
+## 历史 80000 次部署记录（2026-10-30）
+
+当前为 `casbot02_lafan1_proprio_paper_kpkd_primitive_data1/ckpt_0080000.pt`，首次自动启动动作是 **踏步**。
+15 条动作全部共享新 actor；入口文件名和启动命令不变，用户编辑后的 `joystick_motion_order` 原样保留。
+首次启动对齐同事控制器：**SDK 切到模式 7 → 确认新鲜模式、传感器和 PD 反馈 → 直接 RUN 踏步**，不再依赖部署进程收到 LB+A，也不做准备姿态或 1 秒 HANDOFF。
+有效数据稳定确认仍为 0.5 秒；X 的 0.8 秒动作桥接和 B 回位保持原样。
+新包使用本次训练对应的已对齐关节范围，电机参数和 870＋640→27 接口不变。
+ARM64 包已重新构建，尚未上传 Orin 或运行真机。
+
+GPU Warp 全部 48 条从首帧/参考速度评测：**41/48 完成，平均整段归一化回报 0.501050，按帧数加权 0.433132**。
+保留 0/5/10 ms 每物理步随机执行器延迟，关闭域随机化与观测/动作噪声，摩擦固定 1.0。
+8 条 SDK 动作均完整完成；菜单中 14/15 完成。`walk3_subject1` 以数据首帧参考速度初始化时约 0.3 秒失败，不能标为整段成功。
+该数据开头根部水平速度约 17.4 m/s；零速度起步 10 秒通过。
+踏步完整 597 帧（11.94 秒）原生 sim2sim 通过，默认 10 秒 C++ 起步及观测/推理一致性通过。
+15 组隔离相邻短测中 **13 组通过**；`walk2_subject4 → walk3_subject1` 在进入目标后失败，
+`walk3_subject1 → walk4_subject1` 在源动作初始化时失败。保留历史连续链同样失败，桥接延长到 1.2 秒也未解决。
+因此本次是用户指定的本地 80000 权重包更新，**未宣称全菜单切换通过；上述 walk3 切换不要用于真机**。
+用户菜单、0.8 秒桥接和所有运行保护原样保留，失败报告未删除或改写。
+记录及 108000 次旧包备份位于 `outputs/casbot02_data1_080000_deployment_20261030/deployment/`；
+全量回报报告位于 `outputs/casbot02_data1_080000_deployment_20261030/benchmark.json`。
+原 108000 次模型的独立记录仍在 `outputs/casbot02_data1_108000_20261030/`，不要将其通过的连续切换结果移用到 80000 模型。
+
+## 历史 68000 次部署记录
 
 已切换为 `casbot02_lafan1_proprio_paper_kpkd_primitive_data/ckpt_0068000.pt` 的固定快照。
 输入仍为 870 维本体历史 + 640 维参考，输出 27 维；首次自动启动为 `walk1_subject2`。
@@ -28,24 +74,24 @@
 `/joystick_events`（`crb_ros_msg/msg/JoystickCmdReport`）。无需额外启动终端选择脚本。
 
 - X：每次单独按下再松开，切换到下一条。RUN 中使用 `switch_blend_seconds: 0.8` 秒的参考轨迹桥接，进入 `SWITCH` 后恢复 `RUN`；策略一直计算，不经过 RETURN、默认姿态 PREPARE 或再次 HANDOFF。保留实测历史和上一帧策略动作。
-- 桥接从当前参考姿态/速度到下一条第 0 帧，使用平滑权重并重算关节速度、单位重力及根部角/线速度；参考仍为原来的 10×64 编码。新动作时钟在桥接到第 0 帧后从第 1 帧正常推进。当前仅支持无根部位置观测策略。
-- IDLE/HOLD/DONE 中按 X 与首次自动启动均跳过准备姿态，直接从当前实测关节位置进入 1 秒接管。RUN 内的 0.8 秒动作切换不变。
+- 桥接从当前参考姿态/速度到下一条第 0 帧，使用平滑权重并重算关节、根部角/线速度；当前权重使用 10×69 编码。新动作时钟在桥接到第 0 帧后从第 1 帧正常推进。当前仅支持无根部位置观测策略。
+- IDLE/HOLD/DONE 中按 X 跳过准备姿态，从当前实测关节位置进入 1 秒接管；首次自动启动直接 RUN。RUN 内的 0.8 秒动作切换不变。
 - 十字键不再用于 SuperMimic 动作选择。终端参数/脚本仍可按名称选择或重播指定动作。
 - B：平滑结束当前动作并回位 HOLD，取消待播放请求。它是回位操作；底层阻尼/急停仍使用原 SDK 操作。
 - 长按不会重复触发；开机时已经按住的键必须先完全松开。LB/RB/Back/Start/扳机等组合均被屏蔽，原 SDK 的模式切换和急停操作保留。
 
 循环顺序由 `joystick_motion_order` 配置，当前为：
-`walk1_subject2 → 原地左转 → X1_1000HZ → 后退 → 直行2步态 → 踏步 → 原地右转 → X1_Xiao360_100HZ → 直行1步态 → dance1_subject2 → walk1_subject1 → walk2_subject4 → walk3_subject1 → walk4_subject1 → dance1_subject3 → walk1_subject2`。
-默认当前动作是 `walk1_subject2`，第一次有效 X 松开后会进入“原地左转”；在最后一条 `dance1_subject3` 松开 X 会回到 `walk1_subject2`。步进以已加载的 `motion` 为准；被取消/拒绝的切换不会额外跳过动作。
-控制器会立即打印 `Joystick X: walk1_subject2 -> 原地左转; ...`。状态中的 `joystick_choice` 是请求目标，
+`踏步 → BS_XiaoDongTai_TaiJiaoPanDing_100HZ → X1_1000HZ → SEED_鼓掌 → SEED_看时间 → SEED_思考 → SEED_捂脸 → SEED_扭胯 → SEED_武术 → SEED_摆胯 → SEED_迪斯科 → 后退 → 原地左转 → 原地右转 → 踏步`。
+默认当前动作是“踏步”，第一次有效 X 松开后会进入 `BS_XiaoDongTai_TaiJiaoPanDing_100HZ`；在最后一条 `原地右转` 松开 X 会回到“踏步”。步进以已加载的 `motion` 为准；被取消/拒绝的切换不会额外跳过动作。
+控制器会立即打印 `Joystick X: 踏步 -> BS_XiaoDongTai_TaiJiaoPanDing_100HZ; ...`。状态中的 `joystick_choice` 是请求目标，
 `motion` 是当前已加载动作，`joystick_pending` 是待执行请求，`joystick_rx` 为消息计数。
 
-只有健康的模式 7 接受手柄动作命令。准备/接管/桥接/回位期间重复 X 被忽略；B 可以中断桥接并按原流程回位，动作正常结束也仍回位；FAULT 不会被手柄自动清除。
+只有健康的模式 7 接受手柄动作命令。准备/接管/桥接/回位期间重复 X 被忽略；B 可以中断桥接并按原流程回位，动作自然结束进入 END_HOLD；FAULT 不会被手柄自动清除。
 手柄消息中断超过 0.5 秒时，尚未执行的切换请求会取消，恢复后需先松开再重新操作；
 已在运行的策略仍遵循原有传感器、模式和推理检查。手动 stop/prepare/start/finish/play 或参数切换也会取消之前排队的手柄请求。
 
-首次切入调试模式仍沿用 `auto_start_on_mode7: true`，自动播放默认动作。
-如果将该项改为 `false`，进入模式 7 后会等待操作；X 仍表示进入当前默认动作的下一条，因此第一次 X 会播放“原地左转”。要播放指定名称，可使用下文终端 `/play` 接口。
+首次启动使用 `auto_start_on_mode7: true`、`auto_start_trigger: mode7` 和 `auto_direct_start: true`，收到新鲜模式 7 后自动播放默认动作。
+如果将该项改为 `false`，进入模式 7 后会等待操作；X 仍表示进入当前默认动作的下一条，因此第一次 X 会播放 `BS_XiaoDongTai_TaiJiaoPanDing_100HZ`。要播放指定名称，可使用下文终端 `/play` 接口。
 
 本地 ARM64 包已构建；更新功能后上传并重启一次控制器即可，后续切换不再重启：
 
@@ -84,10 +130,10 @@ END_HOLD 中松开 X，沿用 0.8 秒连续策略参考过渡切到下一动作�
 
 正数 `preview_seconds` 仍可设置 RUN 阶段的秒数上限，触发时沿用回位路径；该时间上限与自然播放结束的 END_HOLD 分开。HANDOFF 不计入预览时间预算，END_HOLD 中传感器、模式、倾斜、推理和目标过期检查继续生效。
 
-默认在启动时预加载菜单中的 15 条动作，共用当前 68000 次更新 actor；手柄顺序以 YAML 的 `joystick_motion_order` 为准，完整顺序见上文。
+默认在启动时预加载配置中的 25 条动作，共用当前 96000 次更新 actor；X 循环只含指定的 14 条，手柄顺序以 YAML 的 `joystick_motion_order` 为准，完整顺序见上文。
 动作库在 `config/model/supermimic_motion_bank/`，配置的 `motions` 将名称映射到各 bundle。
 启动时检查所有包的模型/观测/电机契约和实际 actor 文件一致；切换时不读磁盘、不加载新 ONNX。
-默认从 `walk1_subject2` 开始，输入仍为 870+640、27 输出。
+默认从“踏步”开始，输入为 870+690、27 输出。
 
 本地需要重新构建和上传（只编辑 YAML 无法让旧二进制支持新功能）：
 
@@ -168,7 +214,7 @@ SuperMimic 保留单次严重超时、持续超时、目标过期、传感器和
 
 本节替代下文历史记录中的“外部显式 PD / effort 透传”真机接口说明。
 SDK 2.2.37 会覆盖腿部 effort，手臂/腰部接收位置插值目标；当前 runner 因此发送
-`position + kp/kd`、`velocity=0`、`effort=0`，由 SDK 执行控制。策略仍是 870+640 输入、27 动作，权重和参考编码没有改变。
+`position + kp/kd`、`velocity=0`、`effort=0`，由 SDK 执行控制。SDK 命令契约不依赖目标维度；当前策略为 870+690 输入、27 动作。
 
 - 命令包含 27 个策略关节和两个头部关节（共 29 个）；头部保持 prepare 时的实测位置，Kp/Kd 为 SDK 头部默认 30/2。
 - 策略关节增益来自 manifest，并显式截断为 SDK 实际使用的整数；例如 276.3489/17.5929 变为 276/17。没有改写训练参数或模型 manifest。
@@ -176,7 +222,7 @@ SDK 2.2.37 会覆盖腿部 effort，手臂/腰部接收位置插值目标；当�
 - stop、FAULT、IDLE、DONE 使用 Kp=0、Kd=对应整数阻尼、effort=0。阻尼依赖 SDK 的实时测量，不再在上位机使用陈旧速度算力矩。
 - 正常 Ctrl+C/SIGTERM 会在 ROS 退出前留出 150 ms 发送阻尼。SIGKILL、崩溃、断网无法靠上位机保证停机；这版 SDK 缓存命令且没有接收超时看门狗。
 - `/motion/current_mode` 提供真实模式号，收到新鲜的 `7` 才认定为调试模式。每 50 ms 调用 `/get_robot_mode` 仅获取分类：2=ZERO、3=STAND、4=WALK。SDK 把调试模式也归为 4，不能把分类 4 当成原始模式 7。
-- 自动启动要求先确认分类 2/3（阻尼/准备），随后收到新鲜的真实模式 7 话题。启动时已经在调试模式，或只查询到分类 4，不会自动动作。先用手柄回到阻尼/准备，再切入调试模式。原始模式话题超过 max_sensor_age（默认 100 ms）未更新，或查询超过 250 ms 未更新，会阻止启动/触发运行故障。
+- 默认自动启动只要求新鲜的真实模式 7 话题和有效数据，不要求先观察分类 2/3 或收到 LB+A；如果启动程序时已处于模式 7，也会自动启动。单独分类 4 不会触发。原始模式话题超过 max_sensor_age（默认 100 ms）未更新，或查询超过 250 ms 未更新，会阻止启动/触发运行故障。
 - 真实模式还要求 `/motion/debug/joint_state` 返回的实际 Kp/Kd 与已发送增益匹配。首次 prepare 前等待匹配；运行中增益切换最多允许 250 ms 反馈时间，失配会锁存故障。支持 SDK 的 49 名称、29 个非手指增益布局。
 
 Orin 上先检查实际 SDK 配置（默认路径可在部署 YAML 的 `sdk_config_file` 修改）：
@@ -199,7 +245,7 @@ cd /home/casbot/Desktop/SuperMimic-Reproduced/rl_controller
 ./scripts/install_remote.sh
 ```
 
-Orin 先启动控制器，确认处于 SDK 阻尼/准备模式（状态 mode_class=2/3），再用手柄切入调试模式：
+Orin 先启动控制器，再按 SDK 的 LB+A 切入调试模式；无需部署程序再次识别组合键：
 
 ```bash
 source /workspace/rl_controller/setup.bash
@@ -209,8 +255,8 @@ bash /workspace/rl_controller/scripts/run_supermimic.sh
 bash /workspace/rl_controller/scripts/run_supermimic.sh --ros-args -p dry_run:=false
 ```
 
-自动流程：新鲜传感器/模式/增益反馈 → 连续稳定 0.5 秒 → 跳过默认姿态准备 →
-从实测关节位置开始固定起始参考 HANDOFF 1 秒 → 完整播放所选动作 → 3 秒回位并 HOLD。
+默认自动流程：新鲜真实模式 7、传感器/增益反馈 → 连续稳定 0.5 秒 → 直接 RUN → 完整动作 → END_HOLD。
+只有手动 start/play 使用配置中的 HANDOFF；B / finish 才回位。
 正常真实运行状态应显示 `command_mode=sdk237_position_pd`、`pd_feedback=matched`，
 `mode_query_rx` 持续增加；调试模式时应同时显示 `mode=7 mode_class=4`，这是 SDK 的两套编号。不要同时运行 AMP 或其他电机命令发布者。
 
@@ -219,17 +265,23 @@ bash /workspace/rl_controller/scripts/run_supermimic.sh --ros-args -p dry_run:=f
 
 
 
-## 自动启动方式（SDK 逻辑沿用 2026-10-27，播放时长见文首）
+## 模式 7 直接启动（2026-10-30，对比同事控制器后修正）
 
-默认 `supermimic_walk1_subject2_proprio.yaml` 已开启 `auto_start_on_mode7: true`。
-先启动控制器，确认 SDK 处于阻尼/准备（mode_class=2/3），再用手柄切入真实模式 7：传感器与模式消息连续新鲜 0.5 秒后，
-从当前实测关节位置自动开始 1 秒 HANDOFF，随后完整播放参考动作，
-最后 3 秒回到准备前实测姿态并 HOLD。无需调用 prepare/start 服务。
+同事的 `rl_interface.cpp` 在 `robot_mode == 7` 时激活策略，并在首个推理结果到达前保持实测关节位置。
+它不需要在策略层再次收到 LB+A。此前本项目默认 `auto_start_trigger: lb_a` 增加了一个组合键接收条件：
+即使 SDK 已进入模式 7，没收到完整组合键的部署进程也会一直 IDLE。现默认改为 `auto_start_trigger: mode7`。
+该差异已经从源码确认，但尚无本次 Orin 新日志证明实际漏收的是哪一条消息。
 
-如果启动时已经处于模式 7，控制器保持 IDLE，须先退出再重新切入；只有先确认 SDK 阻尼/准备，随后收到新鲜的真实 mode=7 才会自动执行。
-启动时已在 mode=7 不会直接引发动作。自动启动每次进程只尝试一次；stop、fault、模式退出、正常结束或手动
-prepare/start/finish 后不会再次自动触发。等待初始新鲜数据最多 5 秒；启用正数准备时间时，准备后等待到位也最多 5 秒；
-超时进入 FAULT。原有传感器、目标年龄、姿态及模式检查继续生效。
+先启动程序，再按 LB+A 让 SDK 切入调试模式；控制器依据 `/motion/current_mode` 的新鲜原始 7 触发，
+不依赖手柄消息，也不要求先观察 ZERO/STAND。模式、传感器和运行中 PD 反馈稳定 0.5 秒后，
+`auto_direct_start: true` 直接 RUN 默认“踏步”，跳过 PREPARE 与 HANDOFF。
+若程序启动时已经处于模式 7，也会执行同样的自动启动；单独服务 class 4 仍不能触发。
+
+每个进程自动尝试一次；stop、fault、模式退出、手动操作后不会自动重播，故障不会因消息恢复自行清除。
+从首次收到新鲜模式 7 开始，最多等待 5 秒有效数据；超时进入 FAULT。
+预期日志为 `Raw mode 7 startup requested` 和 `Automatic startup: RUN directly, motion=踏步`。
+X 的 0.8 秒桥接、B 的回位及所有运行保护保持原设置。模式触发不等于首帧已推理，
+以 RUN 中帧号推进和新目标输出为准。本机隔离通信测试不证明真机平衡或实际 SDK 时序已验证。
 
 Orin 启动（默认仍为 dry-run，无真实命令发布）：
 
@@ -244,21 +296,21 @@ bash /workspace/rl_controller/scripts/run_supermimic.sh
 bash /workspace/rl_controller/scripts/run_supermimic.sh --ros-args -p dry_run:=false
 ```
 
-启动后切模式 7 即自动执行。退出自动启动模式、继续用手动服务：
+启动后按 LB+A，经有效数据确认后直接 RUN。退出自动启动模式、继续用手动服务：
 
 ```bash
 bash /workspace/rl_controller/scripts/run_supermimic.sh --ros-args -p dry_run:=false -p auto_start:=false
 ```
 
-状态包含 `auto_start=waiting_mode_edge/pending/consumed/disabled` 和 `auto_reason`。
+状态包含 `auto_start=waiting_mode7/pending/consumed/disabled`、`auto_trigger=mode7`、`auto_direct_start=true` 和 `auto_reason`，简洁控制台也显示自动启动状态。
 `consumed` 表示本次自动机会已使用或被手动操作取消。故障后可显式 prepare/start 恢复，
 不会仅因数据恢复或再次切模式而重启。下面的手动启动说明用于关闭自动启动后的操作或历史配置。
 
 **历史 48000 次更新权重（已被当前 primitive/20000 快照替换）：** `casbot02_lafan1_proprio_paper_kpkd/ckpt_0048000.pt`。当时 40 条动作整段 GPU 仿真评测完成 30 条（75%，按未触发高度/倾斜失败终止统计），`walk1_subject2` 完成全部 261.22 秒；另通过前 10 秒 C++ ONNX / 1 kHz 显式限矩 PD 原生 MuJoCo 闭环及隔离 ROS 流程检查。历史评测和验证记录见主项目 `outputs/casbot02_kpkd_048000/deployment_sync.json`。部署是固定快照，后续不会自动热更新。
 
-**当前准备/接管流程：** `prepare_seconds: 0.0`，跳过准备姿态，配置中的默认姿态表不参与此次启动；从实测关节位置进入 `HANDOFF`，固定第 0 帧的整个未来参考窗口、参考速度为零，用 1 秒交接策略。观测历史始终更新；HANDOFF 完成后不重置历史，从 f+1 正常推进动作，动作播放预算从这时开始；当前 `preview_seconds: 0` 不截断参考。自然结束进入 END_HOLD，只有 B / `~/finish` 才按 3 秒回位并 HOLD。默认位置表只影响准备目标，不会擅自改变 actor q0。跳过准备和冻结参考流程已通过隔离 ROS 测试；尚未做完整启动/回位物理闭环和真机验证。
+**入口区别：** 当前模式 7 自动入口启用 `auto_direct_start: true`，跳过准备与接管，按训练的 f+1 时序直接推进动作。手动 start/play 仍沿用 `prepare_seconds: 0.0` 和 1 秒固定起始参考的 HANDOFF；观测历史保持更新。`preview_seconds: 0` 不截断参考。自然结束进入 END_HOLD，只有 B / `~/finish` 才按 3 秒回位并 HOLD。actor q0、权重及手柄菜单不变；隔离流程测试不等同于真机平衡验证。未提供新启动选项的旧配置继续使用原来的 ZERO/STAND→模式 7 门控与准备/接管。
 
-**SDK 接收已对齐 AMP：** 同时订阅标准 `/motion/joint_state` 与 debug `/motion/debug/joint_state`，从独立校验的完整新鲜帧中按接收时间选取最近来源。使用 4 线程执行器和独立的传感器/控制回调组。手柄模式仍监听 `/motion/current_mode`，真实命令只在 7 内发布；默认 walk1 配置会在确认 ZERO/STAND 分类、随后收到真实模式话题 7 后自动准备并启动；每次进程只尝试一次，手动 prepare/start 仍可用。状态分别显示双关节来源、IMU 和模式的接收计数。完整流程见主项目 `docs/CASBOT02_PROPRIO.md` 的 AMP SDK 小节。
+**SDK 接收已对齐 AMP：** 同时订阅标准 `/motion/joint_state` 与 debug `/motion/debug/joint_state`，从独立校验的完整新鲜帧中按接收时间选取最近来源。使用 4 线程执行器和独立的传感器/控制回调组。手柄模式仍监听 `/motion/current_mode`，真实命令只在 7 内发布；默认配置收到新鲜真实模式话题 7 并确认有效数据后直接启动；每次进程只尝试一次，手动 prepare/start 仍可用。状态分别显示双关节来源、IMU 和模式的接收计数。完整流程见主项目 `docs/CASBOT02_PROPRIO.md` 的 AMP SDK 小节。
 
 以下较早的 26 万步/0.5 秒接管说明为历史背景，当前行为以本段和主项目部署文档为准。
 
@@ -266,7 +318,7 @@ bash /workspace/rl_controller/scripts/run_supermimic.sh --ros-args -p dry_run:=f
 
 **当前电机参数已按 HANDOFF 的 casbot02_constants.py 更新。** Kp、Kd、action_scale 和公式所需的力矩上限已同步到训练配置及 walk1 部署 manifest。腕部 6/7 轴按源文件轻型臂电机补齐，腰使用其单独定义的腰电机。旧 26 万步 actor 未按这些新参数训练，新参数下显式 PD 闭环在 9.56 秒失败，因此下文旧参数的 10 秒成功记录不再代表当前配置验证通过。需使用新训练权重重新验证。原包备份位于主项目 `outputs/casbot02_handoff_parameters/before/hardware_walk1/`；参数对照和失败报告见主项目部署文档。此次只生成本地配置和 ARM64 构建产物，没有启动真机控制。
 
-**当前默认入口已切换为只需 IMU 和关节状态的 640 维策略。** 完整配置、导出及验证命令见主项目 [CASBOT02_PROPRIO.md](../docs/CASBOT02_PROPRIO.md)。`config/supermimic_walk4_proprio.yaml` 强制 `require_anchor_obs: false`，不订阅根部位姿，不估计根部位置；实际位置在内存中标记为 NaN。默认 dry-run 不创建电机命令发布者。
+**历史：只需 IMU 和关节状态的 640 维策略。** 以下 walk4/26 万步描述均为旧包记录；当前 690 维默认入口以上文为准。`config/supermimic_walk4_proprio.yaml` 强制 `require_anchor_obs: false`，不订阅根部位姿，不估计根部位置；实际位置在内存中标记为 NaN。默认 dry-run 不创建电机命令发布者。
 
 **2026-10-26：默认动作切换为 `walk1_subject2`，权重使用旧版平台期代表 `casbot02_lafan1_proprio_codex_fixed/ckpt_0260000.pt`。** 根据训练曲线选择 24–26 万步区间，未做完逐模型精确筛选，不宣称精确最优。默认配置为 `config/supermimic_walk1_subject2_proprio.yaml`，模型与动作位于 `config/model/supermimic_walk1_subject2_proprio/`。ONNX 接口仍为 `obs_hist[1,870] + goal[1,640] -> action[1,27]`，无需根部位置。
 

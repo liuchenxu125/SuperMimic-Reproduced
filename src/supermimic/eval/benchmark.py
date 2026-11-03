@@ -2,7 +2,7 @@
 
 Every clip is played once from its first frame with the deterministic policy:
 no observation/action noise, no reset noise, no domain randomization (foot friction 1.0),
-deterministic physics. A clip *fails* if the training termination (pelvis height /
+no actuator delay, deterministic physics. A clip *fails* if the training termination (pelvis height /
 tilt vs reference) fires before the clip ends. Normalised return = sum of per-step
 rewards / (max step reward * full clip length). Unplayed steps after failure
 contribute zero; the survived-prefix score is retained as a separate diagnostic.
@@ -79,9 +79,9 @@ def run_benchmark(
     anchor_obs: bool = False,
     robot: str = "g1",
     anchor_ori_obs: bool = False,
-    actuator_delay: bool = False,
-    actuator_delay_mode: str = "episode",
     collision_model: str = "mesh",
+    compact_library: bool = False,
+    library_device: str = "device",
 ) -> list[ClipResult]:
     num_envs = min(num_envs or 1024, len(npz_files))
     args = SuperMimicEnvCfgArgs(
@@ -99,9 +99,10 @@ def run_benchmark(
         seed=0,
         anchor_obs=anchor_obs,
         anchor_ori_obs=anchor_ori_obs,
-        actuator_delay=actuator_delay,
-        actuator_delay_mode=actuator_delay_mode,
+        actuator_delay=False,
         collision_model=collision_model,
+        compact_library=compact_library,
+        library_device=library_device,
     )
     env = make_env(args, device=device)
     try:

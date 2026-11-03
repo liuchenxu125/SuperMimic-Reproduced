@@ -41,6 +41,12 @@ double yaw(const Eigen::Quaterniond& q) {
   const auto r = q.normalized().toRotationMatrix();
   return std::atan2(r(1,0), r(0,0));
 }
+Eigen::Matrix3d heading_matrix(const Eigen::Quaterniond& q) {
+  const auto r=q.normalized().toRotationMatrix();
+  const double norm=std::sqrt(r(0,0)*r(0,0)+r(1,0)*r(1,0)+1e-9);
+  const double c=r(0,0)/norm,s=r(1,0)/norm;
+  Eigen::Matrix3d h;h<<c,-s,0,s,c,0,0,0,1;return h;
+}
 }
 void State::validate(bool require_position) const {
   require(q.allFinite() && dq.allFinite() && (!require_position || position.allFinite()) && omega.allFinite() &&
@@ -50,15 +56,21 @@ void State::validate(bool require_position) const {
 Policy::Policy(const std::filesystem::path& bundle) {
   require(std::filesystem::is_regular_file(bundle / "manifest.json"),
           "Deployment bundle missing: " + bundle.string() +
-          ". Export a valid checkpoint first; old 649-goal weights cannot replace a 640-goal policy.");
+          ". Export a checkpoint with its matching reference encoding first.");
   const auto m = YAML::LoadFile((bundle / "manifest.json").string());
   require(m["format"].as<std::string>() == "supermimic-hardware-v1" &&
           m["robot"].as<std::string>() == "casbot02", "Unsupported hardware bundle");
   anchor_obs_=m["anchor_obs"].as<bool>();
+  anchor_ori_obs_=m["anchor_ori_obs"].as<bool>(false);
+  const auto encoding=m["goal_encoding"].as<std::string>("per_frame_v1");
+  require(encoding=="per_frame_v1" || encoding=="reference_heading_v1", "Unknown goal encoding");
+  heading_goals_=encoding=="reference_heading_v1";
   goal_dim_=m["goal_dim"].as<int>();
   checkpoint_iteration_=m["checkpoint_iteration"].as<int>(0);
   checkpoint_sha256_=m["checkpoint_sha256"].as<std::string>("unknown");
-  require(m["obs_dim"].as<int>() == kObs && goal_dim_ == (anchor_obs_?649:640) &&
+  require(m["obs_dim"].as<int>() == kObs &&
+          goal_dim_ == 10*goal_frame_dim()+(anchor_obs_?9:(anchor_ori_obs_?6:0)) &&
+          m["goal_frame_dim"].as<int>(goal_frame_dim())==goal_frame_dim() &&
           m["history"].as<int>() == kHistory && m["future_frames"].as<int>() == 10 &&
           m["reset_goal_advance"].as<int>() == 1,
           "Checkpoint IO contract mismatch");
@@ -130,14 +142,15 @@ std::shared_ptr<const MotionClip> Policy::load_motion(const std::filesystem::pat
   std::ifstream file(bundle / m["motion_file"].as<std::string>(), std::ios::binary);
   char magic[8]; uint32_t count=0, width=0;
   file.read(magic,8); file.read(reinterpret_cast<char*>(&count),4); file.read(reinterpret_cast<char*>(&width),4);
-  require(file.good() && std::string(magic,8)=="SMREF001" && width==125 && count>=2 && count<10000000 &&
+  require(file.good() && std::string(magic,8)==(heading_goals_?"SMREF002":"SMREF001") &&
+          width==static_cast<uint32_t>(heading_goals_?67:125) && count>=2 && count<10000000 &&
           count == m["frames"].as<uint32_t>(), "Invalid motion header (little-endian float32 expected)");
   auto clip=std::make_shared<MotionClip>();
   clip->name=m["clip"].as<std::string>();
   clip->frames.resize(count);
   for (auto& f : clip->frames) {
-    std::array<float,125> row{};
-    require(static_cast<bool>(file.read(reinterpret_cast<char*>(row.data()),sizeof(row))), "Truncated motion");
+    std::vector<float> row(width);
+    require(static_cast<bool>(file.read(reinterpret_cast<char*>(row.data()),width*sizeof(float))), "Truncated motion");
     for (float x : row) require(std::isfinite(x), "Nonfinite reference data");
     f.position=Eigen::Map<Eigen::Vector3f>(row.data()).cast<double>();
     f.orientation=Eigen::Quaterniond(row[3],row[4],row[5],row[6]);
@@ -145,7 +158,10 @@ std::shared_ptr<const MotionClip> Policy::load_motion(const std::filesystem::pat
     f.orientation.normalize();
     f.q=Eigen::Map<Eigen::Matrix<float,27,1>>(row.data()+7).cast<double>();
     f.dq=Eigen::Map<Eigen::Matrix<float,27,1>>(row.data()+34).cast<double>();
-    std::copy(row.begin()+61,row.end(),f.features.begin());
+    if(heading_goals_) {
+      f.linear_world=Eigen::Map<Eigen::Vector3f>(row.data()+61).cast<double>();
+      f.angular_world=Eigen::Map<Eigen::Vector3f>(row.data()+64).cast<double>();
+    } else std::copy(row.begin()+61,row.end(),f.features.begin());
   }
   require(file.peek()==std::char_traits<char>::eof(), "Unexpected motion trailing bytes");
   return clip;
@@ -170,13 +186,14 @@ void Policy::transition_motion(std::shared_ptr<const MotionClip> clip, double se
   // so changing a clip's original world origin cannot invent travel or spins.
   const Eigen::Quaterniond heading(Eigen::AngleAxisd(yaw(a.orientation)-yaw(b.orientation),Eigen::Vector3d::UnitZ()));
   b.orientation=heading*b.orientation; b.position.head<2>()=a.position.head<2>();
+  b.linear_world=heading*b.linear_world; b.angular_world=heading*b.angular_world;
   const auto world_lin=[](const ReferenceFrame& f) -> Eigen::Vector3d {
     return Eigen::AngleAxisd(yaw(f.orientation),Eigen::Vector3d::UnitZ())*
       Eigen::Vector3d(f.features[60],f.features[61],f.features[62]);
   };
-  const Eigen::Vector3d va=world_lin(a), vb=world_lin(b);
-  const Eigen::Vector3d wa(a.features[57],a.features[58],a.features[59]);
-  const Eigen::Vector3d wb(b.features[57],b.features[58],b.features[59]);
+  const Eigen::Vector3d va=heading_goals_?a.linear_world:world_lin(a), vb=heading_goals_?b.linear_world:world_lin(b);
+  const Eigen::Vector3d wa=heading_goals_?Eigen::Vector3d(a.orientation.conjugate()*a.angular_world):Eigen::Vector3d(a.features[57],a.features[58],a.features[59]);
+  const Eigen::Vector3d wb=heading_goals_?Eigen::Vector3d(b.orientation.conjugate()*b.angular_world):Eigen::Vector3d(b.features[57],b.features[58],b.features[59]);
   const auto exp=[](const Eigen::Vector3d& v) -> Eigen::Quaterniond {
     const double angle=v.norm();
     return angle<1e-12?Eigen::Quaterniond::Identity():Eigen::Quaterniond(Eigen::AngleAxisd(angle,v/angle));
@@ -206,13 +223,17 @@ void Policy::transition_motion(std::shared_ptr<const MotionClip> clip, double se
     for(int j=0;j<27;++j) {f.features[j]=f.q[j]-q0[j]; f.features[27+j]=f.dq[j];}
     for(int j=0;j<3;++j) {f.features[54+j]=gravity[j];f.features[57+j]=omega[j];f.features[60+j]=lin[j];}
     f.features[63]=f.position.z();
+    f.linear_world=(1.-w)*va+w*vb+dw*(pr-pl);
+    f.angular_world=f.orientation*omega;
     if(i==0) f=a;
-    if(i==steps) f=b; // exact original 64-feature endpoint, including velocities
+    if(i==steps) f=b;
     bridge.push_back(f);
   }
   motion_=std::move(clip); bridge_=std::move(bridge); bridge_cursor_=1;
   frame_=1;start_frame_=0;
-  alignment_.setIdentity();origin_=motion_->frames.front().position;anchor_=origin_;
+  // Keep every destination future frame in the bridge's aligned world frame.
+  // New displacement/rot6d windows span this boundary before frame 0 is reached.
+  alignment_=heading.toRotationMatrix();origin_=motion_->frames.front().position;anchor_=b.position;
   // No reset(): first_, history_ and previous_ deliberately remain untouched.
 }
 std::array<float,kFrame> Policy::observe(const State& state) const {
@@ -242,6 +263,8 @@ ReferenceFrame Policy::reference(int frame) const {
   auto f=motion_->frames[frame];
   f.position=alignment_*(f.position-origin_)+anchor_;
   f.orientation=Eigen::Quaterniond(alignment_)*f.orientation;
+  f.linear_world=alignment_*f.linear_world;
+  f.angular_world=alignment_*f.angular_world;
   return f;
 }
 Output Policy::step(const State& state, bool advance_reference) {
@@ -265,6 +288,7 @@ Output Policy::step_reference(const State& state, bool advance_reference, int he
   out.reference=bridge?bridge_.at(bridge_cursor_):reference(out.frame);
   if(!advance_reference) {
     out.reference.dq.setZero();
+    out.reference.linear_world.setZero();out.reference.angular_world.setZero();
     std::fill(out.reference.features.begin()+27,out.reference.features.begin()+54,0.f);
     std::fill(out.reference.features.begin()+57,out.reference.features.begin()+63,0.f);
   }
@@ -275,8 +299,24 @@ Output Policy::step_reference(const State& state, bool advance_reference, int he
   }
   for(int t=0;t<10;++t) {
     const size_t index=bridge_cursor_+t;
-    const auto& f=bridge?(index<bridge_.size()?bridge_[index]:motion_->frames[std::min<int>(index-(bridge_.size()-1),length()-1)]):
-      motion_->frames[advance_reference?std::min(frame_+t,length()-1):held_frame];
+    const auto f=bridge?(index<bridge_.size()?bridge_[index]:reference(std::min<int>(index-(bridge_.size()-1),length()-1))):
+      reference(advance_reference?std::min(frame_+t,length()-1):held_frame);
+    if(heading_goals_) {
+      const auto inverse_heading=heading_matrix(out.reference.orientation).transpose().eval();
+      const Eigen::Vector3d displacement=inverse_heading*(f.position-out.reference.position);
+      const Eigen::Matrix3d ori=inverse_heading*f.orientation.toRotationMatrix();
+      const Eigen::Vector3d lin=f.orientation.conjugate()*f.linear_world;
+      const Eigen::Vector3d ang=f.orientation.conjugate()*f.angular_world;
+      const int base=t*69;
+      for(int j=0;j<27;++j) {out.goal[base+j]=f.q[j]-q0[j];out.goal[base+27+j]=advance_reference?f.dq[j]:0.;}
+      for(int j=0;j<3;++j) {
+        out.goal[base+54+j]=displacement[j];
+        for(int k=0;k<2;++k) out.goal[base+57+j*2+k]=ori(j,k);
+        out.goal[base+63+j]=advance_reference?lin[j]:0.;
+        out.goal[base+66+j]=advance_reference?ang[j]:0.;
+      }
+      continue;
+    }
     std::copy(f.features.begin(),f.features.end(),out.goal.begin()+t*64);
     if(!advance_reference) {
       // Fixed pose means zero reference velocity, rather than a moving clip
@@ -285,14 +325,15 @@ Output Policy::step_reference(const State& state, bool advance_reference, int he
       std::fill(out.goal.begin()+t*64+57,out.goal.begin()+t*64+63,0.f);
     }
   }
-  if(anchor_obs_) {
+  if(anchor_obs_ || anchor_ori_obs_) {
     const auto f=reference(out.frame);
     const Eigen::Matrix3d r=state.orientation.normalized().toRotationMatrix();
     const Eigen::Vector3d pos=r.transpose()*(f.position-state.position);
     const Eigen::Matrix3d ori=r.transpose()*f.orientation.toRotationMatrix();
+    const int base=10*goal_frame_dim();
     for(int i=0;i<3;++i) {
-      out.goal[640+i]=pos[i];
-      for(int j=0;j<2;++j) out.goal[643+i*2+j]=ori(i,j);
+      if(anchor_obs_) out.goal[base+i]=pos[i];
+      for(int j=0;j<2;++j) out.goal[base+(anchor_obs_?3:0)+i*2+j]=ori(i,j);
     }
   }
   auto memory=Ort::MemoryInfo::CreateCpu(OrtArenaAllocator,OrtMemTypeDefault);

@@ -8,6 +8,7 @@ int main(int argc,char** argv) {
     check(argc==3,"Supply main bundle and next bundle");
     supermimic::Policy policy(argv[1]);
     auto next=policy.load_motion(argv[2]);
+    const int width=policy.goal_frame_dim();
     supermimic::State state;state.q=policy.q0;state.position.setConstant(std::nan(""));
     policy.reset(state,0,false);
     supermimic::Output before;
@@ -24,9 +25,15 @@ int main(int argc,char** argv) {
       check(out.frame==0,"Destination clip clock advanced during bridge");
       check(policy.transitioning()==(i<39),"Bridge duration is not 40 policy updates");
       for(int t=0;t<10;++t) {
-        check(std::isfinite(out.goal[t*64+63]),"Nonfinite bridge feature");
-        const Eigen::Vector3f g=Eigen::Map<const Eigen::Vector3f>(out.goal.data()+t*64+54);
-        check(std::abs(g.norm()-1.)<1e-5,"Interpolated gravity is not a unit vector");
+        for(int j=0;j<width;++j) check(std::isfinite(out.goal[t*width+j]),"Nonfinite bridge feature");
+        if(width==64) {
+          const Eigen::Vector3f g=Eigen::Map<const Eigen::Vector3f>(out.goal.data()+t*width+54);
+          check(std::abs(g.norm()-1.)<1e-5,"Interpolated gravity is not a unit vector");
+        } else {
+          const auto* r=out.goal.data()+t*width+57;
+          const Eigen::Vector3f a(r[0],r[2],r[4]),b(r[1],r[3],r[5]);
+          check(std::abs(a.norm()-1.)<1e-5 && std::abs(b.norm()-1.)<1e-5 && std::abs(a.dot(b))<1e-5,"Bridge rot6d is not orthonormal");
+        }
       }
       if(i==0) {
         // Compare against continuation at the existing reference velocity.
@@ -39,11 +46,14 @@ int main(int argc,char** argv) {
         check(rejected,"Nested transition was accepted");
       }
     }
-    for(int j=0;j<64;++j) check(out.goal[j]==next->frames.front().features[j],"Bridge endpoint differs from next frame 0");
+    check((out.reference.q-next->frames.front().q).norm()<1e-7,"Bridge endpoint differs from next frame 0");
     const auto after=policy.step(state);
     check(after.frame==1,"Playback did not continue at frame 1");
-    for(int t=0;t<10;++t) for(int j=0;j<64;++j)
-      check(after.goal[t*64+j]==next->frames[t+1].features[j],"Next clip encoding changed");
+    supermimic::Policy fresh(argv[2]);fresh.reset(state,0,false);
+    const auto expected=fresh.step(state);
+    for(size_t j=0;j<after.goal.size();++j)
+      check(std::abs(after.goal[j]-expected.goal[j])<2e-5,"Next clip encoding changed");
+    if(width==69) for(int j=54;j<57;++j) check(after.goal[j]==0.,"Current reference displacement is not zero");
     for(int j=0;j<27;++j)
       check(std::abs(after.obs[600+9*27+j]-out.action[j])<1e-6,"Bridge end reset previous action");
     check(policy.step(state).frame==2,"Next clip clock did not advance");

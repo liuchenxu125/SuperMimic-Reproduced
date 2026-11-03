@@ -11,6 +11,9 @@ from typing import Literal
 from .layout import RobotLayout
 
 CASBOT_ASSETS = Path(__file__).parent / "assets/casbot02"
+# Longer than any episode. mjlab resets this counter on episode reset, so the lag
+# drawn on the first physics step holds until the next reset. Same knob as MorphMimic.
+FIXED_DELAY_PERIOD = 2**40
 G1_TRACKED = (
     "pelvis",
     "left_hip_roll_link",
@@ -109,7 +112,7 @@ class RobotProfile:
 
     def entity_cfg(
         self, *, actuator_delay: bool = False,
-        actuator_delay_mode: Literal["step", "episode"] = "step",
+        actuator_delay_mode: Literal["step", "episode"] = "episode",
         collision_model: Literal["mesh", "primitive"] = "mesh",
     ):
         if actuator_delay_mode not in ("step", "episode"):
@@ -131,13 +134,16 @@ class RobotProfile:
                 armature=p["armature"],
                 frictionloss=p["friction"],
                 viscous_damping=0.0,
-                # 200 Hz physics: command latency is 0/5/10 ms. New runs
-                # resample every physics step; episode mode preserves old runs.
+                # 200 Hz physics: command latency is 0/5/10 ms. Episode mode draws
+                # that lag once per episode, matching MorphMimic's fixed delay.
+                # Step mode keeps the previous every-physics-step draw.
                 # mjlab fuses matching builtins into one bus per environment.
                 delay_min_lag=0,
                 delay_max_lag=2 if actuator_delay else 0,
-                delay_hold_prob=0.0 if actuator_delay_mode == "step" else 1.0,
-                delay_update_period=0,
+                delay_hold_prob=0.0,
+                delay_update_period=(
+                    0 if actuator_delay_mode == "step" else FIXED_DELAY_PERIOD
+                ),
                 delay_per_env_phase=False,
             )
             for name, p in params["motors"].items()

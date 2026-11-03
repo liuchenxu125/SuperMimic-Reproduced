@@ -3,7 +3,6 @@
 import argparse
 import hashlib
 import json
-import struct
 from pathlib import Path
 
 import mujoco
@@ -11,6 +10,7 @@ import numpy as np
 import torch
 
 from supermimic.deployment.export import ActorOnly, validate_policy
+from supermimic.deployment.motion_binary import encode_motion
 from supermimic.policy.nets import Policy, PolicyCfg
 
 
@@ -28,11 +28,16 @@ def main():
     if hashlib.sha256(checkpoint.read_bytes()).hexdigest() != meta["checkpoint_sha256"]:
         raise ValueError("Checkpoint changed since sim2sim validation")
     ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    expected_goal = 640 + (9 if meta["anchor_obs"] else 0)
+    encoding = meta.get("goal_encoding", "per_frame_v1")
+    frame_dim = 69 if encoding == "reference_heading_v1" else 64
+    anchor_extra = 9 if meta["anchor_obs"] else (6 if meta.get("anchor_ori_obs", False) else 0)
+    expected_goal = frame_dim * meta["future_frames"] + anchor_extra
     if (meta["obs_dim"], meta["goal_dim"]) != (870, expected_goal):
         raise ValueError("Bundle has inconsistent Casbot02 IO dimensions")
     if ckpt["config"]["env"].get("anchor_obs", False) != meta["anchor_obs"]:
         raise ValueError("Cannot change anchor_obs when exporting existing weights")
+    if ckpt["config"]["env"].get("anchor_ori_obs", False) != meta.get("anchor_ori_obs", False):
+        raise ValueError("Cannot change anchor_ori_obs when exporting existing weights")
     policy = Policy(PolicyCfg(**ckpt["config"]["policy"])).eval()
     policy.load_state_dict(ckpt["policy"])
     validate_policy(policy)
@@ -53,17 +58,8 @@ def main():
     if graph.ir_version > 10:
         raise ValueError("ONNX IR is too new for the bundled ORT 1.19")
     with np.load(args.bundle / meta["motions"][args.clip]) as motion:
-        records = np.concatenate(
-            [
-                motion[k]
-                for k in ("root_pos_w", "root_quat_w", "joint_pos", "joint_vel", "goal_features")
-            ],
-            axis=1,
-        ).astype("<f4")
-    assert records.shape[1] == 125
-    with (args.output / "motion.bin").open("wb") as f:
-        f.write(b"SMREF001" + struct.pack("<II", len(records), records.shape[1]))
-        f.write(records.tobytes())
+        blob, frames = encode_motion(motion, encoding)
+    (args.output / "motion.bin").write_bytes(blob)
     model = mujoco.MjModel.from_xml_path(str(args.bundle / meta["model_file"]))
     # Explicit policy -> SDK mapping: waist is SDK 28, arms are SDK 12..25.
     sdk_names = [f"leg_{side}{j}_joint" for side in ("l", "r") for j in range(1, 7)]
@@ -106,19 +102,24 @@ def main():
         actor_file="actor.onnx",
         motion_file="motion.bin",
         clip=args.clip,
-        frames=len(records),
+        frames=frames,
+        goal_encoding=encoding,
+        goal_frame_dim=frame_dim,
+        anchor_ori_obs=meta.get("anchor_ori_obs", False),
         sdk_joint_names=sdk_names,
         joint_limits=model.jnt_range[1:].tolist(),
         actor_sha256=hashlib.sha256((args.output / "actor.onnx").read_bytes()).hexdigest(),
         motion_sha256=hashlib.sha256((args.output / "motion.bin").read_bytes()).hexdigest(),
     )
+    if "goal_terms" in meta:
+        manifest["goal_terms"] = meta["goal_terms"]
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     print(
         json.dumps(
             {
                 "output": str(args.output),
                 "clip": args.clip,
-                "frames": len(records),
+                "frames": frames,
                 "onnx_opset": 17,
                 "onnx_ir": graph.ir_version,
             },

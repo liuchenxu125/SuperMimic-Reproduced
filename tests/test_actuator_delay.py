@@ -44,6 +44,9 @@ def test_delays_targets_in_physics_steps_and_clears_old_episode(lag):
         for act in actuators:
             act.reset()
         actuators[0].set_lags(torch.full((8,), lag))
+        # The fixed delay is drawn when the episode step counter is zero.
+        # Move past that draw so the pinned lag is the one that is held.
+        actuators[0]._delay_buffer._step_count.fill_(1)
         native.reset()
         native.lag = lag
         for t in range(8):
@@ -85,15 +88,23 @@ def test_sample_once_per_episode_and_partial_reset_isolation():
 def test_new_training_default_and_legacy_environment_default():
     from supermimic.config import TrainConfig
 
+    from supermimic.robots.profiles import FIXED_DELAY_PERIOD
+
     assert TrainConfig(robot="casbot02").env.actuator_delay
-    assert TrainConfig(robot="casbot02").env.actuator_delay_mode == "step"
+    assert TrainConfig(robot="casbot02").env.actuator_delay_mode == "episode"
     args = SuperMimicEnvCfgArgs(npz_files=["unused.npz"], robot="casbot02")
     legacy = make_env_cfg(args)
     assert all(a.delay_max_lag == 0 for a in legacy.scene.entities["robot"].articulation.actuators)
     args.actuator_delay = True
+    fixed = make_env_cfg(args)
+    assert fixed.sim.mujoco.timestep == 0.005 and fixed.decimation == 4
+    assert all(
+        a.delay_max_lag == 2 and a.delay_hold_prob == 0.0
+        and a.delay_update_period == FIXED_DELAY_PERIOD and a.delay_per_env_phase is False
+        for a in fixed.scene.entities["robot"].articulation.actuators
+    )
     args.actuator_delay_mode = "step"
     delayed = make_env_cfg(args)
-    assert delayed.sim.mujoco.timestep == 0.005 and delayed.decimation == 4
     assert all(a.delay_max_lag == 2 and a.delay_hold_prob == 0.0 and a.delay_update_period == 0
                for a in delayed.scene.entities["robot"].articulation.actuators)
     args.robot = "g1"
@@ -110,7 +121,7 @@ def test_old_checkpoint_requires_matching_no_delay_for_resume(tmp_path):
     cfg = TrainConfig(robot="casbot02", run_name="delay", log_root=tmp_path)
     saved = asdict(cfg)
     saved["env"].pop("actuator_delay")
-    saved["policy"]["goal_dim"] = 640
+    saved["policy"]["goal_dim"] = 690
     checkpoint = tmp_path / "legacy.pt"
     torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,
                 "num_updates": 10, "collection_accumulator": 0., "config": saved}, checkpoint)
@@ -150,8 +161,24 @@ def test_step_resampling_and_partial_reset_preserve_target_history():
     torch.testing.assert_close(ctrl[1::2, 0], expected.float())
 
 
+def test_resume_rejects_step_delay_under_fixed_default(tmp_path):
+    from supermimic.config import TrainConfig
+    from supermimic.training.loop import Trainer
+
+    cfg = TrainConfig(robot="casbot02", run_name="delay", log_root=tmp_path)
+    saved = asdict(cfg)
+    saved["env"]["actuator_delay_mode"] = "step"
+    saved["policy"]["goal_dim"] = 690
+    checkpoint = tmp_path / "step.pt"
+    torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,
+                "num_updates": 10, "collection_accumulator": 0., "config": saved}, checkpoint)
+    cfg.resume = checkpoint
+    with pytest.raises(ValueError, match="Resume actuator delay mode differs"):
+        Trainer(cfg)
+    assert not (tmp_path / "delay").exists()
+
+
 @pytest.mark.parametrize("missing_field,error", [
-    ("actuator_delay_mode", "Resume actuator delay mode differs"),
     ("training_floor_friction", "Resume training floor friction differs"),
 ])
 def test_resume_rejects_silent_physics_change(tmp_path, missing_field, error):
@@ -161,7 +188,7 @@ def test_resume_rejects_silent_physics_change(tmp_path, missing_field, error):
     cfg = TrainConfig(robot="casbot02", run_name="delay", log_root=tmp_path)
     saved = asdict(cfg)
     saved["env"].pop(missing_field)
-    saved["policy"]["goal_dim"] = 640
+    saved["policy"]["goal_dim"] = 690
     checkpoint = tmp_path / "legacy.pt"
     torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,
                 "num_updates": 10, "collection_accumulator": 0., "config": saved}, checkpoint)
@@ -204,3 +231,19 @@ def test_compiled_floor_and_actual_foot_contact_friction(training):
         expected = max(.3 if training else 1., mu)
         for contact in contacts:
             np.testing.assert_allclose(contact.friction[:2], expected)
+
+
+def test_benchmark_disables_actuator_delay(monkeypatch):
+    from supermimic.eval.benchmark import run_benchmark
+
+    captured = {}
+
+    def stop(args, device):
+        captured["delay"] = args.actuator_delay
+        captured["device"] = device
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr("supermimic.eval.benchmark.make_env", stop)
+    with pytest.raises(RuntimeError, match="stop"):
+        run_benchmark(object(), ["clip.npz"], device="cpu")
+    assert captured == {"delay": False, "device": "cpu"}

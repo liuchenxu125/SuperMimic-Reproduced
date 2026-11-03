@@ -64,7 +64,7 @@ def limit_statistics(q, limits):
     }
 
 
-def clean_arrays(arrays, model, root_name, trim_frames):
+def clean_arrays(arrays, model, root_name, trim_frames, *, clamp_joints=True):
     names = [model.joint(i).name for i in range(1, model.njnt)]
     bodies = [model.body(i).name for i in range(1, model.nbody)]
     if arrays["joint_names"].tolist() != names or arrays["body_names"].tolist() != bodies:
@@ -89,8 +89,13 @@ def clean_arrays(arrays, model, root_name, trim_frames):
     root_quat /= norms
     q_original = result["joint_pos"].astype(np.float64)
     limits = model.jnt_range[1:]
-    lo, hi = float32_bounds(limits)
-    q = np.clip(q_original, lo.astype(np.float64), hi.astype(np.float64)).astype(np.float32)
+    if clamp_joints:
+        lo, hi = float32_bounds(limits)
+        q = np.clip(q_original, lo.astype(np.float64), hi.astype(np.float64)).astype(np.float32)
+    else:
+        if limit_statistics(q_original, limits)["frames_outside_hard_limits"]:
+            raise ValueError("Trim-only mode requires joints already within limits (1e-6 rad tolerance)")
+        q = q_original.astype(np.float32)
     dt = 1 / float(result["fps"].item())
     motion = ResampledMotion(
         fps=1 / dt,
@@ -136,10 +141,10 @@ def clean_arrays(arrays, model, root_name, trim_frames):
     return result, stats
 
 
-def validate_arrays(arrays, model, root_name):
+def validate_arrays(arrays, model, root_name, *, limit_tolerance=0.0):
     q = arrays["joint_pos"].astype(np.float64)
     limits = model.jnt_range[1:]
-    if ((q < limits[:, 0]) | (q > limits[:, 1])).any():
+    if ((q < limits[:, 0] - limit_tolerance) | (q > limits[:, 1] + limit_tolerance)).any():
         raise ValueError("Post-cleaning joint is outside an exact model hard limit")
     for key in TIME_KEYS:
         if len(arrays[key]) != len(q) or not np.isfinite(arrays[key]).all():
@@ -184,17 +189,21 @@ def validate_arrays(arrays, model, root_name):
 
 
 def process_clip(job):
-    source, output, robot, trim_frames = job
+    source, output, robot, trim_frames, clamp_joints = job
     profile = get_robot(robot)
     model = profile.model()
     with np.load(source, allow_pickle=False) as loaded:
         arrays = {k: loaded[k] for k in loaded.files}
-    cleaned, stats = clean_arrays(arrays, model, profile.root_body, trim_frames)
+    cleaned, stats = clean_arrays(arrays, model, profile.root_body, trim_frames,
+                                 clamp_joints=clamp_joints)
+    cleaned["start_trimmed_frames"] = np.array([trim_frames], dtype=np.int64)
+    cleaned["start_trimmed_seconds"] = np.array([stats["trimmed_seconds"]], dtype=np.float64)
     with Path(output).open("wb") as f:
         np.savez_compressed(f, **cleaned)
     # Validate the actual serialized data, including independent FK/velocities.
     with np.load(output, allow_pickle=False) as loaded:
-        stats["validation"] = validate_arrays(loaded, model, profile.root_body)
+        stats["validation"] = validate_arrays(loaded, model, profile.root_body,
+                                             limit_tolerance=0.0 if clamp_joints else 1e-6)
     stats.update(
         name=Path(source).stem, original_sha256=digest(source), cleaned_sha256=digest(output)
     )
@@ -209,6 +218,9 @@ def main():
     parser.add_argument("--robot", default="casbot02", choices=["casbot02", "g1"])
     parser.add_argument("--trim-seconds", type=float, default=0.1)
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--clips", nargs="+", help="Only replace these clips; other NPZs remain byte-identical")
+    parser.add_argument("--clamp-joints", action=argparse.BooleanOptionalAction, default=True,
+                        help="Use --no-clamp-joints for trim-only processing of already valid data")
     parser.add_argument(
         "--apply", action="store_true", help="Replace input clips after backup and validation"
     )
@@ -218,7 +230,13 @@ def main():
         parser.error(
             "This directory already has a cleaning report; refuse to trim it a second time"
         )
-    files = sorted(directory.glob("*.npz"))
+    all_files = sorted(directory.glob("*.npz"))
+    files = all_files
+    if args.clips is not None:
+        missing = set(args.clips) - {path.stem for path in all_files}
+        if missing:
+            parser.error(f"Unknown clips: {sorted(missing)}")
+        files = [path for path in all_files if path.stem in set(args.clips)]
     if (
         not files
         or args.workers < 1
@@ -237,7 +255,7 @@ def main():
     report_dir.mkdir(parents=True)
     staging = report_dir / "staging"
     staging.mkdir()
-    hashes = {p.name: digest(p) for p in files}
+    hashes = {p.name: digest(p) for p in all_files}
     backup = directory.with_name(directory.name + "_backup_" + stamp)
     if args.apply:
         shutil.copytree(directory, backup)
@@ -264,7 +282,8 @@ def main():
                     "trim_frames": trim,
                 }
             )
-        jobs.append((backup / p.name if args.apply else p, staging / p.name, args.robot, trim))
+        jobs.append((backup / p.name if args.apply else p, staging / p.name, args.robot, trim,
+                     args.clamp_joints))
     stats = []
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
         futures = [pool.submit(process_clip, job) for job in jobs]
@@ -289,7 +308,12 @@ def main():
         "robot": args.robot,
         "trim_seconds": args.trim_seconds,
         "trimmed_clips": trimmed,
-        "limits_policy": "MuJoCo model hard limits; float32 bounds rounded inward",
+        "selected_clips": [path.stem for path in files],
+        "dataset_clips": len(all_files),
+        "input_sha256": hashes,
+        "clamp_joints": args.clamp_joints,
+        "limits_policy": ("MuJoCo model hard limits; float32 bounds rounded inward" if args.clamp_joints
+                          else "Preserve retained joint angles exactly; validate with 1e-6 rad tolerance for float32 boundaries"),
         "derivative_policy": "Recompute joint/root linear differences and SO(3) angular differences after trim/clamp; rebuild every body's FK and spatial velocity",
         "source_audit_note": "source_audit.json still describes the ORIGINAL 30 FPS CSVs; cleaning statistics below describe the copied 50 FPS NPZs",
         "summary": {
@@ -316,6 +340,10 @@ def main():
             os.replace(staging / p.name, directory / p.name)
         if any(digest(directory / (c["name"] + ".npz")) != c["cleaned_sha256"] for c in stats):
             raise RuntimeError("Post-replacement checksum mismatch; restore from backup")
+        selected = {path.name for path in files}
+        if any(digest(directory / name) != value for name, value in hashes.items() if name not in selected):
+            raise RuntimeError("An unselected NPZ changed during processing")
+        report["unselected_npz_unchanged"] = len(all_files) - len(files)
         report["applied"] = True
         content = json.dumps(report, indent=2) + "\n"
         (directory / "cleaning_report.json").write_text(content)

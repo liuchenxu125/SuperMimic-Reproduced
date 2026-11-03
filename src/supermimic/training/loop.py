@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -109,12 +110,14 @@ class Trainer:
                 saved_env.get("collision_model", "mesh") != cfg.env.collision_model
             ):
                 raise ValueError("Resume collision model differs from checkpoint; use a new run")
+            saved_delay_mode = saved_env.get("actuator_delay_mode", "episode")
             if cfg.robot == "casbot02" and cfg.env.actuator_delay and (
-                saved_env.get("actuator_delay_mode", "episode") != cfg.env.actuator_delay_mode
+                saved_delay_mode != cfg.env.actuator_delay_mode
             ):
                 raise ValueError(
-                    "Resume actuator delay mode differs from checkpoint. Use a new run, "
-                    "or --env.actuator-delay-mode episode for the old mechanism."
+                    "Resume actuator delay mode differs from checkpoint "
+                    f"({saved_delay_mode}). Use a new run, or "
+                    f"--env.actuator-delay-mode {saved_delay_mode} to keep it."
                 )
             saved_floor = (saved_env.get("training_floor_friction", 1.0)
                            if saved_env.get("domain_randomization", True) else 1.0)
@@ -183,6 +186,7 @@ class Trainer:
                 sampling_mode=cfg.env.sampling_mode,
                 replay_capacity=cfg.env.replay_capacity,
                 compact_library=cfg.env.compact_library,
+                library_device=cfg.env.library_device,
                 anchor_obs=cfg.env.anchor_obs,
                 anchor_ori_obs=cfg.env.anchor_ori_obs,
                 actuator_delay=cfg.env.actuator_delay,
@@ -215,7 +219,10 @@ class Trainer:
         self.critic = Critic(cfg.critic, pcfg=cfg.policy).to(self.device)
         for m in (self.wm, self.policy, self.critic):
             broadcast_params(m)
-        self.wm_trainer = WorldModelTrainer(self.wm, self.lib, cfg.wm_trainer)
+        self.wm_trainer = WorldModelTrainer(
+            self.wm, self.lib, cfg.wm_trainer,
+            diagnostic_dir=self.log_dir / "failures",
+        )
         self.policy_trainer = PolicyTrainer(
             self.wm, self.policy, self.critic, self.lib, cfg.policy_trainer
         )
@@ -261,6 +268,15 @@ class Trainer:
         if cfg.resume is not None:
             self.load(cfg.resume, checkpoint=resume_checkpoint)
         if self.is_main:
+            execution = {
+                "configured_device": str(self.device),
+                "cpu_threads": torch.get_num_threads(),
+                "cpu_interop_threads": torch.get_num_interop_threads(),
+                "reference_storage": str(self.lib.storage_device),
+                "environment": {key: os.environ.get(key) for key in (
+                    "CUDA_VISIBLE_DEVICES", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+                )},
+            }
             (self.log_dir / "config.json").write_text(
                 json.dumps(asdict(cfg), indent=2, default=str)
             )
@@ -270,6 +286,7 @@ class Trainer:
                         "iteration_unit": "update",
                         "precision": self.precision,
                         "resume_migration": self.resume_migration,
+                        "execution": execution,
                     },
                     indent=2,
                 )
@@ -277,6 +294,7 @@ class Trainer:
             print(
                 f"[INFO] iteration_unit=update; precision={json.dumps(self.precision)}", flush=True
             )
+            print(f"[INFO] execution={json.dumps(execution)}", flush=True)
 
     # ------------------------------------------------------------------ checkpoints
 

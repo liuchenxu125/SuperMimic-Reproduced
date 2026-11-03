@@ -10,6 +10,7 @@ from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from supermimic.data.motion_convert import convert_csv
+from supermimic.data.bones_seed import name_filter
 from supermimic.robots import get_robot
 
 _model = None
@@ -40,9 +41,18 @@ def main() -> None:
         "--pattern", default="*.csv", help="E.g. walk1_subject1.csv for a smoke run"
     )
     parser.add_argument("--overwrite", action="store_true", help="Replace existing output clips")
+    parser.add_argument(
+        "--bones-name-filter", action="store_true",
+        help="G1 BONES only: skip excluded names before FK; write manifest_name_filter.csv",
+    )
+    parser.add_argument("--progress-every", type=int, default=1)
     args = parser.parse_args()
     if args.workers < 1:
         parser.error("--workers must be at least 1")
+    if args.progress_every < 1:
+        parser.error("--progress-every must be positive")
+    if args.bones_name_filter and args.robot != "g1":
+        parser.error("--bones-name-filter is G1-only")
     if not all(math.isfinite(fps) and fps > 0 for fps in (args.input_fps, args.output_fps)):
         parser.error("Frame rates must be finite and positive")
     fps_by_name = {}
@@ -70,6 +80,17 @@ def main() -> None:
         parser.error(f"No matching CSVs in {source}")
     if len({path.stem for path in files}) != len(files):
         parser.error("Input files have duplicate output names")
+    if args.bones_name_filter:
+        output.mkdir(parents=True, exist_ok=True)
+        with (output / "manifest_name_filter.csv").open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(["name", "source", "keep", "reason"])
+            for path in files:
+                reason = name_filter(path.stem)
+                writer.writerow([path.stem, str(path), int(reason is None), reason or ""])
+        accepted = [path for path in files if name_filter(path.stem) is None]
+        print(f"Name filter: {len(files)} -> {len(accepted)} candidates", flush=True)
+        files = accepted
     jobs = [
         (str(p), str(output / f"{p.stem}.npz"), fps_by_name.get(p.stem, args.input_fps),
          args.output_fps, args.robot)
@@ -84,16 +105,18 @@ def main() -> None:
         return
     total = 0
     if args.workers == 1:
-        for name, frames in map(_convert, jobs):
+        for index, (name, frames) in enumerate(map(_convert, jobs), 1):
             total += frames
-            print(f"{name}: {frames} frames", flush=True)
+            if index % args.progress_every == 0 or index == len(jobs):
+                print(f"[{index}/{len(jobs)}] {name}: {frames} frames; total={total}", flush=True)
     else:
         with ProcessPoolExecutor(
             max_workers=args.workers, mp_context=multiprocessing.get_context("spawn")
         ) as pool:
-            for name, frames in pool.map(_convert, jobs):
+            for index, (name, frames) in enumerate(pool.map(_convert, jobs), 1):
                 total += frames
-                print(f"{name}: {frames} frames", flush=True)
+                if index % args.progress_every == 0 or index == len(jobs):
+                    print(f"[{index}/{len(jobs)}] {name}: {frames} frames; total={total}", flush=True)
     print(
         f"Wrote {len(jobs)} clips, {total} frames "
         f"({total / args.output_fps / 3600:.3f} hours) to {output}"

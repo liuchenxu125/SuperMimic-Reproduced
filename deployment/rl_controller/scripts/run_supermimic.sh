@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Does not switch SDK mode or kill processes. With auto_start enabled, an
-# queried ZERO/STAND followed by fresh raw topic mode 7 starts the preview.
+# configured fresh raw mode 7 starts the default motion; SDK owns LB+A.
 # SDK 2.2.37: actual gains must be enabled (use_default_kp_kd=false) and echoed.
 set -eo pipefail
 SM_RUN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

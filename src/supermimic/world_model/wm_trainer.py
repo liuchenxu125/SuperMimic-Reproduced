@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 import torch
 
@@ -31,10 +32,12 @@ def reference_at(lib: MotionLibrary, frame: torch.Tensor) -> ReferenceFrame:
 
 
 class WorldModelTrainer:
-    def __init__(self, wm: WorldModel, lib: MotionLibrary, cfg: WMTrainerCfg):
+    def __init__(self, wm: WorldModel, lib: MotionLibrary, cfg: WMTrainerCfg,
+                 diagnostic_dir: Path | None = None):
         self.wm = wm
         self.lib = lib
         self.cfg = cfg
+        self.diagnostic_dir = diagnostic_dir
         self.opt = torch.optim.Adam(wm.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
         wm.enable_compile(cfg.compile)
 
@@ -53,10 +56,17 @@ class WorldModelTrainer:
         agg: dict[str, torch.Tensor] = {}
         for _ in range(self.cfg.batches_per_update):
             w = buffer.sample_windows(self.cfg.batch_size, self.cfg.window)
-            loss, m = self.loss_on(w)
-            gn = backward_step(
-                loss, self.wm, self.opt, name="World model", max_norm=self.cfg.grad_clip
-            )
+            try:
+                loss, m = self.loss_on(w)
+                gn = backward_step(
+                    loss, self.wm, self.opt, name="World model", max_norm=self.cfg.grad_clip
+                )
+            except (FloatingPointError, RuntimeError) as error:
+                if self.diagnostic_dir is not None:
+                    from supermimic.training.failure_dump import dump_world_model_failure
+
+                    dump_world_model_failure(self.diagnostic_dir, self.wm, self.lib, self.cfg, w, error)
+                raise
             m["loss"] = loss.detach()
             m["grad_norm"] = gn.detach()
             for k, v in m.items():

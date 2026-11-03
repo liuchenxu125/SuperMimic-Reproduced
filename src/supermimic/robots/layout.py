@@ -29,7 +29,9 @@ class RobotLayout:
 
     @property
     def goal_dim(self):
-        return 2 * self.num_joints + 10
+        # Joint position and velocity, then pelvis displacement 3, rot6d 6,
+        # pelvis-frame linear velocity 3 and angular velocity 3.
+        return 2 * self.num_joints + 15
 
     @property
     def xi_dim(self):
