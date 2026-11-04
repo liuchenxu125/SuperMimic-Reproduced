@@ -139,7 +139,7 @@ def test_conversion_library_and_network_dimensions(casbot_clip):
 
 @pytest.mark.parametrize("obs_noise", [False, True])
 def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_noise):
-    """CPU BPTT: one rot6d suffix, unchanged future features, finite updates."""
+    """CPU BPTT: history rot6d, unchanged 690-d future features, finite updates."""
     from types import SimpleNamespace
 
     from supermimic.data.replay_buffer import StartBatch
@@ -148,9 +148,9 @@ def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_n
     from supermimic.imagination.rollout import imagine
     from supermimic.kinematics.g1_fk import G1Kinematics
     from supermimic.policy.nets import Critic, CriticCfg, Policy, PolicyCfg
-    from supermimic.world_model.heads import AnalyticHeads, anchor_relative_orientation
+    from supermimic.kinematics.rotations import robot_relative_rot6d
+    from supermimic.world_model.heads import AnalyticHeads, analytic_observation
     from supermimic.world_model.state_spec import StateSpecCfg
-    from supermimic.world_model.wm_trainer import reference_at
     from supermimic.world_model.world_model import WorldModel, WorldModelCfg
 
     torch.manual_seed(63)
@@ -167,7 +167,10 @@ def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_n
     )
     wm = WorldModel(WorldModelCfg(hidden=(32,), term_hidden=(16,),
                                  state_spec=StateSpecCfg(num_joints=27)), heads, "cpu")
-    pc = PolicyCfg(num_joints=27, goal_dim=696, encoder_hidden=(32,), decoder_hidden=(32,))
+    pc = PolicyCfg(
+        num_joints=27, goal_dim=690, obs_term_scale=(1.0, 5.0, 2.0, 1.0, 1.0, 1.0),
+        encoder_hidden=(32,), decoder_hidden=(32,),
+    )
     policy, critic = Policy(pc), Critic(CriticCfg(hidden=(32,)), pcfg=pc)
     frames = torch.tensor([5, 15])
     qp, qv = lib.ref_qpos_qvel(frames)
@@ -175,23 +178,16 @@ def test_orientation_only_imagination_and_actor_critic_update(casbot_clip, obs_n
     start = StartBatch(
         state=state, xi=wm.spec.xi_offset[None].expand(2, -1).clone(), frame=frames,
         prev_action=torch.zeros(2, 27), hist_states=state[None].expand(10, -1, -1),
-        hist_actions=torch.zeros(10, 2, 27),
+        hist_actions=torch.zeros(10, 2, 27), hist_frames=frames[None].expand(10, -1).contiguous(),
     )
-    ro = imagine(wm, policy, lib, start, horizon=2, anchor_ori_obs=True, obs_noise=obs_noise)
-    assert ro.goals.shape == (3, 2, 696) and ro.actions.shape == (2, 2, 27)
-    for t in range(3):
-        torch.testing.assert_close(ro.goals[t, :, :690], lib.goal_window(ro.frames[t], 10),
-                                   atol=0, rtol=0)
-        ref = reference_at(lib, ro.frames[t])
-        actual_quat = heads.robot_bodies(ro.states[t])["quat"][:, heads.anchor_index]
-        expected = anchor_relative_orientation(actual_quat, ref.body_quat_w[:, heads.anchor_index])
-        difference = (ro.goals[t, :, 690:] - expected).abs()
-        if obs_noise:
-            assert difference.max() <= 0.050001 and difference.max() > 0
-        else:
-            torch.testing.assert_close(ro.goals[t, :, 690:], expected)
-    grad = torch.autograd.grad(ro.goals[0, :, 691].sum(), state)[0]
+    clean = analytic_observation(state, torch.zeros(2, 27), start.xi, q0, qp[:, 3:7])
+    torch.testing.assert_close(clean[:, -6:], robot_relative_rot6d(qp[:, 3:7], qp[:, 3:7]))
+    grad = torch.autograd.grad(clean[:, -5].sum(), state)[0]
     assert torch.isfinite(grad).all() and grad[:, 3:7].abs().sum() > 0
+    ro = imagine(wm, policy, lib, start, horizon=2, anchor_ori_obs=True, obs_noise=obs_noise)
+    assert ro.goals.shape == (3, 2, 690) and ro.actions.shape == (2, 2, 27)
+    for t in range(3):
+        torch.testing.assert_close(ro.goals[t], lib.goal_window(ro.frames[t], 10), atol=0, rtol=0)
 
     # Exercise the real policy/critic update on a detached replay seed.
     start.state = start.state.detach()

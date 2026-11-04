@@ -76,6 +76,17 @@ def rot6d_from_quat(q: torch.Tensor) -> torch.Tensor:
     return m[..., :, :2].reshape(*q.shape[:-1], 6)
 
 
+def robot_relative_rot6d(robot_quat: torch.Tensor, reference_quat: torch.Tensor) -> torch.Tensor:
+    """rot6d of ``R_robot.T @ R_reference``: first two columns, row-major.
+
+    This is the reference pelvis orientation expressed in the current robot
+    pelvis frame. It is not the heading-relative goal rotation, and it is not
+    mjlab's row-packed ``motion_anchor_ori_b``.
+    """
+    relative = quat_mul(quat_inv(robot_quat), reference_quat)
+    return rot6d_from_quat(relative)
+
+
 def heading_yaw(q: torch.Tensor) -> torch.Tensor:
     """Yaw angle of the heading frame of q (rotation of the body x-axis about world z)."""
     w, x, y, z = q.unbind(-1)

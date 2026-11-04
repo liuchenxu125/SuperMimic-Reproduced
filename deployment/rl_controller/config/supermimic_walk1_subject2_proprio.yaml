@@ -3,8 +3,8 @@
 sdk_config_file: /workspace/hl_motion/hl_config/motion_params.yaml
 mode_service: /get_robot_mode
 # Casbot02 proprio policy: 870 history + 690 reference -> 27 actions, 50 Hz.
-# casbot02_bones_seed_proprio_cpu2 / ckpt_0096000.pt, 踏步.
-# Fixed snapshot exported at update 96000; collision model: primitive.
+# casbot02_bones_seed_proprio_cpu4 / ckpt_0092000.pt, 踏步.
+# Fixed snapshot exported at update 92000; collision model: primitive.
 # HANDOFF gains/scales and the new default pose match this training run.
 # Historical explicit-PD preview does not validate the SDK 2.2.37 actuator path.
 # Initial automatic motion: 踏步 (from this bundle manifest).
@@ -36,6 +36,18 @@ motions:
   SEED_武术: model/supermimic_motion_bank/SEED_武术
   SEED_摆胯: model/supermimic_motion_bank/SEED_摆胯
   SEED_迪斯科: model/supermimic_motion_bank/SEED_迪斯科
+  dance_phew_001__A464: model/supermimic_motion_bank/dance_phew_001__A464
+  dance_click_002__A464: model/supermimic_motion_bank/dance_click_002__A464
+  dance_floss_002__A464: model/supermimic_motion_bank/dance_floss_002__A464
+  dance_fresh_001__A464: model/supermimic_motion_bank/dance_fresh_001__A464
+  dance_fishin_002__A464: model/supermimic_motion_bank/dance_fishin_002__A464
+  dance_goated_001__A464: model/supermimic_motion_bank/dance_goated_001__A464
+  dance_macarena_003__A464: model/supermimic_motion_bank/dance_macarena_003__A464
+  dance_peace_out_002__A464: model/supermimic_motion_bank/dance_peace_out_002__A464
+  dance_peace_out_004__A464: model/supermimic_motion_bank/dance_peace_out_004__A464
+  dance_pirouette_001__A464: model/supermimic_motion_bank/dance_pirouette_001__A464
+  dance_wavy_worm_001__A467: model/supermimic_motion_bank/dance_wavy_worm_001__A467
+  TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2: model/supermimic_motion_bank/TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2
 
 require_anchor_obs: false
 # SDK joystick: release X to play NEXT motion; B finishes and returns.
@@ -44,7 +56,7 @@ joystick_enabled: true
 joystick_topic: /joystick_events
 # Keep the console readable; detailed status still publishes at 1 Hz over ROS.
 console_full_status: false
-joystick_motion_order: [踏步, BS_XiaoDongTai_TaiJiaoPanDing_100HZ, X1_1000HZ, SEED_鼓掌, SEED_看时间, SEED_思考, SEED_捂脸, SEED_扭胯, SEED_武术, SEED_摆胯, SEED_迪斯科, 后退, 原地左转, 原地右转]
+joystick_motion_order: [踏步, TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2, BS_XiaoDongTai_TaiJiaoPanDing_100HZ, X1_1000HZ, SEED_鼓掌, SEED_看时间, SEED_思考, SEED_捂脸, SEED_扭胯, SEED_武术, SEED_摆胯, SEED_迪斯科, 后退, 原地左转, 原地右转]
 # One automatic attempt: fresh raw topic 7 and valid sensors/PD, like the colleague controller.
 # The SDK still switches modes; service class 4 alone never asserts mode 7.
 # Starting this process while already in mode 7 also starts the configured motion.

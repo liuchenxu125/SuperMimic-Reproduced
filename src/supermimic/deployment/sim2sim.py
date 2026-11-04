@@ -99,24 +99,31 @@ def reference_heading_goal(
     return features.reshape(-1).astype(np.float32)
 
 
-def observation(qpos, qvel, previous_action, q0) -> np.ndarray:
-    """Single raw proprioception frame. Free-joint angular qvel is body-local."""
+def observation(qpos, qvel, previous_action, q0, ref_quat=None) -> np.ndarray:
+    """Single raw proprioception frame. Free-joint angular qvel is body-local.
+
+    ``ref_quat`` appends rot6d of ``R_robot.T @ R_reference`` (first two columns).
+    Omit it for a legacy 87-wide frame.
+    """
     n = len(q0)
     qp, qv = np.asarray(qpos), np.asarray(qvel)
     if qp.shape != (n + 7,) or qv.shape != (n + 6,) or np.shape(previous_action) != (n,):
         raise ValueError("State/action dimensions do not match the joint contract")
     gravity = -rotation(qp[3:7])[2, :]
     result = np.concatenate((qp[7:] - q0, qv[6:], qv[3:6], gravity, previous_action))
+    if ref_quat is not None:
+        relative = rotation(qp[3:7]).T @ rotation(ref_quat)
+        result = np.concatenate((result, relative[:, :2].reshape(6)))
     if not np.isfinite(result).all():
         raise FloatingPointError("Nonfinite robot observation")
     return result.astype(np.float32)
 
 
 class History:
-    def __init__(self, joints: int, length: int):
+    def __init__(self, joints: int, length: int, reference_pelvis_ori: bool = False):
         if joints < 1 or length < 1:
             raise ValueError("History dimensions must be positive")
-        self.sizes = (joints, joints, 3, 3, joints)
+        self.sizes = (joints, joints, 3, 3, joints) + ((6,) if reference_pelvis_ori else ())
         self.frames = np.zeros((length, sum(self.sizes)), dtype=np.float32)
 
     def reset(self, frame):
@@ -315,7 +322,19 @@ class Sim2Sim:
         self.model, self.data, self.actuator_to_joint = load_model(self.bundle, self.meta)
         self.q0 = np.array([p["q0"] for p in self.meta["motors"]], dtype=np.float64)
         self.scale = np.array([p["scale"] for p in self.meta["motors"]], dtype=np.float64)
-        self.history = History(len(self.q0), self.meta["history"])
+        joints = len(self.q0)
+        history = self.meta["history"]
+        legacy = (3 * joints + 6) * history
+        pelvis = (3 * joints + 12) * history
+        if self.meta["obs_dim"] == pelvis:
+            self.reference_pelvis_ori = True
+        elif self.meta["obs_dim"] == legacy:
+            self.reference_pelvis_ori = False
+        else:
+            raise ValueError(
+                f"Unsupported observation width {self.meta['obs_dim']}; expected {legacy} or {pelvis}"
+            )
+        self.history = History(joints, history, self.reference_pelvis_ori)
         self.dt = self.meta["control_dt"]
         self.decimation = self.meta["decimation"]
         if not np.isclose(self.dt, self.model.opt.timestep * self.decimation):
@@ -349,19 +368,27 @@ class Sim2Sim:
         self.data.ctrl[:] = self.q0[self.actuator_to_joint]
         mujoco.mj_forward(self.model, self.data)
         self.previous_action[:] = 0
-        self.history.reset(
-            observation(self.data.qpos, self.data.qvel, self.previous_action, self.q0)
-        )
         self.start_frame, self.steps = start_frame, 0
         self.target_frame = min(start_frame + self.meta["reset_goal_advance"], ref.length - 1)
+        # The first policy call tracks the advanced frame, so the repeated
+        # history uses that reference orientation.
+        self.history.reset(self.current_observation())
         self.finished = self.failed = self.completed = False
         self.metrics = []
         self.trajectory = []
 
+    def current_observation(self, reference_frame: int | None = None):
+        frame = self.target_frame if reference_frame is None else reference_frame
+        ref_quat = self.reference.root_quat[frame] if self.reference_pelvis_ori else None
+        return observation(self.data.qpos, self.data.qvel, self.previous_action, self.q0, ref_quat)
+
     def inputs(self):
+        # A bundle whose history already contains the pelvis rot6d keeps the
+        # 690-d goal. Older orientation bundles still append the suffix.
+        goal_orientation = self.meta.get("anchor_ori_obs", False) and not self.reference_pelvis_ori
         return self.history.packed(), self.reference.goal(
             self.target_frame, self.data.qpos[:3], self.data.qpos[3:7], self.meta["anchor_obs"],
-            self.meta.get("anchor_ori_obs", False),
+            goal_orientation,
         )
 
     def position_targets(self, action):
@@ -405,8 +432,9 @@ class Sim2Sim:
             self.trajectory.append(
                 np.concatenate((self.data.qpos, self.data.qvel, action, targets))
             )
-        self.history.append(observation(self.data.qpos, self.data.qvel, action, self.q0))
-        self.target_frame = min(f + 1, ref.length - 1)
+        next_frame = min(f + 1, ref.length - 1)
+        self.history.append(self.current_observation(next_frame))
+        self.target_frame = next_frame
         self.completed = self.steps >= ref.length - self.start_frame
         self.finished = self.failed or self.completed
         return self.metrics[-1]

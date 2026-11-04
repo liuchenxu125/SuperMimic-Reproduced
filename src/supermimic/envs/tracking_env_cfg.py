@@ -95,7 +95,7 @@ class SuperMimicEnvCfgArgs:
     anchor_obs: bool = (
         False  # add BeyondMimic anchor-relative pose (9) to the goal group (plan D5 alt.)
     )
-    anchor_ori_obs: bool = False  # relative rot6d only (6), appended once to the goal
+    anchor_ori_obs: bool = False  # per-history-frame reference-pelvis rot6d; not used by the plain proprio task
     actuator_delay: bool = False  # explicit opt-in here preserves legacy checkpoint callers
     actuator_delay_mode: str = "episode"  # one draw per episode; a missing field stays here
     training_floor_friction: float = 0.3
@@ -121,6 +121,14 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
         ),
         "actions": ObservationTermCfg(func=base_mdp.last_action),
     }
+    # Separate from the plain proprio task. Full anchor mode keeps its own
+    # goal suffix and does not also grow the history.
+    if a.anchor_ori_obs and not a.anchor_obs:
+        policy_terms["reference_pelvis_ori"] = ObservationTermCfg(
+            func=sm_obs.reference_pelvis_rot6d,
+            params={"command_name": "motion"},
+            noise=noise(-0.05, 0.05),
+        )
     observations = {
         "policy": ObservationGroupCfg(
             terms=policy_terms,
@@ -153,7 +161,7 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
                             noise=noise(-0.05, 0.05),
                         ),
                     }
-                    if a.anchor_obs or a.anchor_ori_obs
+                    if a.anchor_obs
                     else {}
                 ),
             },

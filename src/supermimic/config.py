@@ -38,7 +38,7 @@ class EnvCfg:
     compact_library: bool = False
     library_device: Literal["device", "cpu"] = "device"  # compact reference storage; batches stay on training device
     anchor_obs: bool = False
-    anchor_ori_obs: bool = False  # append rot6d once, independently of root position
+    anchor_ori_obs: bool = False  # history rot6d of the reference pelvis; separate from the 870-d task
     actuator_delay: bool = True  # Casbot02: 0-2 physics steps (0/5/10 ms), once per episode
     actuator_delay_mode: Literal["step", "episode"] = "episode"
     training_floor_friction: float = 0.3  # MorphMimic floor; evaluation stays at 1.0

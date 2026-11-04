@@ -13,13 +13,14 @@
 
 世界模型和 critic 不参与真机推理。策略仍为 50 Hz，SDK 的 1 kHz 命令发布和 PD 适配由现有 C++ runner 执行。
 
-当前本地部署（2026-11-02）为 `casbot02_bones_seed_proprio_cpu2/ckpt_0096000.pt`，
-默认踏步，X 循环为“踏步、BS_XiaoDongTai_TaiJiaoPanDing_100HZ、X1_1000HZ、SEED_鼓掌、SEED_看时间、SEED_思考、SEED_捂脸、SEED_扭胯、SEED_武术、SEED_摆胯、SEED_迪斯科、后退、原地左转、原地右转”。`CASBOT02_YKS_04_1000HZ` 仍在动作库，不在该循环中。
+当前本地部署（2026-11-04）为 `casbot02_bones_seed_proprio_cpu4/ckpt_0092000.pt`，
+默认踏步。真机 X 循环以 `rl_controller/config/supermimic_walk1_subject2_proprio.yaml` 为准：踏步、TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2、dance_phew_001__A464、SEED_扭胯、SEED_武术、SEED_迪斯科、X1_1000HZ、后退、原地左转、原地右转。`CASBOT02_YKS_04_1000HZ` 仍在动作库，不在该循环中。
 三个原地上肢动作的映射见 `outputs/casbot02_seed_small_motions_20261102/deployment_update.json`。三条原地小舞为 `SEED_捂脸`＝`dance_hiphop_dab_R_fast_001__A317`、`SEED_扭胯`＝`dance_party_hips_003__A467`、`SEED_武术`＝`dance_wutang_is_forever_003__A466`，映射见 `outputs/casbot02_seed_dances_20261102/selection.json`。混合导出数据入口 `export_npz/` 通过符号链接汇总参考，训练数据目录保持原样。
 输入总维度 1560，不增加实测根部定位或相对朝向反馈。新目标顺序与训练一致：
 关节位置偏差 27、关节速度 27、参考航向位移 3、参考航向 rot6d 6、未来骨盆系线速度 3、角速度 3。
-本地通过起步 10 秒 C++/PyTorch 一致性和 6 组相邻显式 PD 短切换；不是全部动作整段评测或真机验证。
-产物和旧包备份：`outputs/casbot02_bones_seed_096000_deployment_20261102/`。
+本地通过起步 10 秒 C++/PyTorch 一致性和当前 X 循环的 10 组相邻显式 PD 短切换；不是全部动作整段评测或真机验证。
+产物和旧包备份：`outputs/casbot02_bones_seed_cpu4_092000_deployment_20261104/`。
+上一包 `casbot02_bones_seed_proprio_cpu2/ckpt_0096000.pt` 的记录仍在 `outputs/casbot02_bones_seed_096000_deployment_20261102/`。
 
 以下为历史 2026-10-30 的 80000 次模型记录，不能作为新权重验证结果：
 `casbot02_lafan1_proprio_paper_kpkd_primitive_data1/ckpt_0080000.pt`，

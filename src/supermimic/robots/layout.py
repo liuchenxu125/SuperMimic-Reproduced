@@ -50,11 +50,28 @@ def split_state(state):
     return state.split((3, 4, n, 3, 3, n), dim=-1)
 
 
-def observation_terms(num_joints=29):
-    return (
+def observation_terms(num_joints=29, *, reference_pelvis_ori: bool = False):
+    terms = [
         ("joint_pos", num_joints),
         ("joint_vel", num_joints),
         ("base_ang_vel", 3),
         ("projected_gravity", 3),
         ("actions", num_joints),
-    )
+    ]
+    if reference_pelvis_ori:
+        terms.append(("reference_pelvis_ori", 6))
+    return tuple(terms)
+
+
+def reference_pelvis_ori_enabled(obs_term_scale) -> bool:
+    """Five saved scales are the legacy proprio frame; six include the rot6d."""
+    count = len(obs_term_scale)
+    if count == 6:
+        return True
+    if count == 5:
+        return False
+    raise ValueError(f"Expected 5 or 6 observation scales, got {count}")
+
+
+def proprio_frame_dim(num_joints: int, *, reference_pelvis_ori: bool) -> int:
+    return 3 * num_joints + (12 if reference_pelvis_ori else 6)

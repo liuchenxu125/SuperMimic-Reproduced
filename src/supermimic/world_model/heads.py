@@ -15,12 +15,12 @@ import torch
 
 from supermimic.envs.mdp.rewards import TrackingRewardCfg, tracking_reward_terms
 from supermimic.kinematics.g1_fk import G1Kinematics
-from supermimic.kinematics.rotations import projected_gravity, quat_apply_inverse
+from supermimic.kinematics.rotations import projected_gravity, quat_apply_inverse, robot_relative_rot6d
 from supermimic.robots.layout import observation_terms
 from supermimic.robots.layout import split_state as split_robot_state
 
 OBS_DIM = 93
-# Term layout of the ``policy`` observation group (order matters: term-major history).
+# Term layout of the plain G1 ``policy`` group. The orientation task appends rot6d.
 OBS_TERMS = (
     ("joint_pos", 29),
     ("joint_vel", 29),
@@ -36,17 +36,24 @@ def split_state(s: torch.Tensor):
 
 
 def analytic_observation(
-    s: torch.Tensor, prev_action: torch.Tensor, xi: torch.Tensor, default_joint_pos: torch.Tensor
+    s: torch.Tensor,
+    prev_action: torch.Tensor,
+    xi: torch.Tensor,
+    default_joint_pos: torch.Tensor,
+    ref_root_quat: torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """Noise-free 93-d proprioceptive observation (paper Table A.1) from state + context.
+    """Noise-free proprioception.
 
-    xi[..., 1:30] is the encoder bias: observed joint positions are ``q + bias - q0``.
+    xi[..., 1:1+n] is the encoder bias: observed joint positions are ``q + bias - q0``.
+    Passing ``ref_root_quat`` appends the orientation-task term: the first two
+    columns of ``R_robot.T @ R_reference``. The plain proprio task omits it.
     """
     _, root_quat, q, _, ang_b, qd = split_state(s)
     bias = xi[..., 1 : 1 + q.shape[-1]]
-    return torch.cat(
-        [q + bias - default_joint_pos, qd, ang_b, projected_gravity(root_quat), prev_action], dim=-1
-    )
+    parts = [q + bias - default_joint_pos, qd, ang_b, projected_gravity(root_quat), prev_action]
+    if ref_root_quat is not None:
+        parts.append(robot_relative_rot6d(root_quat, ref_root_quat))
+    return torch.cat(parts, dim=-1)
 
 
 def anchor_relative_orientation(
@@ -79,14 +86,33 @@ def anchor_relative_obs(
 ANCHOR_OBS_DIM = 9
 
 
-def flatten_history_term_major(hist: torch.Tensor) -> torch.Tensor:
-    """(H, N, 93) oldest→newest  ->  (N, 930) in mjlab's term-major layout [A_t0..A_tH-1, B_t0..]."""
-    H, N, _ = hist.shape
+def _history_terms(width: int, num_joints: int | None = None):
+    """Recover term widths. Pass ``num_joints`` when 93 could be either layout."""
+    if num_joints is not None:
+        if width == 3 * num_joints + 12:
+            return observation_terms(num_joints, reference_pelvis_ori=True)
+        if width == 3 * num_joints + 6:
+            return observation_terms(num_joints, reference_pelvis_ori=False)
+        raise ValueError(f"Observation width {width} does not match {num_joints} joints")
+    for joints in (29, 27):
+        if width == 3 * joints + 6:
+            return observation_terms(joints, reference_pelvis_ori=False)
+    for joints in (29, 27):
+        if width == 3 * joints + 12:
+            return observation_terms(joints, reference_pelvis_ori=True)
+    raise ValueError(f"Unrecognized observation width {width}")
+
+
+def flatten_history_term_major(hist: torch.Tensor, num_joints: int | None = None) -> torch.Tensor:
+    """(H, N, frame) oldest→newest -> (N, H*frame), term-major."""
+    H, N, width = hist.shape
     chunks = []
     start = 0
-    for _, d in observation_terms((hist.shape[-1] - 6) // 3):
+    for _, d in _history_terms(width, num_joints):
         chunks.append(hist[:, :, start : start + d].permute(1, 0, 2).reshape(N, H * d))
         start += d
+    if start != width:
+        raise ValueError(f"Observation terms do not cover width {width}")
     return torch.cat(chunks, dim=-1)
 
 

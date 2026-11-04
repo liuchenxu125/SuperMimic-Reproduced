@@ -33,6 +33,7 @@ class StartBatch:
     prev_action: torch.Tensor
     hist_states: torch.Tensor  # (hist, B, 71), oldest first
     hist_actions: torch.Tensor  # previous env-input action at each historical state
+    hist_frames: torch.Tensor | None = None  # reference frame of each history row; orientation task only
 
 
 class ReplayBuffer:
@@ -208,4 +209,5 @@ class ReplayBuffer:
             prev_action=self.prev_actions[ids, start],
             hist_states=self.states[ids[None], rows],
             hist_actions=self.prev_actions[ids[None], rows],
+            hist_frames=self.frame[ids[None], rows],
         )

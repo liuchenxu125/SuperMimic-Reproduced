@@ -20,7 +20,7 @@ from supermimic.envs.tracking_env_cfg import SuperMimicEnvCfgArgs, make_env_cfg
 from supermimic.goal_spec import anchor_goal_dim
 from supermimic.policy.nets import Policy, PolicyCfg
 from supermimic.robots import get_robot
-from supermimic.robots.layout import RobotLayout
+from supermimic.robots.layout import RobotLayout, proprio_frame_dim, reference_pelvis_ori_enabled
 
 
 class ActorOnly(nn.Module):
@@ -42,7 +42,10 @@ def validate_policy(policy: Policy) -> None:
             f"Policy contains NaN/Inf in {len(bad)} tensors (e.g. {bad[0]}). "
             "Training diverged; use a finite checkpoint or retrain. Cannot export for deployment."
         )
-    obs_dim = (3 * policy.cfg.num_joints + 6) * policy.cfg.history
+    obs_dim = policy.cfg.history * proprio_frame_dim(
+        policy.cfg.num_joints,
+        reference_pelvis_ori=reference_pelvis_ori_enabled(policy.cfg.obs_term_scale),
+    )
     with torch.inference_mode(), torch.random.fork_rng(devices=[]):
         torch.manual_seed(1301)
         for random in (False, True):
@@ -85,7 +88,9 @@ def export_bundle(checkpoint: Path, motions: list[Path], output: Path) -> dict:
     n, k = pcfg.num_joints, cfg["env"]["future_frames"]
     anchor = cfg["env"].get("anchor_obs", False)
     anchor_ori = cfg["env"].get("anchor_ori_obs", False)
-    obs_dim = (3 * n + 6) * pcfg.history
+    obs_dim = pcfg.history * proprio_frame_dim(
+        n, reference_pelvis_ori=reference_pelvis_ori_enabled(pcfg.obs_term_scale)
+    )
     if n != 27 or pcfg.goal_dim != k * RobotLayout(n).goal_dim + anchor_goal_dim(anchor, anchor_ori):
         raise ValueError("Checkpoint dimensions are inconsistent with the selected robot/interface")
     output.mkdir(parents=True, exist_ok=True)

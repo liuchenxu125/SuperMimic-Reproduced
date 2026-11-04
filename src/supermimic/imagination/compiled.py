@@ -26,15 +26,22 @@ REWARD_TERM_NAMES = (
 
 
 class ImagStep:
-    def __init__(self, wm: WorldModel, default_joint_pos: torch.Tensor, compile_mode: str | None = None):
+    def __init__(
+        self,
+        wm: WorldModel,
+        default_joint_pos: torch.Tensor,
+        compile_mode: str | None = None,
+        reference_pelvis_ori: bool = False,
+    ):
         self.wm = wm
         self.q0 = default_joint_pos
+        self.reference_pelvis_ori = reference_pelvis_ori
         self._fn = self._step
         if compile_mode:
             mode = None if compile_mode == "default" else compile_mode
             self._fn = torch.compile(self._step, mode=mode, dynamic=False)
 
-    def _step(self, s, a, a_prev, xi, ref_body_pos, ref_body_quat, ref_body_lin, ref_body_ang, ref_root_pos, ref_root_quat):
+    def _step(self, s, a, a_prev, xi, ref_body_pos, ref_body_quat, ref_body_lin, ref_body_ang, ref_root_pos, ref_root_quat, next_root_quat):
         ref = ReferenceFrame(ref_body_pos, ref_body_quat, ref_body_lin, ref_body_ang, ref_root_pos, ref_root_quat)
         s_next = self.wm.step(s, a, xi)
         bodies = self.wm.heads.robot_bodies(s_next)
@@ -42,10 +49,16 @@ class ImagStep:
         r = terms["total"]
         term_vec = torch.stack([terms[k] for k in REWARD_TERM_NAMES], dim=0)  # (8, n)
         logits = self.wm.termination_logits(s_next, ref)
-        obs_clean = analytic_observation(s_next, a, xi, self.q0)
+        # The orientation task observes the reference after the frame advance.
+        # The plain proprio task leaves this quaternion unused.
+        quat = next_root_quat if self.reference_pelvis_ori else None
+        obs_clean = analytic_observation(s_next, a, xi, self.q0, quat)
         ai = self.wm.heads.anchor_index
         anchor_pose = torch.cat([bodies["pos"][..., ai, :], bodies["quat"][..., ai, :]], dim=-1)  # (n, 7)
         return s_next, r, term_vec, logits, obs_clean, anchor_pose
 
-    def __call__(self, s, a, a_prev, xi, ref: ReferenceFrame):
-        return self._fn(s, a, a_prev, xi, ref.body_pos_w, ref.body_quat_w, ref.body_lin_vel_w, ref.body_ang_vel_w, ref.root_pos_w, ref.root_quat_w)
+    def __call__(self, s, a, a_prev, xi, ref: ReferenceFrame, next_root_quat: torch.Tensor):
+        return self._fn(
+            s, a, a_prev, xi, ref.body_pos_w, ref.body_quat_w, ref.body_lin_vel_w,
+            ref.body_ang_vel_w, ref.root_pos_w, ref.root_quat_w, next_root_quat,
+        )

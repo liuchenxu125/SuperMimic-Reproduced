@@ -15,19 +15,22 @@ from supermimic.deployment.sim2sim import Sim2Sim, observation, rotation
 def evaluate(args, source, destination, cfg):
     sim = Sim2Sim(args.sim_bundle, threads=1)
     sim.reset(source, args.start_frame)
-    before = round(args.before_seconds / sim.dt)
     bridge_steps = int(np.ceil(args.switch_seconds / sim.dt))
     bank = {name: (args.config.parent / path).resolve() for name, path in cfg['motions'].items()}
+    metadata = {}
     for name in (source, destination):
-        metadata = json.loads((bank[name] / 'manifest.json').read_text())
+        metadata[name] = json.loads((bank[name] / 'manifest.json').read_text())
         for key in ('checkpoint_sha256', 'motors', 'joint_names', 'goal_dim', 'control_dt'):
-            if metadata[key] != sim.meta[key]:
+            if metadata[name][key] != sim.meta[key]:
                 raise ValueError(f'Sim/hardware contract mismatch: {name}/{key}')
-        if metadata['anchor_obs'] or metadata.get('anchor_ori_obs', False) or metadata['goal_dim'] not in (640, 690):
+        if metadata[name]['anchor_obs'] or metadata[name].get('anchor_ori_obs', False) or metadata[name]['goal_dim'] not in (640, 690):
             raise ValueError('Live transition test requires a supported proprio-only actor')
-    # Frame 0 is the bridge endpoint; frames 1..L-1 then play exactly once.
-    # A short destination normally finishes before the requested 10 seconds.
-    after_steps = min(round(args.after_seconds/sim.dt), metadata['frames']-1)
+    # The native policy rejects another source step once frame reaches the clip length.
+    # Keep the pre-switch window inside that clip, and let a short destination finish early.
+    if metadata[source]['frames'] < 2:
+        raise ValueError(f'{source} is too short for a live switch')
+    before = min(round(args.before_seconds / sim.dt), metadata[source]['frames'] - 1)
+    after_steps = min(round(args.after_seconds/sim.dt), metadata[destination]['frames']-1)
     count = before + bridge_steps + after_steps
     process = subprocess.Popen([str(args.probe.resolve()), str(bank[source]), str(bank[destination]),
                                 str(before), str(args.switch_seconds), str(args.start_frame)],
@@ -95,7 +98,8 @@ def evaluate(args, source, destination, cfg):
         if process.wait(timeout=5) != 0: raise RuntimeError('C++ probe failed')
     return dict(source=source, destination=destination, explicit_pd=args.explicit_pd,
                 checkpoint_sha256=sim.meta['checkpoint_sha256'],
-                start_frame=args.start_frame, before_seconds=args.before_seconds,
+                start_frame=args.start_frame, before_seconds=before*sim.dt,
+                requested_before_seconds=args.before_seconds,
                 switch_seconds=args.switch_seconds, after_seconds=after_steps*sim.dt,
                 requested_after_seconds=args.after_seconds,
                 completed=failed is None, failed=failed, simulated_seconds=len(rows)*sim.dt,

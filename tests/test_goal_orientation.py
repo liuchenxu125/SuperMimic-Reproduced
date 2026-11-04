@@ -8,24 +8,25 @@ import torch
 from supermimic.envs import SuperMimicEnvCfgArgs
 from supermimic.envs.tracking_env_cfg import make_env_cfg
 from supermimic.goal_spec import anchor_goal_dim
-from supermimic.world_model.heads import anchor_relative_orientation
+from supermimic.kinematics.rotations import robot_relative_rot6d
 
 
-@pytest.mark.parametrize("anchor,ori,extra", [(False, False, 0), (False, True, 6),
-                                            (True, False, 9), (True, True, 9)])
-def test_goal_schema_adds_orientation_once(anchor, ori, extra):
+@pytest.mark.parametrize(
+    "anchor,ori,extra,history_ori",
+    [(False, False, 0, False), (False, True, 0, True), (True, False, 9, False), (True, True, 9, False)],
+)
+def test_goal_schema_adds_orientation_once(anchor, ori, extra, history_ori):
     cfg = make_env_cfg(SuperMimicEnvCfgArgs(
         npz_files=["unused.npz"], robot="casbot02", anchor_obs=anchor, anchor_ori_obs=ori,
         obs_noise=False,
     ))
     terms = cfg.observations["goal"].terms
-    assert list(terms) == ["future_frames"] + (["anchor_pos"] if anchor else []) + (
-        ["anchor_ori"] if anchor or ori else []
-    )
+    assert list(terms) == ["future_frames"] + (["anchor_pos", "anchor_ori"] if anchor else [])
     assert anchor_goal_dim(anchor, ori) == extra
-    assert list(cfg.observations["policy"].terms) == [
-        "joint_pos", "joint_vel", "base_ang_vel", "projected_gravity", "actions"
-    ]
+    policy = ["joint_pos", "joint_vel", "base_ang_vel", "projected_gravity", "actions"]
+    if history_ori:
+        policy.append("reference_pelvis_ori")
+    assert list(cfg.observations["policy"].terms) == policy
 
 
 def test_orientation_matches_environment_and_provides_yaw_gradient_without_position():
@@ -33,18 +34,14 @@ def test_orientation_matches_environment_and_provides_yaw_gradient_without_posit
     zeros = torch.zeros_like(angle)
     robot_quat = torch.stack([torch.cos(angle / 2), zeros, zeros, torch.sin(angle / 2)], -1)
     ref_quat = torch.tensor([[1., 0., 0., 0.]]).expand(2, -1)
-    cmd = SimpleNamespace(
-        robot_anchor_pos_w=torch.full((2, 3), float("nan")),
-        anchor_pos_w=torch.full((2, 3), float("nan")),
-        robot_anchor_quat_w=robot_quat, anchor_quat_w=ref_quat,
-    )
+    cmd = SimpleNamespace(robot_root_quat_w=robot_quat, root_quat_w=ref_quat)
     env = SimpleNamespace(command_manager=SimpleNamespace(get_term=lambda _: cmd), num_envs=2)
     cfg = make_env_cfg(SuperMimicEnvCfgArgs(
         npz_files=["unused.npz"], robot="casbot02", anchor_ori_obs=True, obs_noise=False,
     ))
-    term = cfg.observations["goal"].terms["anchor_ori"]
+    term = cfg.observations["policy"].terms["reference_pelvis_ori"]
     actual = term.func(env, **term.params)
-    expected = anchor_relative_orientation(robot_quat, ref_quat)
+    expected = robot_relative_rot6d(robot_quat, ref_quat)
     assert actual.shape == (2, 6) and torch.isfinite(actual).all()
     torch.testing.assert_close(actual, expected)
     identity = torch.tensor([1., 0., 0., 1., 0., 0.])
@@ -70,7 +67,8 @@ def test_old_checkpoint_cannot_resume_with_new_orientation_inputs(tmp_path):
     cfg = TrainConfig(robot="casbot02", run_name="orientation", log_root=tmp_path,
                       resume=checkpoint)
     cfg.env.anchor_ori_obs = True
-    with pytest.raises(ValueError, match="saved=690, requested=696"):
+    with pytest.raises(ValueError, match="observation terms differ"):
         Trainer(cfg)
     assert not (tmp_path / "orientation").exists()
-    assert cfg.policy_trainer.anchor_ori_obs and cfg.policy.goal_dim == 696
+    assert cfg.policy_trainer.anchor_ori_obs and cfg.policy.goal_dim == 690
+    assert len(cfg.policy.obs_term_scale) == 6

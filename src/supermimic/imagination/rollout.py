@@ -14,13 +14,12 @@ from supermimic.world_model.heads import (
     ReferenceFrame,
     analytic_observation,
     anchor_relative_obs,
-    anchor_relative_orientation,
     flatten_history_term_major,
 )
 from supermimic.world_model.wm_trainer import reference_at
 from supermimic.world_model.world_model import WorldModel
 
-# Paper Table A.1 sensor noise (uniform half-widths) in the 93-d observation order.
+# Paper Table A.1 sensor noise (uniform half-widths) in the plain observation order.
 OBS_NOISE_HALF = torch.tensor([0.01] * 29 + [0.5] * 29 + [0.2] * 3 + [0.05] * 3 + [0.0] * 29)
 ANCHOR_NOISE_HALF = torch.tensor([0.25] * 3 + [0.05] * 6)
 
@@ -53,10 +52,13 @@ def imagine(
     device = start.state.device
     n = start.state.shape[0]
     q0 = lib.default_joint_pos
-    step_fn = step_fn or ImagStep(wm, q0)
+    # History rot6d only for the orientation task. Full anchor mode keeps its goal suffix.
+    pelvis = anchor_ori_obs and not anchor_obs
+    step_fn = step_fn or ImagStep(wm, q0, reference_pelvis_ori=pelvis)
     nj = wm.spec.layout.num_joints
     noise_half = torch.tensor(
-        [0.01] * nj + [0.5] * nj + [0.2] * 3 + [0.05] * 3 + [0.0] * nj, device=device
+        [0.01] * nj + [0.5] * nj + [0.2] * 3 + [0.05] * 3 + [0.0] * nj + ([0.05] * 6 if pelvis else []),
+        device=device,
     )
     anchor_noise_half = (ANCHOR_NOISE_HALF if anchor_obs else ANCHOR_NOISE_HALF[3:]).to(device)
     ai = wm.heads.anchor_index
@@ -68,25 +70,35 @@ def imagine(
 
     def make_goal(frame_t, ref_t, anchor_pose):
         g = lib.goal_window(frame_t, future_frames)
-        if not (anchor_obs or anchor_ori_obs):
+        if not anchor_obs:
             return g
-        if anchor_obs:
-            rel = anchor_relative_obs(
-                anchor_pose[..., 0:3], anchor_pose[..., 3:7],
-                ref_t.body_pos_w[..., ai, :], ref_t.body_quat_w[..., ai, :],
-            )
-        else:
-            rel = anchor_relative_orientation(
-                anchor_pose[..., 3:7], ref_t.body_quat_w[..., ai, :]
-            )
+        rel = anchor_relative_obs(
+            anchor_pose[..., 0:3], anchor_pose[..., 3:7],
+            ref_t.body_pos_w[..., ai, :], ref_t.body_quat_w[..., ai, :],
+        )
         if obs_noise:
             rel = rel + (torch.rand_like(rel) * 2 - 1) * anchor_noise_half
         return torch.cat([g, rel], dim=-1)
 
     # Initial observation history from the logged states/actions (noise re-sampled per frame).
+    hist_len = start.hist_states.shape[0]
+    hist_quat = None
+    if pelvis:
+        if start.hist_frames is None:
+            raise ValueError("The orientation task needs the reference frame of each history row")
+        hist_ref = lib.ref(start.hist_frames.reshape(-1))
+        hist_quat = hist_ref.root_quat_w.reshape(hist_len, n, 4)
     hist = [
-        add_noise(analytic_observation(start.hist_states[i], start.hist_actions[i], start.xi, q0))
-        for i in range(start.hist_states.shape[0])
+        add_noise(
+            analytic_observation(
+                start.hist_states[i],
+                start.hist_actions[i],
+                start.xi,
+                q0,
+                None if hist_quat is None else hist_quat[i],
+            )
+        )
+        for i in range(hist_len)
     ]
     s = start.state
     frame = start.frame.clone()
@@ -116,7 +128,7 @@ def imagine(
         )
 
     ref = ref_at(0)
-    if anchor_obs or anchor_ori_obs:
+    if anchor_obs:
         b0 = wm.heads.robot_bodies(s)
         anchor_pose = torch.cat([b0["pos"][..., ai, :], b0["quat"][..., ai, :]], dim=-1)
     else:
@@ -126,9 +138,12 @@ def imagine(
     term_sum = torch.zeros(len(REWARD_TERM_NAMES), device=device)
 
     for t in range(horizon):
-        obs_flat = flatten_history_term_major(torch.stack(hist, 0))
+        obs_flat = flatten_history_term_major(torch.stack(hist, 0), num_joints=nj)
         a = policy(obs_flat, goals[-1])
-        s_next, r, term_vec, logits, obs_clean, anchor_pose = step_fn(s, a, a_prev, start.xi, ref)
+        next_root_quat = ref_at(t + 1).root_quat_w
+        s_next, r, term_vec, logits, obs_clean, anchor_pose = step_fn(
+            s, a, a_prev, start.xi, ref, next_root_quat
+        )
         d = torch.sigmoid(logits)
         c = c * (1.0 - d)
         term_sum += term_vec.detach().mean(-1)

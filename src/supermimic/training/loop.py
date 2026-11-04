@@ -19,6 +19,7 @@ from supermimic.imagination.policy_trainer import PolicyTrainer
 from supermimic.kinematics.g1_fk import G1Kinematics
 from supermimic.policy.nets import Critic, Policy
 from supermimic.robots import get_robot
+from supermimic.robots.layout import proprio_frame_dim
 from supermimic.training.checkpoints import checkpoint_progress
 from supermimic.training.distributed import (
     allreduce_mean,
@@ -48,6 +49,11 @@ class Trainer:
         cfg.policy.goal_dim = cfg.env.future_frames * profile.layout.goal_dim + anchor_goal_dim(
             cfg.env.anchor_obs, cfg.env.anchor_ori_obs
         )
+        if cfg.env.anchor_ori_obs and not cfg.env.anchor_obs:
+            if len(cfg.policy.obs_term_scale) == 5:
+                cfg.policy.obs_term_scale = tuple(cfg.policy.obs_term_scale) + (1.0,)
+            elif len(cfg.policy.obs_term_scale) != 6:
+                raise ValueError("The orientation task needs five proprio scales plus the rot6d scale")
         cfg.policy_trainer.anchor_obs = cfg.env.anchor_obs
         cfg.policy_trainer.anchor_ori_obs = cfg.env.anchor_ori_obs
         cfg.policy_trainer.future_frames = cfg.env.future_frames
@@ -96,6 +102,17 @@ class Trainer:
                     "Resume goal/anchor dimensions differ from checkpoint: "
                     f"saved={resume_checkpoint['config']['policy']['goal_dim']}, "
                     f"requested={cfg.policy.goal_dim}. Use a new run for changed inputs."
+                )
+            saved_scale = tuple(
+                resume_checkpoint["config"]["policy"].get(
+                    "obs_term_scale", (1.0, 5.0, 2.0, 1.0, 1.0)
+                )
+            )
+            if saved_scale != tuple(cfg.policy.obs_term_scale):
+                raise ValueError(
+                    "Resume observation terms differ from the checkpoint "
+                    f"(saved {len(saved_scale)} scales, current {len(cfg.policy.obs_term_scale)}). "
+                    "The reference-pelvis rot6d changes the observation width; start a new run."
                 )
             if cfg.robot == "casbot02" and (
                 resume_checkpoint["config"]["env"].get("actuator_delay", False)
@@ -229,7 +246,7 @@ class Trainer:
         n_params = lambda m: sum(p.numel() for p in m.parameters())
         if self.is_main:
             print(
-                f"[INFO] policy inputs: history={cfg.policy.history * profile.layout.obs_dim}, "
+                f"[INFO] policy inputs: history={cfg.policy.history * proprio_frame_dim(profile.num_joints, reference_pelvis_ori=cfg.env.anchor_ori_obs and not cfg.env.anchor_obs)}, "
                 f"goal={cfg.policy.goal_dim}, actions={profile.num_joints}, "
                 f"anchor_pos={cfg.env.anchor_obs}, "
                 f"anchor_ori={cfg.env.anchor_obs or cfg.env.anchor_ori_obs}", flush=True,

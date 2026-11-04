@@ -1,15 +1,15 @@
 # Casbot02 SuperMimic 真机部署
 
-## 当前部署权重（2026-11-02）
+## 当前部署权重（2026-11-04）
 
-当前为 `casbot02_bones_seed_proprio_cpu2/ckpt_0096000.pt`，首次仍自动启动 **踏步**。
+当前为 `casbot02_bones_seed_proprio_cpu4/ckpt_0092000.pt`，首次仍自动启动 **踏步**。
 本体历史 870 维，参考 690 维，总输入 **1560**，输出 27 维、50 Hz；不需要实测根部位置，也未增加实测相对朝向反馈。
 每个未来帧按训练顺序编码：`q-q0(27), dq(27), 相对当前参考航向的骨盆位移(3), rot6d(6), 骨盆系线速度(3), 骨盆系角速度(3)`，共 69 维，10 帧。
 rot6d 是旋转矩阵前两列按行展开。位移和朝向的基准是当前**参考帧**，不是机器人当前位置。
 新 `SMREF002` 动作文件存原始根部位姿、关节和世界系速度，由 C++ 每次重建目标窗口；不能与旧 SMREF001/640 维演员混用。
 X 桥接末段的未来窗口会跨入新动作，目标轨迹的所有后续帧统一做 XY/航向对齐，防止参考坐标跳变。
 
-手柄顺序：`踏步 → BS_XiaoDongTai_TaiJiaoPanDing_100HZ → X1_1000HZ → SEED_鼓掌 → SEED_看时间 → SEED_思考 → SEED_捂脸 → SEED_扭胯 → SEED_武术 → SEED_摆胯 → SEED_迪斯科 → 后退 → 原地左转 → 原地右转 → 踏步`。`CASBOT02_YKS_04_1000HZ` 仍在动作库中，不在这条 X 循环里。
+真机手柄顺序以 `rl_controller/config/supermimic_walk1_subject2_proprio.yaml` 为准：`踏步 → TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2 → dance_phew_001__A464 → SEED_扭胯 → SEED_武术 → SEED_迪斯科 → X1_1000HZ → 后退 → 原地左转 → 原地右转 → 踏步`。`CASBOT02_YKS_04_1000HZ` 仍在动作库中，不在这条 X 循环里。
 原地上肢动作：`SEED_鼓掌`＝`clap_forced_003__A063`（6.46 秒），`SEED_看时间`＝`checking_time_R_002__A413`（6.14 秒），`SEED_思考`＝`thinking_R_004__A072`（4.76 秒）。
 原地小舞：`SEED_捂脸`＝`dance_hiphop_dab_R_fast_001__A317`（5.06 秒），`SEED_扭胯`＝`dance_party_hips_003__A467`（6.42 秒），`SEED_武术`＝`dance_wutang_is_forever_003__A466`（10.06 秒）。三条在 96000 整段评测中都完整播完，当时评测仍带 0/5/10 ms 延迟；骨盆水平跨度约 3–12 厘米，脚水平跨度最大约 3.8 厘米。原始训练数据不改名、不裁剪；仅部署使用短别名。映射见 `outputs/casbot02_seed_dances_20261102/selection.json`。
 下肢会迈步的两条：`SEED_摆胯`＝`dance_vouge_dutty_wine_R_003__A320`（8.16 秒，脚水平约 0.58 米），`SEED_迪斯科`＝`dance_retro_disco_finger_horizontal_R_001__A309`（5.02 秒，脚水平约 0.52 米）。96000 整段回报都是 0.942，当时评测仍带延迟。映射见 `outputs/casbot02_seed_dances_leg_20261102/selection.json`。
@@ -20,8 +20,9 @@ X 桥接末段的未来窗口会跨入新动作，目标轨迹的所有后续帧
 其余原有动作参考保留，可用终端按名称选择，不进入 X 循环。
 自动直接 RUN、0.8 秒 X 桥接、B 回位、完整播放和末帧策略保持沿用原设置。
 已通过 C++/PyTorch 目标和推理一致性、踏步静止参考起步 10 秒、6 组相邻短切换（整数增益显式 PD、保留延迟）以及末帧保持检查。
-这些是本地仿真检查，不是六条动作全部整段评测或真机结果。记录和旧部署备份：
-`outputs/casbot02_bones_seed_096000_deployment_20261102/`。
+这些是本地仿真检查，不是全部动作整段评测或真机结果。记录和旧部署备份：
+`outputs/casbot02_bones_seed_cpu4_092000_deployment_20261104/`。
+上一包记录仍在 `outputs/casbot02_bones_seed_096000_deployment_20261102/`。
 上传时必须使用本次重新构建的 ARM64 程序和新动作包，不能只替换 ONNX。
 
 ## 历史 80000 次部署记录（2026-10-30）
@@ -81,9 +82,9 @@ GPU Warp 全部 48 条从首帧/参考速度评测：**41/48 完成，平均整�
 - 长按不会重复触发；开机时已经按住的键必须先完全松开。LB/RB/Back/Start/扳机等组合均被屏蔽，原 SDK 的模式切换和急停操作保留。
 
 循环顺序由 `joystick_motion_order` 配置，当前为：
-`踏步 → BS_XiaoDongTai_TaiJiaoPanDing_100HZ → X1_1000HZ → SEED_鼓掌 → SEED_看时间 → SEED_思考 → SEED_捂脸 → SEED_扭胯 → SEED_武术 → SEED_摆胯 → SEED_迪斯科 → 后退 → 原地左转 → 原地右转 → 踏步`。
-默认当前动作是“踏步”，第一次有效 X 松开后会进入 `BS_XiaoDongTai_TaiJiaoPanDing_100HZ`；在最后一条 `原地右转` 松开 X 会回到“踏步”。步进以已加载的 `motion` 为准；被取消/拒绝的切换不会额外跳过动作。
-控制器会立即打印 `Joystick X: 踏步 -> BS_XiaoDongTai_TaiJiaoPanDing_100HZ; ...`。状态中的 `joystick_choice` 是请求目标，
+`踏步 → TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2 → BS_XiaoDongTai_TaiJiaoPanDing_100HZ → X1_1000HZ → SEED_鼓掌 → SEED_看时间 → SEED_思考 → SEED_捂脸 → SEED_扭胯 → SEED_武术 → SEED_摆胯 → SEED_迪斯科 → 后退 → 原地左转 → 原地右转 → 踏步`。
+默认当前动作是“踏步”，第一次有效 X 松开后会进入 `TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2`；在最后一条 `原地右转` 松开 X 会回到“踏步”。步进以已加载的 `motion` 为准；被取消/拒绝的切换不会额外跳过动作。
+控制器会立即打印 `Joystick X: 踏步 -> TongYongDongTaiQingTian_casbot02-bass1_6R7R2R1R_hand01_whole_50hz_v2; ...`。状态中的 `joystick_choice` 是请求目标，
 `motion` 是当前已加载动作，`joystick_pending` 是待执行请求，`joystick_rx` 为消息计数。
 
 只有健康的模式 7 接受手柄动作命令。准备/接管/桥接/回位期间重复 X 被忽略；B 可以中断桥接并按原流程回位，动作自然结束进入 END_HOLD；FAULT 不会被手柄自动清除。

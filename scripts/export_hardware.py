@@ -30,9 +30,11 @@ def main():
     ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
     encoding = meta.get("goal_encoding", "per_frame_v1")
     frame_dim = 69 if encoding == "reference_heading_v1" else 64
-    anchor_extra = 9 if meta["anchor_obs"] else (6 if meta.get("anchor_ori_obs", False) else 0)
+    scales = ckpt["config"]["policy"].get("obs_term_scale", [1.0, 5.0, 2.0, 1.0, 1.0])
+    expected_obs = (3 * 27 + (12 if len(scales) == 6 else 6)) * ckpt["config"]["policy"]["history"]
+    anchor_extra = 9 if meta["anchor_obs"] else 0
     expected_goal = frame_dim * meta["future_frames"] + anchor_extra
-    if (meta["obs_dim"], meta["goal_dim"]) != (870, expected_goal):
+    if (meta["obs_dim"], meta["goal_dim"]) != (expected_obs, expected_goal):
         raise ValueError("Bundle has inconsistent Casbot02 IO dimensions")
     if ckpt["config"]["env"].get("anchor_obs", False) != meta["anchor_obs"]:
         raise ValueError("Cannot change anchor_obs when exporting existing weights")

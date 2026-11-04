@@ -84,8 +84,10 @@ def bundle(tmp_path_factory, request):
         body_ang_vel_w=np.zeros((20, m.nbody - 1, 3), np.float32),
     )
     anchor, anchor_ori, delay, collision = request.param
+    history_ori = anchor_ori and not anchor
     pc = PolicyCfg(
-        num_joints=27, goal_dim=699 if anchor else 696 if anchor_ori else 690,
+        num_joints=27, goal_dim=699 if anchor else 690,
+        obs_term_scale=(1.0, 5.0, 2.0, 1.0, 1.0, 1.0) if history_ori else (1.0, 5.0, 2.0, 1.0, 1.0),
         encoder_hidden=(32,), decoder_hidden=(32,)
     )
     torch.manual_seed(17)
@@ -170,7 +172,10 @@ def test_export_actor_and_motor_order(bundle):
     assert sim.decimation == 4
     for f in [0, 1, 4]:
         obs, goal = sim.inputs()
-        assert obs.shape == (870,) and goal.shape == (meta["goal_dim"],)
+        assert obs.shape == (meta["obs_dim"],) and goal.shape == (meta["goal_dim"],)
+        if meta["obs_dim"] == 930:
+            relative = rotation(sim.data.qpos[3:7]).T @ rotation(sim.reference.root_quat[sim.target_frame])
+            np.testing.assert_allclose(obs[-6:], relative[:, :2].reshape(6), atol=1e-6)
         with torch.inference_mode():
             expected = policy(torch.from_numpy(obs[None]), torch.from_numpy(goal[None]))
             actual = sim.actor(torch.from_numpy(obs[None]), torch.from_numpy(goal[None]))

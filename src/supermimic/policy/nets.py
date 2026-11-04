@@ -7,7 +7,12 @@ from dataclasses import dataclass
 import torch
 from torch import nn
 
-from supermimic.robots.layout import RobotLayout, observation_terms
+from supermimic.robots.layout import (
+    RobotLayout,
+    observation_terms,
+    proprio_frame_dim,
+    reference_pelvis_ori_enabled,
+)
 from supermimic.world_model.dynamics import MLP
 
 GOAL_DIM = 730
@@ -22,7 +27,9 @@ class PolicyCfg:
     decoder_hidden: tuple[int, ...] = (2048, 1024, 512, 256)
     latent_dim: int = LATENT_DIM
     history: int = 10
-    # Fixed per-term observation scales (divide): joint_pos, joint_vel, base_ang_vel, projected_gravity, actions.
+    # Fixed per-term observation scales (divide): joint_pos, joint_vel,
+    # base_ang_vel, projected_gravity, actions. The orientation task appends
+    # a sixth scale of 1 for the reference-pelvis rot6d.
     obs_term_scale: tuple[float, ...] = (1.0, 5.0, 2.0, 1.0, 1.0)
     # Fixed goal scales: joint_pos, joint_vel, pelvis displacement, rot6d, pelvis linear, pelvis angular.
     goal_term_scale: tuple[float, ...] = (1.0, 5.0, 1.0, 1.0, 1.0, 2.0)
@@ -36,8 +43,13 @@ class CriticCfg:
 
 
 def _obs_scale_vector(cfg: PolicyCfg) -> torch.Tensor:
+    terms = observation_terms(
+        cfg.num_joints, reference_pelvis_ori=reference_pelvis_ori_enabled(cfg.obs_term_scale)
+    )
+    if len(terms) != len(cfg.obs_term_scale):
+        raise ValueError("Observation scale count does not match the observation terms")
     parts = []
-    for (name, d), s in zip(observation_terms(cfg.num_joints), cfg.obs_term_scale):
+    for (name, d), s in zip(terms, cfg.obs_term_scale):
         parts.append(torch.full((cfg.history * d,), 1.0 / s))
     return torch.cat(parts)  # term-major layout matches the flattened history
 
@@ -65,7 +77,10 @@ class MotionEncoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, cfg: PolicyCfg, obs_dim: int | None = None):
         super().__init__()
-        obs_dim = obs_dim or cfg.history * RobotLayout(cfg.num_joints).obs_dim
+        pelvis = reference_pelvis_ori_enabled(cfg.obs_term_scale)
+        obs_dim = obs_dim or cfg.history * proprio_frame_dim(
+            cfg.num_joints, reference_pelvis_ori=pelvis
+        )
         self.mlp = MLP(
             cfg.latent_dim + obs_dim,
             cfg.decoder_hidden,
