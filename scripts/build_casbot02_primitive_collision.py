@@ -54,19 +54,37 @@ def build():
         ET.SubElement(bodies[body], "geom", attrs)
         entries.append({"body": body, **attrs})
 
-    def visual_points(body_name):
+    def visual_points(body_name, *, single=True):
         body_id = model.body(body_name).id
         geoms = [g for g in range(model.ngeom)
                  if model.geom_bodyid[g] == body_id and model.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH
                  and not (model.geom_contype[g] or model.geom_conaffinity[g])]
-        if len(geoms) != 1:
+        if single and len(geoms) != 1:
             raise ValueError(f"{body_name}: expected one visual mesh")
-        geom = geoms[0]
-        mesh = int(model.geom_dataid[geom])
-        start, count = int(model.mesh_vertadr[mesh]), int(model.mesh_vertnum[mesh])
-        rotation = np.empty(9)
-        mujoco.mju_quat2Mat(rotation, model.geom_quat[geom])
-        return model.mesh_vert[start:start + count] @ rotation.reshape(3, 3).T + model.geom_pos[geom]
+        if not geoms:
+            raise ValueError(f"{body_name}: expected a visual mesh")
+        clouds = []
+        for geom in geoms:
+            mesh = int(model.geom_dataid[geom])
+            start, count = int(model.mesh_vertadr[mesh]), int(model.mesh_vertnum[mesh])
+            rotation = np.empty(9)
+            mujoco.mju_quat2Mat(rotation, model.geom_quat[geom])
+            clouds.append(model.mesh_vert[start:start + count] @ rotation.reshape(3, 3).T + model.geom_pos[geom])
+        return np.concatenate(clouds)
+
+    def cover_radius(points, endpoints):
+        """Smallest millimetre radius whose cylinder covers the link along this segment."""
+        start = np.asarray(endpoints[:3], float)
+        end = np.asarray(endpoints[3:], float)
+        direction = end - start
+        scale = float(direction @ direction)
+        along = ((points - start) @ direction) / scale
+        inside = (along >= 0.0) & (along <= 1.0)
+        chosen = points[inside] if np.any(inside) else points
+        axis = direction / np.sqrt(scale)
+        offset = chosen - start
+        radial = np.linalg.norm(offset - (offset @ axis)[:, None] * axis, axis=1)
+        return float(np.ceil((float(radial.max()) + 0.001) * 1000 - 1e-6) / 1000)
 
     def hip_segment(points):
         center = points.mean(0)
@@ -95,20 +113,33 @@ def build():
     add("head_pitch_link", "head_collision", .095, position=[.02, 0, .075])
     foot_bounds = {}
     for side in ("left", "right"):
-        segment, radius = hip_segment(visual_points(f"{side}_leg_pelvic_pitch_link"))
-        add(f"{side}_leg_pelvic_pitch_link", f"{side}_hip_collision", radius, segment)
-        add(f"{side}_leg_pelvic_yaw_link", f"{side}_thigh_collision", .06,
-            [-.005, 0, -.045, -.02, 0, -.28])
-        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_collision", .045,
-            [.005, 0, -.045, .005, 0, -.395])
-        add(f"{side}_shoulder_yaw_link", f"{side}_upper_arm_collision", .04,
-            [0, 0, .005, 0, 0, -.065])
-        add(f"{side}_elbow_pitch_link", f"{side}_elbow_collision", .035,
-            [0, 0, .005, 0, 0, -.055])
-        add(f"{side}_wrist_yaw_link", f"{side}_forearm_collision", .035,
-            [0, 0, -.02, 0, 0, -.135])
-        add(f"{side}_wrist_roll_link", f"{side}_hand_collision", .03,
-            [0, 0, -.005, 0, 0, -.135])
+        hip_points = visual_points(f"{side}_leg_pelvic_pitch_link")
+        segment, _old_radius = hip_segment(hip_points)
+        add(f"{side}_leg_pelvic_pitch_link", f"{side}_hip_collision",
+            cover_radius(hip_points, segment), segment)
+        thigh = [-.005, 0, -.045, -.02, 0, -.28]
+        add(f"{side}_leg_pelvic_yaw_link", f"{side}_thigh_collision",
+            round(cover_radius(visual_points(f"{side}_leg_pelvic_yaw_link", single=False), thigh) - 0.005, 3), thigh)
+        shin = np.array([.005, 0, -.045, .005, 0, -.395])
+        shin_mid = (shin[:3] + shin[3:]) / 2
+        shin_upper = np.concatenate((shin[:3], shin_mid))
+        shin_lower = np.concatenate((shin_mid, shin[3:]))
+        shin_radius = round(cover_radius(visual_points(f"{side}_leg_knee_pitch_link", single=False), shin) - 0.017, 3)
+        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_upper_collision", shin_radius, shin_upper)
+        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_lower_collision",
+            round(shin_radius - 0.015, 3), shin_lower)
+        upper_arm = [0, 0, .005, 0, 0, -.065]
+        add(f"{side}_shoulder_yaw_link", f"{side}_upper_arm_collision",
+            cover_radius(visual_points(f"{side}_shoulder_yaw_link", single=False), upper_arm), upper_arm)
+        elbow = [0, 0, .005, 0, 0, -.055]
+        add(f"{side}_elbow_pitch_link", f"{side}_elbow_collision",
+            round(cover_radius(visual_points(f"{side}_elbow_pitch_link", single=False), elbow) - 0.014, 3), elbow)
+        forearm = [0, 0, -.02, 0, 0, -.135]
+        add(f"{side}_wrist_yaw_link", f"{side}_forearm_collision",
+            round(cover_radius(visual_points(f"{side}_wrist_yaw_link", single=False), forearm) - 0.015, 3), forearm)
+        hand = [0, 0, -.005, 0, 0, -.135]
+        add(f"{side}_wrist_roll_link", f"{side}_hand_collision",
+            round(cover_radius(visual_points(f"{side}_wrist_roll_link", single=False), hand) - 0.013, 3), hand)
         points = visual_points(f"{side}_leg_ankle_roll_link")
         lo, hi = points.min(0), points.max(0)
         foot_bounds[side] = {"min": lo.tolist(), "max": hi.tolist()}

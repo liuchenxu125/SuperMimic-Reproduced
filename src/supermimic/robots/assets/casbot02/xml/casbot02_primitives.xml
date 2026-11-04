@@ -96,12 +96,13 @@
                   <geom name="left_foot_collision" type="mesh" rgba="1 1 1 1" mesh="left_leg_ankle_roll_link" class="collision" />
                 </body>
               </body>
-              <geom name="left_shin_collision" class="primitive_collision" size="0.045" fromto="0.005 0 -0.045 0.005 0 -0.395" />
+              <geom name="left_shin_upper_collision" class="primitive_collision" size="0.062" fromto="0.005 0 -0.045 0.005 0 -0.22" />
+              <geom name="left_shin_lower_collision" class="primitive_collision" size="0.047" fromto="0.005 0 -0.22 0.005 0 -0.395" />
             </body>
-            <geom name="left_thigh_collision" class="primitive_collision" size="0.06" fromto="-0.005 0 -0.045 -0.02 0 -0.28" />
+            <geom name="left_thigh_collision" class="primitive_collision" size="0.073" fromto="-0.005 0 -0.045 -0.02 0 -0.28" />
           </body>
         </body>
-        <geom name="left_hip_collision" class="primitive_collision" size="0.069" fromto="0.000619395442 -0.0028176466 0.00615787596 -0.00138714339 0.0888404246 -0.058933909" />
+        <geom name="left_hip_collision" class="primitive_collision" size="0.075" fromto="0.000619395442 -0.0028176466 0.00615787596 -0.00138714339 0.0888404246 -0.058933909" />
       </body>
       <body name="right_leg_pelvic_pitch_link" pos="0 -0.061 0.0575">
         <inertial pos="0.0073684 -0.073515 -0.047566" quat="0.910949 0.407376 -0.0339189 0.0553705" mass="2.1692" diaginertia="0.0039263 0.00331282 0.00187007" />
@@ -131,12 +132,13 @@
                   <geom name="right_foot_collision" type="mesh" rgba="1 1 1 1" mesh="right_leg_ankle_roll_link" class="collision" />
                 </body>
               </body>
-              <geom name="right_shin_collision" class="primitive_collision" size="0.045" fromto="0.005 0 -0.045 0.005 0 -0.395" />
+              <geom name="right_shin_upper_collision" class="primitive_collision" size="0.062" fromto="0.005 0 -0.045 0.005 0 -0.22" />
+              <geom name="right_shin_lower_collision" class="primitive_collision" size="0.047" fromto="0.005 0 -0.22 0.005 0 -0.395" />
             </body>
-            <geom name="right_thigh_collision" class="primitive_collision" size="0.06" fromto="-0.005 0 -0.045 -0.02 0 -0.28" />
+            <geom name="right_thigh_collision" class="primitive_collision" size="0.073" fromto="-0.005 0 -0.045 -0.02 0 -0.28" />
           </body>
         </body>
-        <geom name="right_hip_collision" class="primitive_collision" size="0.066" fromto="0.00468448875 -0.000535347539 0.0104434089 0.0117569783 -0.0893753885 -0.0618819853" />
+        <geom name="right_hip_collision" class="primitive_collision" size="0.068" fromto="0.00468448875 -0.000535347539 0.0104434089 0.0117569783 -0.0893753885 -0.0618819853" />
       </body>
       <body name="waist_yaw_link" pos="0 0 0.15424">
         <inertial pos="-0.011182 0.00019844 0.18439" quat="0.998775 0.000610279 0.0490013 0.00679043" mass="11.255" diaginertia="0.134276 0.125508 0.0732664" />
@@ -180,14 +182,14 @@
                       <joint name="upper_left_7_joint" pos="0 0 0" axis="1 0 0" range="-1.0472 1.5708" armature="0.0245" frictionloss="0" damping="0" />
                       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.79216 0.81961 0.93333 1" mesh="left_wrist_roll_link" />
                       <geom pos="0 0 -0.0735" quat="0.000563312 -0.706825 0.707388 0.000562864" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="left_base_link" />
-                      <geom name="left_hand_collision" class="primitive_collision" size="0.03" fromto="0 0 -0.005 0 0 -0.135" />
+                      <geom name="left_hand_collision" class="primitive_collision" size="0.037" fromto="0 0 -0.005 0 0 -0.135" />
                     </body>
                   </body>
-                  <geom name="left_forearm_collision" class="primitive_collision" size="0.035" fromto="0 0 -0.02 0 0 -0.135" />
+                  <geom name="left_forearm_collision" class="primitive_collision" size="0.042" fromto="0 0 -0.02 0 0 -0.135" />
                 </body>
-                <geom name="left_elbow_collision" class="primitive_collision" size="0.035" fromto="0 0 0.005 0 0 -0.055" />
+                <geom name="left_elbow_collision" class="primitive_collision" size="0.048" fromto="0 0 0.005 0 0 -0.055" />
               </body>
-              <geom name="left_upper_arm_collision" class="primitive_collision" size="0.04" fromto="0 0 0.005 0 0 -0.065" />
+              <geom name="left_upper_arm_collision" class="primitive_collision" size="0.054" fromto="0 0 0.005 0 0 -0.065" />
             </body>
           </body>
         </body>
@@ -220,14 +222,14 @@
                       <joint name="upper_right_7_joint" pos="0 0 0" axis="1 0 0" range="-1.5708 1.0472" damping="0" frictionloss="0" armature="0.0245" />
                       <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.79216 0.81961 0.93333 1" mesh="right_wrist_roll_link" />
                       <geom pos="0 0 -0.0735" quat="0.000563312 0.706825 0.707388 -0.000562864" type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="1 1 1 1" mesh="right_base_link" />
-                      <geom name="right_hand_collision" class="primitive_collision" size="0.03" fromto="0 0 -0.005 0 0 -0.135" />
+                      <geom name="right_hand_collision" class="primitive_collision" size="0.037" fromto="0 0 -0.005 0 0 -0.135" />
                     </body>
                   </body>
-                  <geom name="right_forearm_collision" class="primitive_collision" size="0.035" fromto="0 0 -0.02 0 0 -0.135" />
+                  <geom name="right_forearm_collision" class="primitive_collision" size="0.042" fromto="0 0 -0.02 0 0 -0.135" />
                 </body>
-                <geom name="right_elbow_collision" class="primitive_collision" size="0.035" fromto="0 0 0.005 0 0 -0.055" />
+                <geom name="right_elbow_collision" class="primitive_collision" size="0.048" fromto="0 0 0.005 0 0 -0.055" />
               </body>
-              <geom name="right_upper_arm_collision" class="primitive_collision" size="0.04" fromto="0 0 0.005 0 0 -0.065" />
+              <geom name="right_upper_arm_collision" class="primitive_collision" size="0.054" fromto="0 0 0.005 0 0 -0.065" />
             </body>
           </body>
         </body>

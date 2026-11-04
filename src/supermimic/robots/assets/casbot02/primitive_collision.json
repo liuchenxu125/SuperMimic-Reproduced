@@ -28,98 +28,112 @@
       "body": "left_leg_pelvic_pitch_link",
       "name": "left_hip_collision",
       "class": "primitive_collision",
-      "size": "0.069",
+      "size": "0.075",
       "fromto": "0.000619395442 -0.0028176466 0.00615787596 -0.00138714339 0.0888404246 -0.058933909"
     },
     {
       "body": "left_leg_pelvic_yaw_link",
       "name": "left_thigh_collision",
       "class": "primitive_collision",
-      "size": "0.06",
+      "size": "0.073",
       "fromto": "-0.005 0 -0.045 -0.02 0 -0.28"
     },
     {
       "body": "left_leg_knee_pitch_link",
-      "name": "left_shin_collision",
+      "name": "left_shin_upper_collision",
       "class": "primitive_collision",
-      "size": "0.045",
-      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
+      "size": "0.062",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.22"
+    },
+    {
+      "body": "left_leg_knee_pitch_link",
+      "name": "left_shin_lower_collision",
+      "class": "primitive_collision",
+      "size": "0.047",
+      "fromto": "0.005 0 -0.22 0.005 0 -0.395"
     },
     {
       "body": "left_shoulder_yaw_link",
       "name": "left_upper_arm_collision",
       "class": "primitive_collision",
-      "size": "0.04",
+      "size": "0.054",
       "fromto": "0 0 0.005 0 0 -0.065"
     },
     {
       "body": "left_elbow_pitch_link",
       "name": "left_elbow_collision",
       "class": "primitive_collision",
-      "size": "0.035",
+      "size": "0.048",
       "fromto": "0 0 0.005 0 0 -0.055"
     },
     {
       "body": "left_wrist_yaw_link",
       "name": "left_forearm_collision",
       "class": "primitive_collision",
-      "size": "0.035",
+      "size": "0.042",
       "fromto": "0 0 -0.02 0 0 -0.135"
     },
     {
       "body": "left_wrist_roll_link",
       "name": "left_hand_collision",
       "class": "primitive_collision",
-      "size": "0.03",
+      "size": "0.037",
       "fromto": "0 0 -0.005 0 0 -0.135"
     },
     {
       "body": "right_leg_pelvic_pitch_link",
       "name": "right_hip_collision",
       "class": "primitive_collision",
-      "size": "0.066",
+      "size": "0.068",
       "fromto": "0.00468448875 -0.000535347539 0.0104434089 0.0117569783 -0.0893753885 -0.0618819853"
     },
     {
       "body": "right_leg_pelvic_yaw_link",
       "name": "right_thigh_collision",
       "class": "primitive_collision",
-      "size": "0.06",
+      "size": "0.073",
       "fromto": "-0.005 0 -0.045 -0.02 0 -0.28"
     },
     {
       "body": "right_leg_knee_pitch_link",
-      "name": "right_shin_collision",
+      "name": "right_shin_upper_collision",
       "class": "primitive_collision",
-      "size": "0.045",
-      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
+      "size": "0.062",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.22"
+    },
+    {
+      "body": "right_leg_knee_pitch_link",
+      "name": "right_shin_lower_collision",
+      "class": "primitive_collision",
+      "size": "0.047",
+      "fromto": "0.005 0 -0.22 0.005 0 -0.395"
     },
     {
       "body": "right_shoulder_yaw_link",
       "name": "right_upper_arm_collision",
       "class": "primitive_collision",
-      "size": "0.04",
+      "size": "0.054",
       "fromto": "0 0 0.005 0 0 -0.065"
     },
     {
       "body": "right_elbow_pitch_link",
       "name": "right_elbow_collision",
       "class": "primitive_collision",
-      "size": "0.035",
+      "size": "0.048",
       "fromto": "0 0 0.005 0 0 -0.055"
     },
     {
       "body": "right_wrist_yaw_link",
       "name": "right_forearm_collision",
       "class": "primitive_collision",
-      "size": "0.035",
+      "size": "0.042",
       "fromto": "0 0 -0.02 0 0 -0.135"
     },
     {
       "body": "right_wrist_roll_link",
       "name": "right_hand_collision",
       "class": "primitive_collision",
-      "size": "0.03",
+      "size": "0.037",
       "fromto": "0 0 -0.005 0 0 -0.135"
     },
     {
