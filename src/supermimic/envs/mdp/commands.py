@@ -61,6 +61,7 @@ class MultiClipMotionCommand(CommandTerm):
             bin_frames=cfg.bin_frames,
             compact=cfg.compact_library,
             library_device=cfg.library_device,
+            library_transfer=cfg.library_transfer,
             store_dtype=torch.float16 if cfg.library_fp16 else torch.float32,
             root_body_name=cfg.root_body_name,
             robot_name=cfg.robot_name,
@@ -486,6 +487,7 @@ class MultiClipMotionCommandCfg(CommandTermCfg):
     max_logged_steps: int = 1024
     compact_library: bool = False
     library_device: Literal["device", "cpu"] = "device"
+    library_transfer: Literal["sync", "pinned"] = "sync"
     library_fp16: bool = True
     resampling_time_range: tuple[float, float] = (1.0e9, 1.0e9)
 

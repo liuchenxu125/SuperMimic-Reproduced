@@ -37,6 +37,13 @@ from supermimic.world_model.world_model import WorldModel
 class Trainer:
     def __init__(self, cfg: TrainConfig):
         self.cfg = cfg
+        if cfg.cpu_threads is not None and cfg.cpu_threads < 1:
+            raise ValueError("cpu_threads must be positive")
+        cpu_threads = cfg.cpu_threads
+        if cpu_threads is None and cfg.env.library_device == "cpu":
+            cpu_threads = 1
+        if cpu_threads is not None:
+            torch.set_num_threads(cpu_threads)
         profile = get_robot(cfg.robot)
         cfg.policy.num_joints = profile.num_joints
         cfg.world_model.state_spec.num_joints = profile.num_joints
@@ -204,6 +211,7 @@ class Trainer:
                 replay_capacity=cfg.env.replay_capacity,
                 compact_library=cfg.env.compact_library,
                 library_device=cfg.env.library_device,
+                library_transfer=cfg.env.library_transfer,
                 anchor_obs=cfg.env.anchor_obs,
                 anchor_ori_obs=cfg.env.anchor_ori_obs,
                 actuator_delay=cfg.env.actuator_delay,
@@ -290,6 +298,11 @@ class Trainer:
                 "cpu_threads": torch.get_num_threads(),
                 "cpu_interop_threads": torch.get_num_interop_threads(),
                 "reference_storage": str(self.lib.storage_device),
+                "reference_transfer": self.lib.library_transfer,
+                "cpu_threads_requested": cfg.cpu_threads,
+                "cpu_threads_source": "explicit" if cfg.cpu_threads is not None else (
+                    "cpu_reference_default" if cfg.env.library_device == "cpu" else "torch_default"
+                ),
                 "environment": {key: os.environ.get(key) for key in (
                     "CUDA_VISIBLE_DEVICES", "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
                 )},

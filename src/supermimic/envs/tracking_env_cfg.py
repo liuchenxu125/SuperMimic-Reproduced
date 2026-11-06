@@ -92,6 +92,7 @@ class SuperMimicEnvCfgArgs:
     bin_frames: int = 50
     compact_library: bool = False
     library_device: str = "device"  # CPU storage requires compact_library
+    library_transfer: str = "sync"
     anchor_obs: bool = (
         False  # add BeyondMimic anchor-relative pose (9) to the goal group (plan D5 alt.)
     )
@@ -214,6 +215,7 @@ def make_env_cfg(a: SuperMimicEnvCfgArgs) -> ManagerBasedRlEnvCfg:
             sampling_mode=a.sampling_mode,  # type: ignore[arg-type]
             compact_library=a.compact_library,
             library_device=a.library_device,
+            library_transfer=a.library_transfer,
             debug_vis=a.debug_vis,
             **a.extra_command_kwargs,
         )

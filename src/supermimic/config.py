@@ -37,6 +37,7 @@ class EnvCfg:
     future_frames: int = 10
     compact_library: bool = False
     library_device: Literal["device", "cpu"] = "device"  # compact reference storage; batches stay on training device
+    library_transfer: Literal["sync", "pinned"] = "sync"  # CPU batches: blocking copy by default; pinned async is opt-in
     anchor_obs: bool = False
     anchor_ori_obs: bool = False  # history rot6d of the reference pelvis; separate from the 870-d task
     actuator_delay: bool = True  # Casbot02: 0-2 physics steps (0/5/10 ms), once per episode
@@ -65,6 +66,7 @@ class TrainConfig:
     log_root: Path = Path("logs")
     seed: int = 0
     device: str = "cuda:0"
+    cpu_threads: int | None = None  # None: CPU reference storage uses 1 (validated cpu4 setup); other runs keep Torch default
     data: DataCfg = field(default_factory=DataCfg)
     env: EnvCfg = field(default_factory=EnvCfg)
     world_model: WorldModelCfg = field(default_factory=WorldModelCfg)

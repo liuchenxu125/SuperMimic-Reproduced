@@ -25,11 +25,12 @@ def clip(tmp_path):
     return output, q0, joints
 
 
-def library(clip, device="cpu", storage="cpu", dtype=torch.float16):
+def library(clip, device="cpu", storage="cpu", dtype=torch.float16, transfer="sync"):
     path, q0, joints = clip
     return MotionLibrary([path], get_robot("casbot02").tracked_bodies, q0, device=device,
                          compact=True, store_dtype=dtype, root_body_name="base_link",
-                         robot_name="casbot02", joint_names=joints, library_device=storage)
+                         robot_name="casbot02", joint_names=joints, library_device=storage,
+                         library_transfer=transfer)
 
 
 def test_cpu_storage_and_clip_end_queries(clip):
@@ -48,11 +49,12 @@ def test_cpu_storage_and_clip_end_queries(clip):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="needs CUDA")
 @pytest.mark.parametrize("dtype", [torch.float16, torch.float32])
-def test_host_storage_matches_gpu_storage_for_cuda_indices(clip, dtype):
+@pytest.mark.parametrize("transfer", ["sync", "pinned"])
+def test_host_storage_matches_gpu_storage_for_cuda_indices(clip, dtype, transfer):
     from supermimic.world_model.wm_trainer import reference_at
 
     gpu = library(clip, "cuda:0", "device", dtype)
-    host = library(clip, "cuda:0", "cpu", dtype)
+    host = library(clip, "cuda:0", "cpu", dtype, transfer)
     frames = torch.tensor([0, 20, 49, 48], device="cuda:0")
     assert host._ref.device.type == "cpu" and gpu._ref.device.type == "cuda"
     assert host.ref71(frames).device.type == "cuda"

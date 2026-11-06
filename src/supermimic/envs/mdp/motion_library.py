@@ -116,14 +116,18 @@ class MotionLibrary:
         robot_name: str = "g1",
         joint_names: tuple[str, ...] | None = None,
         library_device: Literal["device", "cpu"] = "device",
+        library_transfer: Literal["sync", "pinned"] = "sync",
     ):
         if library_device not in ("device", "cpu"):
             raise ValueError(f"Unknown library_device: {library_device!r}")
+        if library_transfer not in ("sync", "pinned"):
+            raise ValueError(f"Unknown library_transfer: {library_transfer!r}")
         if library_device == "cpu" and not compact:
             raise ValueError("CPU reference storage requires compact_library")
         self.device = torch.device(device)
         self.storage_device = torch.device("cpu") if library_device == "cpu" else self.device
         self.library_device = library_device
+        self.library_transfer = library_transfer
         self.dtype = dtype
         self.body_names = tuple(body_names)
         self.bin_frames = int(bin_frames)
@@ -258,13 +262,15 @@ class MotionLibrary:
 
     def ref71(self, frame: torch.Tensor) -> torch.Tensor:
         if self.storage_device.type == "cpu" and self.device.type != "cpu":
-            # Only the selected rows are pinned/transferred. Pinning the entire
-            # multi-GiB library is unnecessary and constrains host memory.
+            # Copy only selected rows. The synchronous default avoids per-query
+            # pinned allocator/event churn while Torch and Warp share CUDA.
+            # The previous async path remains available for controlled comparisons.
             indices = frame.detach().to(device="cpu")
             rows = self._ref[indices]
-            if self.device.type == "cuda":
+            asynchronous = self.library_transfer == "pinned" and self.device.type == "cuda"
+            if asynchronous:
                 rows = rows.pin_memory()
-            return rows.to(device=self.device, dtype=self.dtype, non_blocking=True)
+            return rows.to(device=self.device, dtype=self.dtype, non_blocking=asynchronous)
         return self._ref[frame].to(self.dtype)
 
     def bodies(self, frame: torch.Tensor) -> RefBodies:
@@ -361,7 +367,7 @@ class MotionLibrary:
                 / 1e9
             )
         storage = str(self.storage_device)
-        transfer = f"; batches -> {self.device}" if self.library_device == "cpu" else ""
+        transfer = f"; batches -> {self.device} ({self.library_transfer})" if self.library_device == "cpu" else ""
         return f"MotionLibrary({'compact' if self.compact else 'full'}): {self.num_clips} clips, {self.num_frames} frames ({hours:.3f} h @50Hz), {self.num_bins} bins, {mem:.2f} GB on {storage}{transfer}"
 
 
