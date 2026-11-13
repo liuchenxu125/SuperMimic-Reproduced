@@ -92,7 +92,7 @@ class SuperMimicEnvCfgArgs:
     bin_frames: int = 50
     compact_library: bool = False
     library_device: str = "device"  # CPU storage requires compact_library
-    library_transfer: str = "sync"
+    library_transfer: str = "pinned"
     anchor_obs: bool = (
         False  # add BeyondMimic anchor-relative pose (9) to the goal group (plan D5 alt.)
     )

@@ -6,6 +6,9 @@
 from __future__ import annotations
 
 import os
+import sys
+
+from supermimic.training.cpu_runtime import configure_cpu_reference_environment
 
 # Under torchrun, pin each rank to its own GPU *before* CUDA/warp initialise: MuJoCo Warp and
 # mjlab's simulation always run on the first visible device, so cfg.device alone is not enough.
@@ -35,12 +38,14 @@ if "LOCAL_RANK" in os.environ and int(os.environ.get("LOCAL_WORLD_SIZE", "1")) <
     except (OSError, ValueError):
         pass
 
-import tyro
-
-from supermimic.config import TrainConfig
-
-
 def main() -> None:
+    # TrainConfig imports Torch transitively. Set BLAS/OpenMP limits first so
+    # their thread pools see cpu4's environment when they are initialized.
+    configure_cpu_reference_environment(sys.argv[1:])
+    import tyro
+
+    from supermimic.config import TrainConfig
+
     cfg = tyro.cli(TrainConfig)
     from supermimic.training.loop import Trainer
 

@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--output-dir', type=Path, default=Path('data/npz/lafan1_casbot02_codex'))
     parser.add_argument('--input-fps', type=float, default=1000., help='Fallback for names without _NNNHZ; explicit filename rates take priority')
     parser.add_argument('--output-fps', type=float, default=50.)
+    parser.add_argument('--robot-assets-dir', type=Path, help='Training asset snapshot matching the deployment actor')
     parser.add_argument('--pattern', default='*.data')
     parser.add_argument('--no-clamp-joints', action='store_true', help='Preserve source joint angles even outside hard limits')
     parser.add_argument('--overwrite', action='store_true')
@@ -34,9 +35,13 @@ def main():
     paths = [output/(source.stem+'.npz') for source in files]
     existing = [str(path) for path in paths if path.exists()]
     if existing and not args.overwrite: parser.error(f'Outputs already exist (use --overwrite): {existing}')
+    if args.robot_assets_dir is not None:
+        from supermimic.robots import profiles
+        profiles.CASBOT_ASSETS = args.robot_assets_dir.expanduser().resolve(strict=True)
     model = get_robot('casbot02').model()
     report = dict(input_dir=str(args.input_dir.resolve()), output_dir=str(output), robot='casbot02',
                   joint_count=27, body_count=model.nbody-1, output_fps=args.output_fps,
+                  robot_assets_dir=str(args.robot_assets_dir.resolve()) if args.robot_assets_dir else None,
                   root_convention='AMP converter: x=raw[1], y=raw[0], z=raw[2]; pitch=raw[3]-auto_offset, roll=raw[4], yaw=-raw[5]',
                   joint_columns_zero_based=[*range(12, 24), 60, *range(24, 31), *range(31, 38)], clips=[])
     args.report.parent.mkdir(parents=True, exist_ok=True)

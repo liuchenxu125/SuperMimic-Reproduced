@@ -116,7 +116,7 @@ class MotionLibrary:
         robot_name: str = "g1",
         joint_names: tuple[str, ...] | None = None,
         library_device: Literal["device", "cpu"] = "device",
-        library_transfer: Literal["sync", "pinned"] = "sync",
+        library_transfer: Literal["sync", "pinned"] = "pinned",
     ):
         if library_device not in ("device", "cpu"):
             raise ValueError(f"Unknown library_device: {library_device!r}")
@@ -262,9 +262,8 @@ class MotionLibrary:
 
     def ref71(self, frame: torch.Tensor) -> torch.Tensor:
         if self.storage_device.type == "cpu" and self.device.type != "cpu":
-            # Copy only selected rows. The synchronous default avoids per-query
-            # pinned allocator/event churn while Torch and Warp share CUDA.
-            # The previous async path remains available for controlled comparisons.
+            # Copy only selected rows. Default to cpu4's pinned + asynchronous
+            # path; blocking copies remain available via library_transfer="sync".
             indices = frame.detach().to(device="cpu")
             rows = self._ref[indices]
             asynchronous = self.library_transfer == "pinned" and self.device.type == "cuda"

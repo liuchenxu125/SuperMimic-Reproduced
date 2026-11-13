@@ -25,6 +25,7 @@ class CppActor:
         self.latency = []
         self.calls = 0
         self.goal_dim = sim.meta["goal_dim"]
+        self.obs_dim = sim.meta["obs_dim"]
         if explicit_pd:
             # Use the same model/transmissions, replacing implicit position PD
             # with bounded explicit effort PD at 1 kHz, as in the ROS adapter.
@@ -44,14 +45,14 @@ class CppActor:
         began = time.perf_counter()
         self.proc.stdin.write(record.tobytes())
         self.proc.stdin.flush()
-        count = 870 + self.goal_dim + 54
+        count = self.obs_dim + self.goal_dim + 54
         raw = self.proc.stdout.read(count * 4)
         if len(raw) != count * 4:
             raise RuntimeError(f"C++ probe stopped: {self.proc.poll()}")
         self.latency.append(time.perf_counter() - began)
         result = np.frombuffer(raw, dtype="<f4")
-        end_goal = 870 + self.goal_dim
-        cpp_obs, cpp_goal = result[:870], result[870:end_goal]
+        end_goal = self.obs_dim + self.goal_dim
+        cpp_obs, cpp_goal = result[:self.obs_dim], result[self.obs_dim:end_goal]
         action, target = result[end_goal : end_goal + 27], result[end_goal + 27 :]
         for name, actual, expected in (
             ("observation", cpp_obs, obs.numpy()[0]),
@@ -86,6 +87,8 @@ def explicit_step(sim):
     target = sim.q0 + sim.scale * action
     motors = sim.meta["motors"]
     kp, kd, effort = (np.array([m[key] for m in motors]) for key in ("kp", "kd", "effort_limit_nm"))
+    # runner.cpp publishes integer SDK gains; reproduce that contract here.
+    kp, kd = np.trunc(kp), np.trunc(kd)
     for _ in range(20):
         tau = np.clip(kp * (target - sim.data.qpos[7:]) - kd * sim.data.qvel[6:], -effort, effort)
         sim.data.ctrl[:] = tau[sim.actuator_to_joint]
@@ -106,8 +109,9 @@ def explicit_step(sim):
             np.max(np.abs(action)),
         ]
     )
-    sim.history.append(observation(sim.data.qpos, sim.data.qvel, action, sim.q0))
-    sim.target_frame = min(f + 1, ref.length - 1)
+    next_frame = min(f + 1, ref.length - 1)
+    sim.history.append(sim.current_observation(next_frame))
+    sim.target_frame = next_frame
     sim.completed = sim.steps >= ref.length - sim.start_frame
     sim.finished = sim.failed or sim.completed
 
@@ -133,14 +137,14 @@ def main():
         p.error("--seconds must include at least one 20 ms control step")
     sim = Sim2Sim(args.sim_bundle)
     meta = json.loads((args.hardware_bundle / "manifest.json").read_text())
-    for key in ("checkpoint_sha256", "anchor_obs", "goal_dim", "joint_names"):
+    for key in ("checkpoint_sha256", "anchor_obs", "anchor_ori_obs", "obs_dim", "goal_dim", "joint_names"):
         if sim.meta[key] != meta[key]:
             raise ValueError(f"Sim and hardware bundles disagree on {key}")
     sim.reset(meta["clip"], args.start_frame, start_xy=[1.2, -0.6], start_yaw=0.7)
     if args.from_rest:
         sim.data.qvel[:] = 0
         mujoco.mj_forward(sim.model, sim.data)
-        sim.history.reset(observation(sim.data.qpos, sim.data.qvel, sim.previous_action, sim.q0))
+        sim.history.reset(sim.current_observation())
     cpp = CppActor(sim, args.probe, args.hardware_bundle, args.start_frame, args.explicit_pd)
     sim.actor = cpp
     try:

@@ -15,6 +15,7 @@ import mujoco
 import numpy as np
 
 from supermimic.robots.profiles import CASBOT_ASSETS
+from supermimic.robots.collision_geometry import fit_wrist_capsule
 
 
 def build():
@@ -121,13 +122,8 @@ def build():
         add(f"{side}_leg_pelvic_yaw_link", f"{side}_thigh_collision",
             round(cover_radius(visual_points(f"{side}_leg_pelvic_yaw_link", single=False), thigh) - 0.005, 3), thigh)
         shin = np.array([.005, 0, -.045, .005, 0, -.395])
-        shin_mid = (shin[:3] + shin[3:]) / 2
-        shin_upper = np.concatenate((shin[:3], shin_mid))
-        shin_lower = np.concatenate((shin_mid, shin[3:]))
         shin_radius = round(cover_radius(visual_points(f"{side}_leg_knee_pitch_link", single=False), shin) - 0.017, 3)
-        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_upper_collision", shin_radius, shin_upper)
-        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_lower_collision",
-            round(shin_radius - 0.015, 3), shin_lower)
+        add(f"{side}_leg_knee_pitch_link", f"{side}_shin_collision", 0.05, shin)
         upper_arm = [0, 0, .005, 0, 0, -.065]
         add(f"{side}_shoulder_yaw_link", f"{side}_upper_arm_collision",
             cover_radius(visual_points(f"{side}_shoulder_yaw_link", single=False), upper_arm), upper_arm)
@@ -137,9 +133,8 @@ def build():
         forearm = [0, 0, -.02, 0, 0, -.135]
         add(f"{side}_wrist_yaw_link", f"{side}_forearm_collision",
             round(cover_radius(visual_points(f"{side}_wrist_yaw_link", single=False), forearm) - 0.015, 3), forearm)
-        hand = [0, 0, -.005, 0, 0, -.135]
-        add(f"{side}_wrist_roll_link", f"{side}_hand_collision",
-            round(cover_radius(visual_points(f"{side}_wrist_roll_link", single=False), hand) - 0.013, 3), hand)
+        wrist_radius, wrist_segment = fit_wrist_capsule(visual_points(f"{side}_wrist_roll_link"))
+        add(f"{side}_wrist_roll_link", f"{side}_wrist_collision", wrist_radius, wrist_segment)
         points = visual_points(f"{side}_leg_ankle_roll_link")
         lo, hi = points.min(0), points.max(0)
         foot_bounds[side] = {"min": lo.tolist(), "max": hi.tolist()}

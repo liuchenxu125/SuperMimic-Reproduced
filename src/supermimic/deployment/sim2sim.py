@@ -528,7 +528,10 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--bundle", type=Path, default=default)
     p.add_argument("--clip", help="Clip name in the bundle; default is its first clip")
-    p.add_argument("--motion-order", nargs="+", help="Limit/reorder selectable clips; default is the bundle order")
+    order_args = p.add_mutually_exclusive_group()
+    order_args.add_argument("--motion-order", nargs="+", help="Limit/reorder selectable clips; default is the bundle menu/order")
+    order_args.add_argument("--motion-order-config", type=Path,
+                           help="Read joystick_motion_order from a deployment YAML at startup")
     p.add_argument("--list-clips", action="store_true")
     p.add_argument("--render", action="store_true", help="Native MuJoCo viewer")
     p.add_argument("--no-realtime", action="store_true")
@@ -557,9 +560,23 @@ def main():
     if a.seconds is not None and (not math.isfinite(a.seconds) or a.seconds <= 0):
         p.error("--seconds must be positive and finite")
     sim = Sim2Sim(a.bundle, a.threads)
-    clips = a.motion_order or list(sim.meta["motions"])
+    clips = a.motion_order
+    if a.motion_order_config is not None:
+        import yaml
+
+        try:
+            config = yaml.safe_load(a.motion_order_config.read_text())
+        except (OSError, yaml.YAMLError) as error:
+            p.error(f"Cannot read motion order config: {error}")
+        if not isinstance(config, dict) or "joystick_motion_order" not in config:
+            p.error("Motion order config must contain joystick_motion_order")
+        clips = config["joystick_motion_order"]
+    if clips is None:
+        clips = sim.meta.get("motion_order", list(sim.meta["motions"]))
+    if not isinstance(clips, list) or not clips or not all(isinstance(name, str) for name in clips):
+        p.error("Motion order must be a nonempty list of clip names")
     if len(set(clips)) != len(clips) or any(name not in sim.meta["motions"] for name in clips):
-        p.error("--motion-order must contain unique clip names present in the bundle")
+        p.error("Motion order must contain unique clip names present in the bundle")
     if a.list_clips:
         print("\n".join(clips))
         return

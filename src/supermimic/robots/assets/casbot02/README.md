@@ -1,5 +1,73 @@
 # Casbot02 27 DOF asset
 
+## Active training motors: restored to cpu7 (2026-11-11)
+
+`motor_parameters.json` is restored byte-for-byte from the verified
+`casbot02_bones_seed_proprio_cpu7` snapshot. Both training MJCFs use its matching
+armatures. Stiffness, damping, torque caps, declared velocity limits, friction
+and action scales (`0.25 * effort_limit / stiffness`) match cpu7 exactly.
+The old waist gain/inertia combination is retained as trained, rather than
+recomputing gains from the later uniform 10 Hz formula.
+
+Leg armatures: joints 1/2/4 = 0.07, joints 3/5/6 = 0.029 kg m².
+Waist yaw = 0.039; arm joints 1/2/4 = 0.033, joints 3/5/6/7 = 0.0245 kg m².
+The current no-palm model, shortened wrist capsules, body inertials, position
+limits and default pose remain unchanged. Thus this is a motor-only restoration,
+not a complete restoration of cpu7's older palm geometry.
+Velocity limits remain declarations with the existing implicit PD actuator.
+The source, backup and full before/after values are recorded in
+`source_manifest.json` and `outputs/casbot02_restore_cpu7_motors_20261111/`.
+New training processes use these values; saved checkpoints and exported
+deployment bundles keep their original contracts.
+
+## Bare-wrist hardware model (2026-11-07)
+
+The training mesh and primitive MJCFs now end at the wrists: fixed
+`left_base_link` / `right_base_link` palm visual/collision meshes are removed.
+All 27 controlled joints, their position limits, motor armatures, PD gains and
+the default pose are retained. The pure wrist-roll link mass/COM/inertia are
+restored from the Serial URDF, undoing the old fixed-palm inertia aggregation:
+left 0.141439 -> 0.11076 kg, right 0.13243 -> 0.10176 kg.
+
+Primitive `left_hand_collision` / `right_hand_collision` capsules are replaced
+with `left_wrist_collision` / `right_wrist_collision`. Each is fitted to the
+remaining wrist-roll shell with a 1 mm margin; radius 49 mm, total axial length
+about 138 mm. The distal tip stops at approximately -84.54 mm in wrist-roll
+coordinates, compared with -172 mm before removal. The builder uses the same
+fit so regeneration does not restore the old palm capsule.
+
+The total model mass is 50.592582 kg. Existing exported deployment/sim2sim
+bundles remain snapshots of their original models; this source-asset edit does
+not change those bundles or an already running simulation/training process.
+
+## Historical training motor update (2026-11-07; superseded above)
+
+The 2026-11-07 version used effort and declared velocity limits from
+`src/supermimic/robots/assets/Serial/urdf/CASBOT02_ENCOS_7dof_shell_20251015.urdf`.
+The user's existing MJCF joint position ranges, default pose, link inertias,
+collision geometry, friction and command-delay settings are preserved.
+The 27 joint-side reflected inertias are now:
+
+- Leg joints 1/2/4: 0.07 kg m².
+- Leg joints 3/5/6 and waist yaw: 0.065797 kg m².
+- Arm joints 1/2/4: 0.03298 kg m².
+- Arm joints 3/5/6/7: 0.02453 kg m².
+
+PD gains retain the existing 10 Hz natural frequency and damping ratio 2:
+`Kp = armature * (2*pi*10)^2`, `Kd = 2*2*armature*(2*pi*10)`.
+Action scale remains `0.25 * effort_limit / Kp`. Exact values, source hash,
+joint-name mapping and the previous parameter origins are recorded in
+`motor_parameters.json`. Both training MJCFs carry the same armatures; mjlab
+builds all 27 implicit PD actuators with the new gains and torque limits.
+
+Velocity values are declarations only: the user chose to retain
+`BuiltinPositionActuatorCfg`, which has no hard velocity-cap interface.
+No motor torque-speed curve or state-velocity clipping is added.
+Existing exported hardware/ARM64 bundles and sim2sim scenes are unchanged.
+These files do not hot-reload into an already running training process.
+
+The sections below retain the history of earlier asset/control changes.
+
 Copied from the user's local ScaleBFM/ScaleTrack Casbot02 assets. The copied
 meshes and adapted MJCF are independent of that project's Python environment.
 See `source_manifest.json` for the exact source and changes.

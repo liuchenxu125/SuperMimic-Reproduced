@@ -25,7 +25,7 @@ def test_copied_assets_and_motor_mapping():
     entity = Entity(profile.entity_cfg())
     model = entity.spec.compile()
     assert (model.nq, model.nv, model.nbody, model.nu) == (34, 33, 31, 27)
-    assert abs(model.body_mass.sum() - 50.653931) < 1e-6
+    assert abs(model.body_mass.sum() - 50.592582) < 1e-6
     for actuator in range(model.nu):
         joint = int(model.actuator_trnid[actuator, 0])
         name = model.joint(joint).name

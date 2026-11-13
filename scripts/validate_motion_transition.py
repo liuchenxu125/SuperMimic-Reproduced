@@ -20,10 +20,10 @@ def evaluate(args, source, destination, cfg):
     metadata = {}
     for name in (source, destination):
         metadata[name] = json.loads((bank[name] / 'manifest.json').read_text())
-        for key in ('checkpoint_sha256', 'motors', 'joint_names', 'goal_dim', 'control_dt'):
+        for key in ('checkpoint_sha256', 'motors', 'joint_names', 'obs_dim', 'goal_dim', 'control_dt'):
             if metadata[name][key] != sim.meta[key]:
                 raise ValueError(f'Sim/hardware contract mismatch: {name}/{key}')
-        if metadata[name]['anchor_obs'] or metadata[name].get('anchor_ori_obs', False) or metadata[name]['goal_dim'] not in (640, 690):
+        if metadata[name]['anchor_obs'] or metadata[name]['obs_dim'] not in (870, 930) or metadata[name]['goal_dim'] not in (640, 690):
             raise ValueError('Live transition test requires a supported proprio-only actor')
     # The native policy rejects another source step once frame reaches the clip length.
     # Keep the pre-switch window inside that clip, and let a short destination finish early.
@@ -53,12 +53,19 @@ def evaluate(args, source, destination, cfg):
             record = np.r_[sim.data.qpos[7:], sim.data.qvel[6:], [np.nan]*3,
                            sim.data.qpos[3:7], sim.data.qvel[3:6]].astype('<f8')
             process.stdin.write(record.tobytes()); process.stdin.flush()
-            goal_end = 870 + sim.meta['goal_dim']
+            obs_dim = sim.meta['obs_dim']
+            goal_end = obs_dim + sim.meta['goal_dim']
             raw = process.stdout.read((goal_end + 54 + 36)*4)
             if len(raw) != (goal_end + 54 + 36)*4:
                 raise RuntimeError(f'C++ probe stopped: {process.poll()}')
             out = np.frombuffer(raw, dtype='<f4')
-            obs, goal, action, target, ref = out[:870], out[870:goal_end], out[goal_end:goal_end+27], out[goal_end+27:goal_end+54], out[goal_end+54:]
+            obs, goal, action, target, ref = out[:obs_dim], out[obs_dim:goal_end], out[goal_end:goal_end+27], out[goal_end+27:goal_end+54], out[goal_end+54:]
+            # q/dq/omega/gravity/action history is independent of reference
+            # switching. Check the rot6d against the bridged current reference
+            # returned by C++, then append it to the Python history below.
+            if sim.reference_pelvis_ori:
+                actual = observation(sim.data.qpos, sim.data.qvel, sim.previous_action, sim.q0, ref[3:7])
+                sim.history.frames[-1][-6:] = actual[-6:]
             error = float(np.max(np.abs(sim.history.packed() - obs)))
             maxima['observation_error'] = max(maxima['observation_error'], error)
             np.testing.assert_allclose(obs, sim.history.packed(), atol=2e-5, rtol=3e-6)
@@ -88,7 +95,9 @@ def evaluate(args, source, destination, cfg):
             for key, value in [('height_error_m', height), ('tilt_error', tilt), ('joint_rmse_rad', rmse)]:
                 maxima[key] = max(maxima[key], value)
             rows.append(dict(tick=tick, frame=int(ref[34]), bridge=bool(ref[35]), height=height, tilt=tilt))
-            sim.history.append(observation(sim.data.qpos, sim.data.qvel, action, sim.q0))
+            sim.previous_action[:] = action
+            sim.history.append(observation(sim.data.qpos, sim.data.qvel, action, sim.q0,
+                                          ref[3:7] if sim.reference_pelvis_ori else None))
             if height > sim.meta['height_threshold'] or tilt > sim.meta['tilt_threshold']:
                 failed = dict(tick=tick, seconds=(tick+1)*sim.dt,
                               stage='source' if tick < before else 'bridge' if ref[35] else 'destination')

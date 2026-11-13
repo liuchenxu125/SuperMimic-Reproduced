@@ -1,6 +1,6 @@
 {
-  "source_sha256": "1cfc8d558969d8335a496b0d400239c6d084108fb4cdeaac7ce8af0204b0bf3f",
-  "removed_collision_meshes": 24,
+  "source_sha256": "c7ff6ca9ccd74b8bc7a34eecfde4d0e64e76c1e209b6f887766b59920a0b8601",
+  "removed_collision_meshes": 22,
   "primitive_geoms": [
     {
       "body": "base_link",
@@ -40,17 +40,10 @@
     },
     {
       "body": "left_leg_knee_pitch_link",
-      "name": "left_shin_upper_collision",
+      "name": "left_shin_collision",
       "class": "primitive_collision",
-      "size": "0.062",
-      "fromto": "0.005 0 -0.045 0.005 0 -0.22"
-    },
-    {
-      "body": "left_leg_knee_pitch_link",
-      "name": "left_shin_lower_collision",
-      "class": "primitive_collision",
-      "size": "0.047",
-      "fromto": "0.005 0 -0.22 0.005 0 -0.395"
+      "size": "0.05",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
     },
     {
       "body": "left_shoulder_yaw_link",
@@ -75,10 +68,10 @@
     },
     {
       "body": "left_wrist_roll_link",
-      "name": "left_hand_collision",
+      "name": "left_wrist_collision",
       "class": "primitive_collision",
-      "size": "0.037",
-      "fromto": "0 0 -0.005 0 0 -0.135"
+      "size": "0.049",
+      "fromto": "-0.000500019474452 7.19477290904e-08 -0.035542245934 -0.000500019474452 7.19477290904e-08 0.00439409342764"
     },
     {
       "body": "right_leg_pelvic_pitch_link",
@@ -96,17 +89,10 @@
     },
     {
       "body": "right_leg_knee_pitch_link",
-      "name": "right_shin_upper_collision",
+      "name": "right_shin_collision",
       "class": "primitive_collision",
-      "size": "0.062",
-      "fromto": "0.005 0 -0.045 0.005 0 -0.22"
-    },
-    {
-      "body": "right_leg_knee_pitch_link",
-      "name": "right_shin_lower_collision",
-      "class": "primitive_collision",
-      "size": "0.047",
-      "fromto": "0.005 0 -0.22 0.005 0 -0.395"
+      "size": "0.05",
+      "fromto": "0.005 0 -0.045 0.005 0 -0.395"
     },
     {
       "body": "right_shoulder_yaw_link",
@@ -131,10 +117,10 @@
     },
     {
       "body": "right_wrist_roll_link",
-      "name": "right_hand_collision",
+      "name": "right_wrist_collision",
       "class": "primitive_collision",
-      "size": "0.037",
-      "fromto": "0 0 -0.005 0 0 -0.135"
+      "size": "0.049",
+      "fromto": "-0.000500019304247 7.16955620948e-08 -0.0355422613252 -0.000500019304247 7.16955620948e-08 0.00439408543958"
     },
     {
       "body": "left_leg_ankle_roll_link",
@@ -233,5 +219,61 @@
       "right_wrist_roll_link"
     ]
   ],
-  "source": "Anatomical capsules plus the source Casbot02 foot meshes. Hip capsules cover the pelvic-pitch visual mesh."
+  "source": "Anatomical capsules plus the source Casbot02 foot meshes. Hip capsules cover the pelvic-pitch visual mesh.",
+  "palm_removed_20261107": {
+    "source": "User: hardware ends at wrist; remove fixed palm geometry and palm contribution to merged inertia.",
+    "wrist_fit": "Bare wrist-roll visual vertices; z-axis capsule with1mm padding",
+    "wrist_capsules": {
+      "left": {
+        "radius": 0.049,
+        "fromto": [
+          -0.0005000194744516004,
+          7.194772909044356e-08,
+          -0.0355422459339793,
+          -0.0005000194744516004,
+          7.194772909044356e-08,
+          0.004394093427642708
+        ],
+        "capsule_z_bounds": [
+          -0.0845422459339793,
+          0.05339409342764271
+        ],
+        "visual_bounds_min": [
+          -0.04800003904043061,
+          -0.028115069203012436,
+          -0.06800000529105404
+        ],
+        "visual_bounds_max": [
+          0.04700000009152741,
+          0.028115213098470617,
+          0.029999997341592997
+        ]
+      },
+      "right": {
+        "radius": 0.049,
+        "fromto": [
+          -0.0005000193042470555,
+          7.169556209482564e-08,
+          -0.03554226132519375,
+          -0.0005000193042470555,
+          7.169556209482564e-08,
+          0.0043940854395843314
+        ],
+        "capsule_z_bounds": [
+          -0.08454226132519375,
+          0.053394085439584335
+        ],
+        "visual_bounds_min": [
+          -0.048000037989879174,
+          -0.02811506932697013,
+          -0.06800000555200673
+        ],
+        "visual_bounds_max": [
+          0.04699999938138506,
+          0.02811521271809432,
+          0.029999998178073337
+        ]
+      }
+    }
+  }
 }

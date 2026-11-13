@@ -290,6 +290,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--ckpt", type=Path, default=Path("logs/casbot02_lafan1/ckpt_latest.pt"))
     p.add_argument("--npz-dir", type=Path, default=Path("data/npz/lafan1_casbot02"))
+    p.add_argument("--robot-assets-dir", type=Path,
+                   help="Archived Casbot02 assets matching checkpoint training; source assets remain untouched")
     p.add_argument(
         "--clips", nargs="+", default=["walk4_subject1", "walk3_subject5", "dance1_subject1"]
     )
@@ -300,7 +302,22 @@ def main():
     missing = [str(path) for path in paths if not path.is_file()]
     if missing:
         p.error(f"Missing reference files: {missing}")
+    if a.robot_assets_dir is not None:
+        assets = a.robot_assets_dir.resolve(strict=True)
+        for relative in ("motor_parameters.json", "xml/casbot02.xml", "xml/casbot02_primitives.xml", "meshes"):
+            if not (assets / relative).exists():
+                p.error(f"Incomplete robot asset snapshot: {assets / relative}")
+        # This CLI runs in its own process; override the profile only for export.
+        import supermimic.robots.profiles as profiles
+        profiles.CASBOT_ASSETS = assets
     result = export_bundle(a.ckpt, paths, a.output)
+    if a.robot_assets_dir is not None:
+        result["robot_asset_snapshot"] = {
+            "directory": str(assets),
+            "sha256": {relative: digest(assets / relative) for relative in
+                       ("motor_parameters.json", "xml/casbot02.xml", "xml/casbot02_primitives.xml")},
+        }
+        (a.output / "manifest.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(
         f"Exported {a.output}: {result['obs_dim']} + {result['goal_dim']} -> {len(result['joint_names'])}"
     )

@@ -487,7 +487,7 @@ class MultiClipMotionCommandCfg(CommandTermCfg):
     max_logged_steps: int = 1024
     compact_library: bool = False
     library_device: Literal["device", "cpu"] = "device"
-    library_transfer: Literal["sync", "pinned"] = "sync"
+    library_transfer: Literal["sync", "pinned"] = "pinned"
     library_fp16: bool = True
     resampling_time_range: tuple[float, float] = (1.0e9, 1.0e9)
 

@@ -52,7 +52,7 @@ def test_heading_goal_migration_requires_matching_schema_and_explicit_flag(metad
         updater.verify_contract(updated, metadata)
     assert updater.verify_contract(updated, metadata, accept_goal_update=True) == {}
     updated['anchor_ori_obs'] = True
-    with pytest.raises(ValueError, match='goal_dim'):
+    with pytest.raises(ValueError, match='orientation'):
         updater.verify_contract(updated, metadata, accept_goal_update=True)
 
 
@@ -61,3 +61,34 @@ def test_goal_acceptance_preserves_motor_guard(metadata):
     updated.update(goal_dim=690, goal_encoding='reference_heading_v1', motors=[])
     with pytest.raises(ValueError, match='motors'):
         updater.verify_contract(updated, metadata, accept_goal_update=True)
+
+
+def test_explicit_motor_migration_preserves_other_interface_guards(metadata):
+    updated = copy.deepcopy(metadata)
+    updated['motors'] = [dict(kp=120., kd=6.)]
+    with pytest.raises(ValueError, match='motors'):
+        updater.verify_contract(updated, metadata)
+    assert updater.verify_contract(updated, metadata, accept_motor_update=True) == {}
+    updated['sdk_joint_names'] = ['wrong']
+    with pytest.raises(ValueError, match='sdk_joint_names'):
+        updater.verify_contract(updated, metadata, accept_motor_update=True)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_orientation_history_migration_requires_explicit_matching_contract(metadata, reverse):
+    before = copy.deepcopy(metadata)
+    before.update(goal_dim=690, goal_encoding='reference_heading_v1',
+                  anchor_obs=False, anchor_ori_obs=False)
+    after = copy.deepcopy(before)
+    after.update(obs_dim=930, anchor_ori_obs=True)
+    if reverse:
+        before, after = after, before
+    with pytest.raises(ValueError, match='accept-orientation-update'):
+        updater.verify_contract(after, before)
+    assert updater.verify_contract(after, before, accept_orientation_update=True) == {}
+    for key, value in [('goal_dim', 696), ('motors', []), ('anchor_obs', True), ('obs_dim', 936),
+                       ('anchor_ori_obs', not after['anchor_ori_obs'])]:
+        wrong = copy.deepcopy(after)
+        wrong[key] = value
+        with pytest.raises(ValueError):
+            updater.verify_contract(wrong, before, accept_orientation_update=True)

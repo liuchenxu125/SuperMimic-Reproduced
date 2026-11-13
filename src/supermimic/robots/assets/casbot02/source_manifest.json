@@ -6,7 +6,10 @@
     "joint position limits match training URDF",
     "passive damping/frictionloss zero; PD gains supplied in robot config",
     "2026-10-28: leg_[lr]3/5/6_joint armature 0.039 -> 0.029, matching colleague supermimic_casbot02_22dof@f38a49a; collision geometry unchanged",
-    "2026-10-29: both training MJCF joint limits aligned with the user-confirmed hardware limits in /home/casbot/Downloads/casbot_02_27dof.xml; preserve gains, armature, body transforms and collision geometry"
+    "2026-10-29: both training MJCF joint limits aligned with the user-confirmed hardware limits in /home/casbot/Downloads/casbot_02_27dof.xml; preserve gains, armature, body transforms and collision geometry",
+    "2026-11-07: training-only effort/velocity declarations from Serial URDF; user-provided armature groups; PD recomputed at10Hz/zeta2 and scales at0.25*tau/kp. Joint ranges and body/collision geometry preserved.",
+    "2026-11-07: remove fixed palm visual/collision meshes from both training MJCFs; restore bare wrist-roll inertials from Serial URDF; replace long hand capsules with bare-wrist fits. Preserve27 joints, ranges and motor parameters.",
+    "2026-11-11: restore all training motor constants and both MJCF armatures to the cpu7 snapshot; preserve no-palm morphology, collision geometry and joint ranges."
   ],
   "limit_changes": [
     {
@@ -71,5 +74,129 @@
         "new": "-2.26 0"
       }
     ]
+  },
+  "training_motor_update_20261107": {
+    "urdf": "/home/casbot/Desktop/SuperMimic-Reproduced/src/supermimic/robots/assets/Serial/urdf/CASBOT02_ENCOS_7dof_shell_20251015.urdf",
+    "urdf_sha256": "48cdec931eb522d231f1d8303975df4545e58e70e6e601a601391fe594d39947",
+    "preserved_joint_ranges": {
+      "xml/casbot02.xml": {
+        "leg_l1_joint": "-1.9199 1.5708",
+        "leg_l2_joint": "-0.17453 1.5708",
+        "leg_l3_joint": "-1.5708 1.5708",
+        "leg_l4_joint": "0 2.53073",
+        "leg_l5_joint": "-0.87266 0.50614",
+        "leg_l6_joint": "-0.50614 0.50614",
+        "leg_r1_joint": "-1.91986 1.57",
+        "leg_r2_joint": "-1.5708 0.17453",
+        "leg_r3_joint": "-1.5708 1.5708",
+        "leg_r4_joint": "0 2.53073",
+        "leg_r5_joint": "-0.87266 0.50614",
+        "leg_r6_joint": "-0.50614 0.50614",
+        "waist_yaw_joint": "-1.5708 1.5708",
+        "upper_left_1_joint": "-3.1416 1.0472",
+        "upper_left_2_joint": "-0.3491 3.1416",
+        "upper_left_3_joint": "-1.5708 1.5708",
+        "upper_left_4_joint": "-2.26 0",
+        "upper_left_5_joint": "-1.5708 1.5708",
+        "upper_left_6_joint": "-1.0472 1.0472",
+        "upper_left_7_joint": "-1.0472 1.5708",
+        "upper_right_1_joint": "-3.1416 1.0472",
+        "upper_right_2_joint": "-3.1416 0.3491",
+        "upper_right_3_joint": "-1.5708 1.5708",
+        "upper_right_4_joint": "-2.26 0",
+        "upper_right_5_joint": "-1.5708 1.5708",
+        "upper_right_6_joint": "-1.0472 1.0472",
+        "upper_right_7_joint": "-1.5708 1.0472"
+      },
+      "xml/casbot02_primitives.xml": {
+        "leg_l1_joint": "-1.9199 1.5708",
+        "leg_l2_joint": "-0.17453 1.5708",
+        "leg_l3_joint": "-1.5708 1.5708",
+        "leg_l4_joint": "0 2.53073",
+        "leg_l5_joint": "-0.87266 0.50614",
+        "leg_l6_joint": "-0.50614 0.50614",
+        "leg_r1_joint": "-1.91986 1.57",
+        "leg_r2_joint": "-1.5708 0.17453",
+        "leg_r3_joint": "-1.5708 1.5708",
+        "leg_r4_joint": "0 2.53073",
+        "leg_r5_joint": "-0.87266 0.50614",
+        "leg_r6_joint": "-0.50614 0.50614",
+        "waist_yaw_joint": "-1.5708 1.5708",
+        "upper_left_1_joint": "-3.1416 1.0472",
+        "upper_left_2_joint": "-0.3491 3.1416",
+        "upper_left_3_joint": "-1.5708 1.5708",
+        "upper_left_4_joint": "-2.26 0",
+        "upper_left_5_joint": "-1.5708 1.5708",
+        "upper_left_6_joint": "-1.0472 1.0472",
+        "upper_left_7_joint": "-1.0472 1.5708",
+        "upper_right_1_joint": "-3.1416 1.0472",
+        "upper_right_2_joint": "-3.1416 0.3491",
+        "upper_right_3_joint": "-1.5708 1.5708",
+        "upper_right_4_joint": "-2.26 0",
+        "upper_right_5_joint": "-1.5708 1.5708",
+        "upper_right_6_joint": "-1.0472 1.0472",
+        "upper_right_7_joint": "-1.5708 1.0472"
+      }
+    },
+    "report": "outputs/casbot02_training_motor_update_20261107/parameter_comparison.json"
+  },
+  "no_palms_20261107": {
+    "urdf_source": "/home/casbot/Desktop/SuperMimic-Reproduced/src/supermimic/robots/assets/Serial/urdf/CASBOT02_ENCOS_7dof_shell_20251015.urdf",
+    "urdf_sha256": "48cdec931eb522d231f1d8303975df4545e58e70e6e601a601391fe594d39947",
+    "wrist_inertials": {
+      "left": {
+        "old_merged_inertial": {
+          "pos": "-0.00118959 0.00126289 -0.0485439",
+          "quat": "0.70966 0.01425 -0.010379 0.704324",
+          "mass": "0.141439",
+          "diaginertia": "0.00044078 0.000331129 0.000143302"
+        },
+        "new_wrist_only_inertial": {
+          "pos": "-0.0011269 0.00026424 -0.027639",
+          "mass": "0.11076",
+          "fullinertia": "9.193E-05 0.00019499 0.00013457 1.1E-06 -1.57E-06 -5.1E-07"
+        },
+        "removed_mass_kg": 0.030679000000000012
+      },
+      "right": {
+        "old_merged_inertial": {
+          "pos": "0.00124321 -0.00100793 -0.0510655",
+          "quat": "0.710811 0.0113492 0.0407479 0.70211",
+          "mass": "0.13243",
+          "diaginertia": "0.000412372 0.000315368 0.00012914"
+        },
+        "new_wrist_only_inertial": {
+          "pos": "0.0020498 0.00015117 -0.02908",
+          "mass": "0.10176",
+          "fullinertia": "8.585E-05 0.00017694 0.00012118 6.3E-07 -7.22E-06 -2.9E-07"
+        },
+        "removed_mass_kg": 0.03066999999999999
+      }
+    },
+    "report": "outputs/casbot02_no_palms_20261107/update.json"
+  },
+  "training_motor_restore_20261111": {
+    "date": "2026-11-11",
+    "source_snapshot": "/home/casbot/Desktop/SuperMimic-Reproduced/outputs/cpu7_092000_deployment_20261109_preparation/training_assets/motor_parameters.json",
+    "source_motor_parameters_sha256": "624b573ea04761337fb045ccf258e1373ec2275583495229be7a0d7770d9fb45",
+    "source_run": "casbot02_bones_seed_proprio_cpu7",
+    "restored_fields": [
+      "stiffness",
+      "damping",
+      "effort_limit",
+      "velocity_limit",
+      "armature",
+      "friction"
+    ],
+    "action_scale_formula": "0.25*effort_limit/stiffness",
+    "preserved": [
+      "joint ranges",
+      "default pose",
+      "bare-wrist body inertials",
+      "collision geometry",
+      "delay and randomization configuration",
+      "deployment bundles"
+    ],
+    "report": "outputs/casbot02_restore_cpu7_motors_20261111/restoration.json"
   }
 }

@@ -25,16 +25,18 @@ def clip(tmp_path):
     return output, q0, joints
 
 
-def library(clip, device="cpu", storage="cpu", dtype=torch.float16, transfer="sync"):
+def library(clip, device="cpu", storage="cpu", dtype=torch.float16, transfer=None):
     path, q0, joints = clip
+    options = {} if transfer is None else {"library_transfer": transfer}
     return MotionLibrary([path], get_robot("casbot02").tracked_bodies, q0, device=device,
                          compact=True, store_dtype=dtype, root_body_name="base_link",
                          robot_name="casbot02", joint_names=joints, library_device=storage,
-                         library_transfer=transfer)
+                         **options)
 
 
 def test_cpu_storage_and_clip_end_queries(clip):
     cpu = library(clip)
+    assert cpu.library_transfer == "pinned"
     assert cpu._ref.device.type == "cpu"
     assert cpu._ref.dtype == torch.float16
     frames = torch.tensor([0, 20, 49])
