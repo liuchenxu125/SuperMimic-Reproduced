@@ -1,0 +1,24 @@
+Human interface adaptation for SuperMimic-Reproduced.
+Portions derived from MorphMimic by Lizhi Yang and contributors, licensed Apache-2.0:
+https://github.com/lzyang2000/morphmimic
+
+Upstream files inspected 2026-11-14:
+src/morphmimic/model/human.py 0adb6a28ada76247aecf6cefaa654d8fa5dfa13e
+src/morphmimic/constants.py dd3c540425173bdbbc671c5d751c7a2ef6ead8ae
+src/morphmimic/data/bvh.py 303c91a24e762ed7403ef2be3310319b33f499ea
+src/morphmimic/data/human_convert.py 1b5d0c31fd92dbf107a1c1033c8a5648d82eed18
+src/morphmimic/train/normalizers.py 1af63db109db55e46d23bd27c225c7bccab75719
+src/morphmimic/train/imagination.py 7cb46345799abd982c60985531b851c4d2df6db1
+src/morphmimic/train/trainer.py d210df3ae8b9f9e386de7310b333f2881db437a4
+
+Changes: separate single-robot, frozen-teacher post-training task; native observation
+history and motion-goal construction retained; no global training configuration
+or main trainer modifications. Human v10 features/masks and SOMA rest-frame conversion
+are adapted into this package. Normalisation is single-process.
+
+2026-11-15 joint extension: independent Casbot02 motion + human copy task,
+following upstream mixed-interface simulator collection, replay-based human
+imagination and per-step optimizer freezing. Reuses the local native trainer
+without editing it; preserves local 930/690/27 layout and fixed scaling instead
+of adopting the G1 joint layout. Single-robot/single-GPU copy only; no upstream
+direct/return student, multi-robot sharing or WM-only warmup extension.
