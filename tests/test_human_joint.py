@@ -217,3 +217,60 @@ def test_streaming_preparation_resumes_verified_pairs(paired,tmp_path,monkeypatc
     report=json.loads((all_out/'preparation_report.json').read_text())
     assert report['ready']==1 and report['rejected']==1 and report['pending']==0
     assert report['audit'][-1]['reason']=='missing_human_in_archive'
+
+
+@pytest.mark.parametrize("device", ["cuda:0", "cpu"])
+def test_joint_cache_handoff_tracks_updates_not_logging_or_physics(monkeypatch, device):
+    from types import SimpleNamespace
+
+    from supermimic.human.joint_training import JointTrainer
+    from supermimic.training.loop import Trainer
+
+    trainer = object.__new__(JointTrainer)
+    trainer.device = device
+    trainer._joint_ready = True
+    trainer._reported_update = trainer._cache_released_update = 12
+    trainer.policy_trainer = SimpleNamespace(human_updates=12)
+    trainer.cfg = SimpleNamespace(schedule=SimpleNamespace(log_interval=50))
+    events = []
+    monkeypatch.setattr(Trainer, "_synchronize", lambda self: events.append("sync"))
+    monkeypatch.setattr(torch.cuda, "empty_cache", lambda: events.append("release"))
+
+    # Restored counters during warmup/WM do not constitute a new joint update.
+    trainer._synchronize()
+    assert events == ["sync"]
+    for count in (13, 14):
+        events.clear()
+        trainer.policy_trainer.human_updates = count
+        trainer._synchronize()
+        assert events == (["sync", "release"] if device.startswith("cuda") else ["sync"])
+        assert trainer._cache_released_update == count
+        assert trainer._reported_update == 12  # No log record at these counts.
+        events.clear()
+        trainer._synchronize()
+        assert events == ["sync"]
+
+
+def test_joint_cache_handoff_follows_optional_validation(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from supermimic.human.joint_training import JointTrainer
+    from supermimic.training.loop import Trainer
+
+    trainer = object.__new__(JointTrainer)
+    trainer.device, trainer._joint_ready = "cuda:0", True
+    trainer._reported_update = trainer._cache_released_update = 49
+    trainer.policy_trainer = SimpleNamespace(human_updates=50, latest={})
+    trainer.cfg = SimpleNamespace(schedule=SimpleNamespace(log_interval=50))
+    trainer.iteration, trainer.validate_every = 49, 50
+    trainer.collection_counts, trainer.log_dir = {}, tmp_path
+    trainer._initial_versions = {name: [] for name in ("wm", "motion", "human")}
+    trainer.wm = trainer.policy = trainer.human = torch.nn.Identity()
+    trainer.writer = SimpleNamespace(add_scalar=lambda *args: None)
+    events = []
+    trainer.validate_human = lambda: events.append("validate") or {}
+    monkeypatch.setattr(Trainer, "_synchronize", lambda self: events.append("sync"))
+    monkeypatch.setattr(torch.cuda, "empty_cache", lambda: events.append("release"))
+    trainer._synchronize()
+    assert events == ["sync", "validate", "release"]
+    assert trainer._reported_update == trainer._cache_released_update == 50

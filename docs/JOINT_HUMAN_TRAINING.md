@@ -64,6 +64,10 @@ env -u PYTHONPATH MUJOCO_GL=egl .venv/bin/python scripts/human/train_joint.py \
 
 除原TensorBoard外新增 `joint_metrics.jsonl` 与 `[JOINT]` 行：`action_mse`、`latent_mse`、`collected.motion/human`、`modules_updated.wm/motion/human`。验证误差是teacher匹配误差；`val_imagined_survival`是模型预测，均不是整段真仿真完成率。原 `train_ret` 仍为存活步平均的训练统计，不能当整段评测分数。
 
+CUDA显存交接：每轮motion/critic和human copy均完成、同步及可选验证之后，调用一次 `torch.cuda.empty_cache()`，释放未使用的训练缓存供下一轮Warp仿真使用。该操作不依赖日志间隔，不在每个物理步或两路更新之间释放；活动模型、优化器、replay张量和训练超参数不变。重启/恢复时按已恢复的human更新数初始化交接标记，预热不会重复触发；该标记不是需要保存的训练状态。启动日志与 `joint_runtime.json` 中的 `cuda_cache_handoff` 记录此行为。原单独motion入口和独立human后训练入口不改动。
+
+显存交接回归包含非日志轮次、CPU不调用CUDA、可选验证顺序和恢复计数；human/velocity/评测接口共33项测试通过。GPU使用20条配对动作、2048环境、motion和human各batch2048、WM2048×10、H32、default编译、CPU库＋sync，正常入口从零训练5轮通过，并从5轮恢复到8轮通过；没有启动正式长训练。记录见 `outputs/joint_cache_handoff_validation_20261116/validation.json`。一次初始预热曾发生OOM，后续同规模启动和恢复均未复现，更新后清缓存不保证消除所有阶段的显存不足。
+
 每4000次保存 `ckpt_0004000.pt` 等及 `ckpt_latest.pt`，正常结束或Ctrl+C保存latest。数值异常不覆盖上一个正常latest。
 
 ```bash
@@ -96,3 +100,19 @@ env -u PYTHONPATH OMP_NUM_THREADS=1 .venv/bin/python scripts/human/export_joint.
 输出共享同一decoder权重的 `motion_actor.pt`、`human_actor.pt` 和机器人契约/输入manifest；比较full/five及多个batch下TorchScript/PyTorch输出。motion权重保留原checkpoint结构，可用原motion评测/导出工具验证。联合训练会改变motion能力，应同时做原motion回归与human留出数据仿真评测。
 
 此步骤没有替换真机部署，也没有把PICO发送器自动切成human。实时human接收、人体格式/时钟对齐以及原930维观测中的6D参考姿态构造仍需单独接入和仿真验证。
+
+## 整段真仿真评测
+
+```bash
+cd /home/casbot/Desktop/SuperMimic-Reproduced
+env -u PYTHONPATH MUJOCO_GL=egl .venv/bin/python scripts/human/eval_joint.py \
+  --checkpoint logs/casbot02_seed_motion_human_all_b4096_full2/ckpt_0060000.pt \
+  --output-dir outputs/human_joint_eval_060000_all_20261116 \
+  --num-envs 3072
+```
+
+默认逐条运行checkpoint配对表中的全部动作，分别测试motion、human full与human five，固定完整10帧预览；不是随机短窗口或世界模型想象。三路都在真实MuJoCo Warp里从原动作开头重置、运行到结束或训练的高度/倾斜终止。保留930维观测，包括参考骨盆相对姿态；human目标用配对SOMA骨架和实际机器人torso朝向构造，归一化统计保持冻结。
+
+协议与原benchmark一致：无观测/动作噪声、无重置噪声、无域随机化、无执行器延迟、地板摩擦1.0。整段归一化回报为奖励和除以整条参考长度乘单步上限0.1，失败后剩余帧贡献零。完成仅表示没有触发该高度/倾斜终止，不代表无自碰撞，也不是PICO实机效果或未见数据泛化测评。可用独立输出目录加 `--actuator-delay` 做额外延迟鲁棒性评测，不可与默认协议混合汇总。
+
+结果逐条写入 `clips.jsonl`，每30秒更新 `progress.json`；结束输出 `motion.json`、`human_full.json`、`human_five.json` 和 `summary.json`。同一命令可从journal中跳过已完成动作继续，严格检查checkpoint、数据与协议；输出目录不能混用其他模型。`--limit` 或 `--clips` 仅用于预检，正式全量时不要加。大库机器人参考与人体轨迹存CPU，GPU只处理当前环境批次。此评测不改变训练权重、human归一化或现有部署。

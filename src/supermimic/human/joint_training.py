@@ -230,6 +230,9 @@ class JointTrainer(Trainer):
             self.restore_joint(self._pending_checkpoint)
             self._pending_checkpoint = None
         self._reported_update = self.policy_trainer.human_updates
+        # This is process-local allocator state, not a training counter. On
+        # resume, warmup/WM synchronization must not look like a new update.
+        self._cache_released_update = self.policy_trainer.human_updates
         self._initial_versions = {name: [p._version for p in module.parameters()] for name, module in
                                    (("wm", self.wm), ("motion", self.policy), ("human", self.human))}
         (self.log_dir/"joint_config.json").write_text(json.dumps(self.joint_config, indent=2))
@@ -237,6 +240,7 @@ class JointTrainer(Trainer):
             "compile_mode": cfg.policy_trainer.compile,
             "inductor_compile_threads": os.environ.get("TORCHINDUCTOR_COMPILE_THREADS"),
             "human_storage": "contiguous_cpu" if cache_clips == 0 else "bounded_cpu_cache",
+            "cuda_cache_handoff": "release_unused_torch_cache_after_joint_update",
             "cpu_threads": torch.get_num_threads(),
             "resume_batch_changes": self.resume_resource_overrides}, indent=2))
         (self.log_dir/"robot_contract.json").write_text(json.dumps(self.meta, indent=2))
@@ -245,6 +249,7 @@ class JointTrainer(Trainer):
             "human_envs": self.human_env_count, "obs": 930, "motion_goal": 690,
             "human_goal": HUMAN_GOAL_DIM, "actions": 27, "student": "copy",
             "train_pairs": len(train_pairs), "validation_pairs": len(val_pairs),
+            "cuda_cache_handoff": "release_unused_torch_cache_after_joint_update",
             "initialization": self.initialization}, ensure_ascii=False), flush=True)
 
     @torch.no_grad()
@@ -310,6 +315,13 @@ class JointTrainer(Trainer):
             for key, value in record.items():
                 if isinstance(value, (int,float)):
                     self.writer.add_scalar(f"human/{key}", value, self.iteration+1)
+        if count and count != self._cache_released_update:
+            # Both native motion/critic and human copy have returned. Warp's
+            # allocator cannot reclaim idle Torch blocks on its next launch.
+            # Release once per joint update, independent of logging cadence.
+            if str(self.device).startswith("cuda"):
+                torch.cuda.empty_cache()
+            self._cache_released_update = count
 
     def save(self, name="ckpt_latest.pt"):
         # Native motion checkpoint keys remain compatible with ordinary motion

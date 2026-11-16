@@ -1,0 +1,19 @@
+Motion + velocity interface adaptation
+
+Velocity command extraction, per-task encoder routing, shared decoder, and
+stop-gradient latent behavior cloning follow HybridRobotics/supermimic:
+https://github.com/HybridRobotics/supermimic
+Revision inspected: abc124c1bd5976341034668af3d12c087f2f1f55
+Copyright 2026 The SuperMimic Authors. Apache License 2.0 (see LICENSE).
+
+Source references:
+src/supermimic/tasks/task_spec.py
+src/supermimic/models.py
+src/supermimic/envs/multi_task_world_model_env.py
+
+This integration retains this project's native motion observations, goals,
+dynamics, reward, critic, and optimization schedule. Velocity-only observations
+use proprioception with constant padding instead of the motion-reference rot6d.
+The centered velocity mean is clamped per clip, avoiding upstream's documented
+cross-clip averaging at concatenated boundaries. Human training and optional
+teleoperation modules are not imported by this independent task.
