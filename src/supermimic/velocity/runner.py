@@ -173,7 +173,7 @@ class VelocityTrainer(Trainer):
             "reward": "native motion tracking for both interfaces",
             "smoothing_boundary": "per-clip",
             "velocity_orientation_padding": "constant identity; no motion-reference observation",
-            "cuda_cache_handoff": "release_unused_torch_cache_after_policy_update",
+            "cuda_cache_handoff": "disabled",
         }
         (self.log_dir / "velocity_config.json").write_text(
             json.dumps(metadata, indent=2, default=str)
@@ -225,12 +225,6 @@ class VelocityTrainer(Trainer):
                     f.write(json.dumps(record) + "\n")
                 print("[VELOCITY] " + json.dumps(record), flush=True)
             self.policy_trainer.latest = {}
-            if str(self.device).startswith("cuda"):
-                # Backprop has returned and native synchronization has completed.
-                # Warp cannot reclaim Torch's idle cache when launching its next
-                # physics graph. Return those blocks once per update, retaining
-                # all live model, optimizer and replay tensors.
-                torch.cuda.empty_cache()
 
     def save(self, name="ckpt_latest.pt"):
         ck = {

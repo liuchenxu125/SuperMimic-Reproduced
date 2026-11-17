@@ -253,7 +253,7 @@ def test_manifest_identity_survives_json_checkpoint_config(tmp_path):
 
 
 @pytest.mark.parametrize("device", ["cuda:0", "cpu"])
-def test_cache_handoff_only_follows_completed_policy_updates(monkeypatch, device):
+def test_velocity_updates_preserve_torch_cache(monkeypatch, device):
     from supermimic.training.loop import Trainer
     from supermimic.velocity.runner import VelocityTrainer
 
@@ -267,13 +267,13 @@ def test_cache_handoff_only_follows_completed_policy_updates(monkeypatch, device
     monkeypatch.setattr(Trainer, "_synchronize", lambda self: events.append("sync"))
     monkeypatch.setattr(torch.cuda, "empty_cache", lambda: events.append("release"))
 
-    # Collection/WM synchronization has no completed policy update to hand off.
+    # Synchronization and completed updates must leave the allocator cache alone.
     trainer._synchronize()
     assert events == ["sync"]
     events.clear()
     trainer.policy_trainer.latest = {"imag_objective": 0.1}
     trainer._synchronize()
-    assert events == (["sync", "release"] if device.startswith("cuda") else ["sync"])
+    assert events == ["sync"]
     assert trainer.policy_trainer.latest == {}
 
     # Subsequent physics steps must not flush the cache again.

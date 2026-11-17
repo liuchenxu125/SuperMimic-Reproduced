@@ -37,7 +37,7 @@ env -u PYTHONPATH MUJOCO_GL=egl .venv/bin/python scripts/velocity/train_joint.py
 
 可用 `--check-only` 只检查选中的数据/接口；`--data-limit 2` 用于短测，不应放到正式全量指令。另可设置 `--command-window`、`--command-noise X Y Z`、`--lin-x-range LO HI`、`--lin-y-range LO HI`、`--ang-z-range LO HI` 和 `--latent-bc-weight`。
 
-4096环境＋总batch4096时，新增velocity/latent BC分支会提高BPTT显存峰值。独立velocity入口在每次actor/critic更新返回并同步后，调用一次 `torch.cuda.empty_cache()`，把未使用的PyTorch缓存交还给CUDA，供下一轮Warp物理图使用。不是每个物理步都释放；模型、优化器、replay等活动张量不释放，batch、损失和采样设置不变。代价是后续更新可能重新申请显存。这不能消除活动张量本身超出容量的OOM；原motion与human入口没有改动。启动日志和 `velocity_config.json` 中的 `cuda_cache_handoff` 记录此行为。
+2026-11-17按用户要求取消motion＋velocity任务每轮更新后的 `torch.cuda.empty_cache()`，恢复保留PyTorch缓存的行为；同步、日志、batch、损失和采样设置不变。启动日志和 `velocity_config.json` 中的 `cuda_cache_handoff` 为 `disabled`。已启动进程不会热更新，需要重新启动或正常恢复训练才使用此修改。motion＋human联合任务仍保留更新后的缓存释放。此前4096环境＋总batch4096在保留缓存时复现过Warp OOM，取消释放不代表已解决该显存问题。
 
 之前失败的 `logs/casbot02_seed_motion_velocity` 已存在配置但没有checkpoint，重新从零训练请换run-name（例如 `casbot02_seed_motion_velocity_v2`），保留原记录。需要4096时，把上述命令的 `--num-envs` 与 `--batch-size` 都设为4096，其余不变。
 
@@ -73,6 +73,6 @@ env -u PYTHONPATH OMP_NUM_THREADS=1 .venv/bin/python scripts/velocity/export_joi
 
 已通过速度平滑边界/机体系/噪声、motion不变性、velocity无参考泄漏、BC梯度隔离、两路BPTT/critic更新及多batch导出检查。GPU已做32环境/32步的3轮更新并恢复到5轮，以及2048环境/总batch2048/32步/default编译的2轮更新（2条动作、每轮1个WM batch）。这些是功能短测，不证明全量训练收敛或速度跟踪已达部署水平；全量SEED的额外CPU速度表约每帧6个float32，需约1.1GB内存。
 
-2026-11-16显存交接修复后，10项velocity测试通过。正式入口使用完整manifest中的126608条动作、4096环境、总batch4096、WM batch2048×10、H32、default编译、CPU库＋pinned搬运，连续完成10轮并正常保存checkpoint；修复前同一故障点可复现Warp graph launch OOM。验证记录见 `outputs/velocity_memory_fix_validation_20261116/validation.json`。这是启动/更新阶段回归，不是320k轮长训练的显存或收敛保证。
+历史验证：2026-11-16启用每轮缓存释放时，10项velocity测试通过。正式入口使用完整manifest中的126608条动作、4096环境、总batch4096、WM batch2048×10、H32、default编译、CPU库＋pinned搬运，连续完成10轮并正常保存checkpoint；修复前同一故障点可复现Warp graph launch OOM。验证记录见 `outputs/velocity_memory_fix_validation_20261116/validation.json`。该GPU结果属于当时启用缓存释放的版本，不代表2026-11-17取消释放后仍可稳定运行。
 
 本次没有启动正式长训练、修改机器人部署或加入PICO/human第三接口。
