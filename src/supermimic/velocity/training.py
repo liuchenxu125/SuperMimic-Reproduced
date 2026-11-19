@@ -1,7 +1,7 @@
 """Native BPTT/critic with mixed motion/velocity slots and official latent BC.
 
 Uses the original imagine(), rewards, termination, history, objective and GAE.
-Only actor routing is changed; the original PolicyTrainer is not edited.
+Actor routing is the only algorithmic change.
 """
 
 import torch
@@ -9,7 +9,7 @@ import torch
 from supermimic.imagination.objective import gae_targets, policy_objective
 from supermimic.imagination.policy_trainer import PolicyTrainer
 from supermimic.imagination.rollout import imagine
-from supermimic.training.numerics import backward_step, require_finite
+from supermimic.training.cuda_graph import optimize_step
 
 from .policy import latent_bc, mixed_actions
 
@@ -21,7 +21,9 @@ def motion_count(batch, fraction):
 
 
 class ImaginedActor:
-    def __init__(self, policy, commands, cfg, start, horizon):
+    def __init__(
+        self, policy, commands, cfg, start, horizon, actions=mixed_actions, latent=latent_bc
+    ):
         self.policy, self.commands, self.cfg = policy, commands, cfg
         self.state, self.t = start.state, 0
         last = commands.lib.last_frame_of(start.frame)
@@ -32,12 +34,13 @@ class ImaginedActor:
         self.world = commands.world_velocity(self.frames)
         self.count = motion_count(len(start.state), cfg.velocity_fraction)
         self.bc = []
+        self._actions, self._latent = actions, latent
 
     def __call__(self, history, goal):
         cmd = self.commands.project(self.world[self.t], self.state[:, 3:7])
-        action = mixed_actions(self.policy, history, goal, cmd, self.count)
+        action = self._actions(self.policy, history, goal, cmd, self.count)
         self.bc.append(
-            latent_bc(self.policy, cmd[self.count :], goal[self.count :]).sum() / len(cmd)
+            self._latent(self.policy, cmd[self.count :], goal[self.count :]).sum() / len(cmd)
         )
         return action
 
@@ -55,6 +58,20 @@ class VelocityPolicyTrainer(PolicyTrainer):
         super().__init__(wm, policy, critic, library, cfg)
         self.commands, self.velocity_cfg = commands, velocity_cfg
         self.latest = {}
+        compiled_mode = None if cfg.compile in (None, "default") else cfg.compile
+        self._actions = mixed_actions
+        self._latent = latent_bc
+        if cfg.compile:
+            self._actions = torch.compile(mixed_actions, mode=compiled_mode, dynamic=False)
+            self._latent = torch.compile(latent_bc, mode=compiled_mode, dynamic=False)
+
+    def _graph_state(self):
+        state = super()._graph_state()
+        for name in ("track", "low", "high", "noise"):
+            value = getattr(self.commands, name, None)
+            if torch.is_tensor(value):
+                state.append(value)
+        return state
 
     def _fit_critic(self, ro, feat, e_root, xi_norm):
         cfg = self.cfg
@@ -73,35 +90,41 @@ class VelocityPolicyTrainer(PolicyTrainer):
             )
             inputs = [x[:-1].reshape(-1, x.shape[-1]) for x in (feat, goals, xi, e_root)]
             y = targets.reshape(-1)
-        require_finite(y, "Mixed critic targets")
         size, mb = len(y), len(y) // cfg.critic_minibatches
         last = y.new_zeros(())
         max_norm = y.new_zeros((), dtype=torch.float64)
+        finite = torch.ones((), device=y.device, dtype=torch.bool)
         for _ in range(cfg.critic_epochs):
             permutation = torch.randperm(size, device=y.device)
             for i in range(cfg.critic_minibatches):
                 ids = permutation[i * mb : (i + 1) * mb]
                 loss = (self.critic(*(x[ids] for x in inputs)) - y[ids]).square().mean()
-                norm = backward_step(
-                    loss,
-                    self.critic,
-                    self.critic_opt,
-                    name="Mixed critic",
-                    max_norm=cfg.critic_grad_clip,
+                norm, ok = optimize_step(
+                    self.critic_opt, loss, self.critic, max_norm=cfg.critic_grad_clip
                 )
-                last, max_norm = loss.detach(), torch.maximum(max_norm, norm.double())
+                finite = finite & ok
+                last, max_norm = loss.detach(), torch.maximum(max_norm, norm.detach().double())
         return {
-            "critic_loss": float(last),
-            "critic_grad_norm_max": float(max_norm),
-            "critic_value_mean": float(values.mean()),
-            "critic_target_mean": float(y.mean()),
+            "critic_loss": last,
+            "critic_grad_norm_max": max_norm,
+            "critic_value_mean": values.mean().detach(),
+            "critic_target_mean": y.mean().detach(),
+            "finite": finite.detach(),
         }
 
-    def update(self, buffer, xi_norm_fn=None):
+    def _update_from(self, packed):
         cfg = self.cfg
-        start = buffer.sample_starts(cfg.batch_size, cfg.history)
+        start = self._start_from(packed)
         xi_norm = self.wm.spec.normalize_xi(start.xi)
-        actor = ImaginedActor(self.policy, self.commands, self.velocity_cfg, start, cfg.horizon)
+        actor = ImaginedActor(
+            self.policy,
+            self.commands,
+            self.velocity_cfg,
+            start,
+            cfg.horizon,
+            self._actions,
+            self._latent,
+        )
         self.wm.requires_grad_(False)
         self.critic.requires_grad_(False)
         try:
@@ -124,11 +147,10 @@ class VelocityPolicyTrainer(PolicyTrainer):
             objective = policy_objective(ro, bootstrap, cfg.gamma)
             bc = torch.stack(actor.bc).sum()
             loss = -objective + self.velocity_cfg.latent_bc_weight * bc
-            grad = backward_step(
+            grad, finite = optimize_step(
+                self.opt,
                 loss,
                 self.policy,
-                self.opt,
-                name="Motion+velocity actor",
                 max_norm=cfg.grad_clip_norm,
                 max_value=cfg.grad_clip_value,
             )
@@ -137,18 +159,20 @@ class VelocityPolicyTrainer(PolicyTrainer):
             self.critic.requires_grad_(True)
         count = actor.count
         result = {
-            "imag_objective": float(objective.detach()),
-            "imag_return_undisc": float((ro.survival[:-1] * ro.rewards).sum(0).mean().detach()),
-            "imag_reward_mean": float(ro.rewards.mean().detach()),
-            "imag_survival_H": float(ro.survival[-1].mean().detach()),
-            "policy_grad_norm": float(grad),
-            "velocity_latent_bc": float(bc.detach()),
-            "motion_imag_return": float(ro.rewards[:, :count].sum(0).mean().detach()),
-            "velocity_imag_return": float(ro.rewards[:, count:].sum(0).mean().detach()),
-            "velocity_imag_survival": float(ro.survival[-1, count:].mean().detach()),
+            "imag_objective": objective.detach(),
+            "imag_return_undisc": (ro.survival[:-1] * ro.rewards).sum(0).mean().detach(),
+            "imag_reward_mean": ro.rewards.mean().detach(),
+            "imag_survival_H": ro.survival[-1].mean().detach(),
+            "policy_grad_norm": grad.detach(),
+            "velocity_latent_bc": bc.detach(),
+            "motion_imag_return": ro.rewards[:, :count].sum(0).mean().detach(),
+            "velocity_imag_return": ro.rewards[:, count:].sum(0).mean().detach(),
+            "velocity_imag_survival": ro.survival[-1, count:].mean().detach(),
+            "finite": finite.detach(),
         }
-        result.update({f"imag_r/{k}": v for k, v in ro.reward_terms.items()})
+        result.update({f"imag_r/{key}": value.detach() for key, value in ro.reward_terms.items()})
         if cfg.use_critic:
-            result.update(self._fit_critic(ro, feat, e_root, xi_norm))
-        self.latest = result
+            critic_metrics = self._fit_critic(ro, feat, e_root, xi_norm)
+            result["finite"] = result["finite"] & critic_metrics.pop("finite")
+            result.update(critic_metrics)
         return result

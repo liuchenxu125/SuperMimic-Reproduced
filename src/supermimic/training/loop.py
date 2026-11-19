@@ -27,6 +27,7 @@ from supermimic.training.distributed import (
     finalize,
     init_distributed,
 )
+from supermimic.training.optim import parameter_counts
 from supermimic.training.precision import configure_precision
 from supermimic.training.schedule import collection_steps, cosine_lr
 from supermimic.world_model.heads import AnalyticHeads
@@ -434,6 +435,16 @@ class Trainer:
         cfg = self.cfg
         sch = cfg.schedule
         self._obs, _ = self.env.reset()
+        if self.is_main:
+            parts = []
+            for name, opt in (
+                ("world model", self.wm_trainer.opt),
+                ("policy", self.policy_trainer.opt),
+                ("critic", self.policy_trainer.critic_opt),
+            ):
+                adam, muon = parameter_counts(opt)
+                parts.append(f"{name} adam {adam} muon {muon}")
+            print("[INFO] optimizers: " + "; ".join(parts), flush=True)
         t_start = time.time()
         timers = {"sim": 0.0, "wm": 0.0, "policy": 0.0}
         agg: dict[str, float] = {}

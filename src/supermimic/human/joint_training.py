@@ -188,6 +188,10 @@ class JointTrainer(Trainer):
         stage_robot_pairs(train_pairs, run_dir/"paired_robot", self.meta)
         cfg.data = DataCfg(npz_dir=run_dir/"paired_robot")
         super().__init__(cfg)
+        # This path calls empty_cache after every update. A captured graph's
+        # pool does not survive that, so the native updates stay eager.
+        self.wm_trainer.capture = False
+        self.policy_trainer.capture = False
         if self.world != 1:
             raise ValueError("Joint task is single-GPU")
         if initial is not None:

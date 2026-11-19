@@ -7,8 +7,9 @@ from dataclasses import dataclass
 import torch
 
 from supermimic.data.replay_buffer import StartBatch
-from supermimic.envs.mdp.motion_library import MotionLibrary
+from supermimic.envs.mdp.motion_library import MotionLibrary, RefState
 from supermimic.imagination.compiled import REWARD_TERM_NAMES, ImagStep
+from supermimic.kinematics.rotations import cached_constant
 from supermimic.policy.nets import Policy
 from supermimic.world_model.heads import (
     ReferenceFrame,
@@ -18,10 +19,6 @@ from supermimic.world_model.heads import (
 )
 from supermimic.world_model.wm_trainer import reference_at
 from supermimic.world_model.world_model import WorldModel
-
-# Paper Table A.1 sensor noise (uniform half-widths) in the plain observation order.
-OBS_NOISE_HALF = torch.tensor([0.01] * 29 + [0.5] * 29 + [0.2] * 3 + [0.05] * 3 + [0.0] * 29)
-ANCHOR_NOISE_HALF = torch.tensor([0.25] * 3 + [0.05] * 6)
 
 
 @dataclass
@@ -56,11 +53,13 @@ def imagine(
     pelvis = anchor_ori_obs and not anchor_obs
     step_fn = step_fn or ImagStep(wm, q0, reference_pelvis_ori=pelvis)
     nj = wm.spec.layout.num_joints
-    noise_half = torch.tensor(
-        [0.01] * nj + [0.5] * nj + [0.2] * 3 + [0.05] * 3 + [0.0] * nj + ([0.05] * 6 if pelvis else []),
-        device=device,
-    )
-    anchor_noise_half = (ANCHOR_NOISE_HALF if anchor_obs else ANCHOR_NOISE_HALF[3:]).to(device)
+    # Uniform half-widths: joint position, joint velocity, angular velocity, gravity, action.
+    noise_values = (0.01,) * nj + (0.5,) * nj + (0.2,) * 3 + (0.05,) * 3 + (0.0,) * nj
+    if pelvis:
+        noise_values += (0.05,) * 6
+    noise_half = cached_constant(noise_values, start.state)
+    anchor_values = (0.25,) * 3 + (0.05,) * 6 if anchor_obs else (0.05,) * 6
+    anchor_noise_half = cached_constant(anchor_values, start.state)
     ai = wm.heads.anchor_index
 
     def add_noise(o):
@@ -68,8 +67,8 @@ def imagine(
             return o + (torch.rand_like(o) * 2 - 1) * noise_half
         return o
 
-    def make_goal(frame_t, ref_t, anchor_pose):
-        g = lib.goal_window(frame_t, future_frames)
+    def make_goal(step, ref_t, anchor_pose):
+        g = goal_rows[step]
         if not anchor_obs:
             return g
         rel = anchor_relative_obs(
@@ -108,13 +107,27 @@ def imagine(
     states = [s]
     actions, rewards = [], []
     dhats, survivals, frames = [torch.zeros(n, device=device)], [c], [frame]
-    # All target frames of the rollout are known up front (frame + t, clamped at the clip end):
-    # gather / FK the references for every step in one batched call.
+    # The whole rollout's reference frames are known before the first actor call.
+    # Read that span once, build every goal window from it, and FK only the
+    # frames the reward actually consumes.
     last = lib.last_frame_of(frame)
     frames_all = torch.minimum(
         frame[None, :] + torch.arange(horizon + 1, device=device)[:, None], last[None, :]
     )  # (H+1, n)
-    ref_all = reference_at(lib, frames_all.reshape(-1))
+    span = lib.reference_span(frame, horizon + future_frames)
+    goal_rows = lib.goals_from_span(span, horizon, future_frames)
+    if lib.compact:
+        step_ref = RefState(*(part[: horizon + 1].reshape(-1, *part.shape[2:]) for part in (
+            span.root_pos_w, span.root_quat_w, span.joint_pos,
+            span.root_lin_vel_w, span.root_ang_vel_w, span.joint_vel,
+        )))
+        bodies = lib.bodies_from_ref(step_ref)
+        ref_all = ReferenceFrame(
+            bodies.pos_w, bodies.quat_w, bodies.lin_vel_w, bodies.ang_vel_w,
+            step_ref.root_pos_w, step_ref.root_quat_w,
+        )
+    else:
+        ref_all = reference_at(lib, frames_all.reshape(-1))
 
     def ref_at(t):
         sl = slice(t * n, (t + 1) * n)
@@ -133,7 +146,7 @@ def imagine(
         anchor_pose = torch.cat([b0["pos"][..., ai, :], b0["quat"][..., ai, :]], dim=-1)
     else:
         anchor_pose = None
-    goals = [make_goal(frame, ref, anchor_pose)]
+    goals = [make_goal(0, ref, anchor_pose)]
     e_roots = [wm.heads.root_error_features(s, ref)]
     term_sum = torch.zeros(len(REWARD_TERM_NAMES), device=device)
 
@@ -158,7 +171,7 @@ def imagine(
         rewards.append(r)
         dhats.append(d)
         survivals.append(c)
-        goals.append(make_goal(frame, ref, anchor_pose))
+        goals.append(make_goal(t + 1, ref, anchor_pose))
         e_roots.append(wm.heads.root_error_features(s, ref))
         frames.append(frame)
 
@@ -171,5 +184,8 @@ def imagine(
         goals=torch.stack(goals),
         e_root=torch.stack(e_roots),
         frames=torch.stack(frames),
-        reward_terms={k: float(v / horizon) for k, v in zip(REWARD_TERM_NAMES, term_sum.tolist())},
+        reward_terms={
+            name: (term_sum[index] / horizon).detach()
+            for index, name in enumerate(REWARD_TERM_NAMES)
+        },
     )

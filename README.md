@@ -66,6 +66,7 @@ tests/                   FK / 解析头 / 环境 / 世界模型 / 想象 / 动�
 - Python 3.12，`uv`；torch 2.14.1+cu130、mujoco 3.16、warp 1.18、mjlab `8bb2bc9`（见 `pyproject.toml` 的 `[tool.uv.sources]`）。
 - 已验证硬件：机器 A = 1×RTX 5090（驱动 580 开源内核模块）；机器 B = 4×RTX 5090（Threadripper PRO，PCIe，无 NVLink）。
 - 系统 `PYTHONPATH` 若带有 ROS 的 python3.10 包会让 pytest 崩溃，所有命令前加 `env -u PYTHONPATH`。
+- 本机 570 驱动可使用 PyTorch cu126 + Warp cu12；当前依赖配置使用本地 Warp wheel，首次同步前请按 [CUDA 12 本机配置](docs/CUDA12_LOCAL_SETUP.md) 下载，验证记录和 Casbot02 起步命令也见该文档。
 
 ```bash
 uv sync --group dev

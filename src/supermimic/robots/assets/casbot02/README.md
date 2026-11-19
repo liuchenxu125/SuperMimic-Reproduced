@@ -161,13 +161,14 @@ Table A.1's missing sensor noise is not proof about execution noise.
 
 ## Collection noise and light-leg armature (2026-10-28)
 
-New training defaults to `env.action_noise_mode=collection`: the collector adds
-Gaussian noise N(0, 0.1^2) to normalized actions before `env.step`. The action
+New training defaults to `env.action_noise_mode=collection` and
+`env.action_noise_std=0`: the collector adds no Gaussian noise before
+`env.step`. A positive std adds N(0, std^2); 0.1 was the previous default. The action
 term's own noise is zero, so execution, previous-action observations, action-rate
-penalties and replay share the same noisy action. No additional action clamp
+penalties and replay share the action passed to `env.step`. No additional action clamp
 was introduced. Imagined rollouts and deterministic evaluation do not add this
-execution noise. The replay field `a_clean` retains its old name for interface
-compatibility, but stores the already-noisy environment input in this mode.
+collection noise. The replay field `a_clean` retains its old name for interface
+compatibility, but stores that same environment input in this mode.
 `--env.action-noise-mode execution` retains the old execution-only noise path;
 resume rejects a silent change between these semantics.
 

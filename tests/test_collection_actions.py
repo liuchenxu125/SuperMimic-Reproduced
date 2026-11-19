@@ -14,13 +14,26 @@ from supermimic.envs.tracking_env_cfg import make_env_cfg
 from supermimic.training.loop import Trainer
 
 
-@pytest.mark.parametrize("mode,internal_std", [("collection", 0.0), ("execution", 0.1)])
-def test_trainer_wires_internal_noise_once(monkeypatch, tmp_path, mode, internal_std):
+def test_collection_noise_defaults_off_and_other_randomization_stays():
+    cfg = TrainConfig()
+    assert cfg.env.action_noise_std == 0.0
+    assert cfg.env.action_noise_mode == "collection"
+    assert cfg.env.actuator_delay is True
+    assert cfg.env.obs_noise is True
+    assert cfg.env.reset_noise is True
+    assert cfg.env.domain_randomization is True
+    assert cfg.env.training_floor_friction == 0.3
+
+
+@pytest.mark.parametrize("mode", ["collection", "execution"])
+def test_trainer_wires_internal_noise_once(monkeypatch, tmp_path, mode):
     import supermimic.training.loop as module
 
     cfg = TrainConfig(robot="casbot02", log_root=tmp_path, run_name=mode, device="cpu")
     cfg.env.action_noise_mode = mode
+    internal_std = 0.0 if mode == "collection" else cfg.env.action_noise_std
     monkeypatch.setattr(module, "init_distributed", lambda: (0, 0, 1))
+    monkeypatch.setattr(module, "configure_precision", lambda tf32: {})
     monkeypatch.setattr(module, "SummaryWriter", lambda path: None)
     monkeypatch.setattr(module, "discover_npz", lambda *args, **kw: [tmp_path / "unused.npz"])
 
@@ -104,6 +117,7 @@ def test_legacy_resume_cannot_silently_change_noise_semantics(tmp_path):
     cfg = TrainConfig(robot="casbot02", run_name="new", log_root=tmp_path)
     saved = asdict(cfg)
     saved["env"].pop("action_noise_mode")
+    saved["env"]["action_noise_std"] = 0.1  # legacy checkpoints used the old 0.1 default
     saved["policy"]["goal_dim"] = 690
     checkpoint = tmp_path / "legacy.pt"
     torch.save({"iteration_unit": "update", "iteration": 10, "env_steps": 65,

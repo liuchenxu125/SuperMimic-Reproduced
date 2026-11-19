@@ -26,6 +26,22 @@ from mjlab.utils.lab_api.math import (  # noqa: F401  (re-exported)
 )
 
 _EPS = 1.0e-8
+_CONSTANTS: dict[tuple, torch.Tensor] = {}
+
+
+def cached_constant(values: tuple[float, ...], like: torch.Tensor) -> torch.Tensor:
+    """Constant tensor on ``like``'s device. Later calls reuse the same storage.
+
+    Building ``torch.tensor(values, device=cuda)`` copies from the CPU. CUDA
+    graph capture rejects that copy, so a captured rollout must reuse a tensor
+    allocated on an earlier eager call.
+    """
+    key = (values, like.dtype, like.device.type, like.device.index)
+    found = _CONSTANTS.get(key)
+    if found is None:
+        found = torch.tensor(values, dtype=like.dtype, device=like.device)
+        _CONSTANTS[key] = found
+    return found
 
 
 def quat_normalize(q: torch.Tensor) -> torch.Tensor:
@@ -130,6 +146,6 @@ def wrap_to_pi(a: torch.Tensor) -> torch.Tensor:
 
 def projected_gravity(q_body_w: torch.Tensor) -> torch.Tensor:
     """Gravity direction (0,0,-1) expressed in the body frame."""
-    g = torch.tensor([0.0, 0.0, -1.0], dtype=q_body_w.dtype, device=q_body_w.device)
+    g = cached_constant((0.0, 0.0, -1.0), q_body_w)
     g = g.expand(*q_body_w.shape[:-1], 3)
     return quat_apply_inverse(q_body_w, g)

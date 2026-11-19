@@ -179,6 +179,8 @@ def test_actor_uses_time_sum_before_gradient_clipping(monkeypatch):
     trainer.policy = torch.nn.Linear(1, 1, bias=False)
     trainer.critic = torch.nn.Linear(1, 1)
     trainer.opt = torch.optim.SGD(trainer.policy.parameters(), lr=0.0)
+    trainer.capture = False
+    trainer.compiled_policy = trainer.policy
     trainer.step_fn, trainer.lib = None, None
     trainer._critic_inputs = lambda ro: (None, None, None)
     weight = trainer.policy.weight.reshape(())
@@ -190,7 +192,11 @@ def test_actor_uses_time_sum_before_gradient_clipping(monkeypatch):
         reward_terms={},
     )
     monkeypatch.setattr(module, "imagine", lambda *args, **kwargs: rollout)
-    buffer = SimpleNamespace(sample_starts=lambda *args: SimpleNamespace(xi=torch.zeros(1, 1)))
+    buffer = SimpleNamespace(sample_starts=lambda *args: SimpleNamespace(
+        state=torch.zeros(1, 1), xi=torch.zeros(1, 1), frame=torch.zeros(1, dtype=torch.long),
+        prev_action=torch.zeros(1, 1), hist_states=torch.zeros(1, 1, 1),
+        hist_actions=torch.zeros(1, 1, 1), hist_frames=None,
+    ))
     trainer.update(buffer)
     expected = -sum(trainer.cfg.gamma**t for t in range(4))
     assert trainer.policy.weight.grad.item() == pytest.approx(expected)

@@ -1,5 +1,6 @@
 .venv/
 .venv-pico/
+/.wheels/
 __pycache__/
 *.pyc
 *.egg-info/

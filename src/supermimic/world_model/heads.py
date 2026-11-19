@@ -15,7 +15,12 @@ import torch
 
 from supermimic.envs.mdp.rewards import TrackingRewardCfg, tracking_reward_terms
 from supermimic.kinematics.g1_fk import G1Kinematics
-from supermimic.kinematics.rotations import projected_gravity, quat_apply_inverse, robot_relative_rot6d
+from supermimic.kinematics.rotations import (
+    cached_constant,
+    projected_gravity,
+    quat_apply_inverse,
+    robot_relative_rot6d,
+)
 from supermimic.robots.layout import observation_terms
 from supermimic.robots.layout import split_state as split_robot_state
 
@@ -193,9 +198,7 @@ class AnalyticHeads:
         root_pos: torch.Tensor, root_quat: torch.Tensor, ref: ReferenceFrame
     ) -> torch.Tensor:
         """[height error, tilt error] (N, 2) — the quantities the paper thresholds (0.25 m, 0.8)."""
-        g = torch.tensor([0.0, 0.0, -1.0], dtype=root_quat.dtype, device=root_quat.device).expand(
-            root_quat.shape[:-1] + (3,)
-        )
+        g = cached_constant((0.0, 0.0, -1.0), root_quat).expand(root_quat.shape[:-1] + (3,))
         tilt = (
             quat_apply_inverse(ref.root_quat_w, g)[..., 2]
             - quat_apply_inverse(root_quat, g)[..., 2]

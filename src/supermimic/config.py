@@ -27,7 +27,7 @@ class DataCfg:
 class EnvCfg:
     num_envs: int = 4096
     episode_length_s: float = 10.0
-    action_noise_std: float = 0.1
+    action_noise_std: float = 0.0  # collection Gaussian on the policy action; 0 disables it
     action_noise_mode: Literal["collection", "execution"] = "collection"
     obs_noise: bool = True
     reset_noise: bool = True

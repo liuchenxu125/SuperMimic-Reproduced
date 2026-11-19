@@ -118,6 +118,32 @@ def test_conversion_library_and_network_dimensions(casbot_clip):
     np.testing.assert_allclose(
         full.goal_window(frames, 10), compact.goal_window(frames, 10), atol=1e-5
     )
+    start = torch.tensor([1, 30, 80])
+    horizon, window = 4, 10
+    span = compact.reference_span(start, horizon + window)
+    batched = compact.goals_from_span(span, horizon, window)
+    for step in range(horizon + 1):
+        current = torch.minimum(start + step, compact.last_frame_of(start))
+        torch.testing.assert_close(
+            batched[step], compact.goal_window(current, window), atol=0, rtol=0
+        )
+    flat_parts = []
+    names = (
+        "root_pos_w", "root_quat_w", "joint_pos",
+        "root_lin_vel_w", "root_ang_vel_w", "joint_vel",
+    )
+    for name in names:
+        part = getattr(span, name)[: horizon + 1]
+        flat_parts.append(part.reshape(-1, part.shape[-1]))
+    from supermimic.envs.mdp.motion_library import RefState
+
+    got = compact.bodies_from_ref(RefState(*flat_parts))
+    expect_index = torch.stack(
+        [torch.minimum(start + step, compact.last_frame_of(start)) for step in range(horizon + 1)]
+    ).reshape(-1)
+    expect = compact.bodies(expect_index)
+    torch.testing.assert_close(got.pos_w, expect.pos_w, atol=0, rtol=0)
+    torch.testing.assert_close(got.lin_vel_w, expect.lin_vel_w, atol=0, rtol=0)
     qp, qv = full.ref_qpos_qvel(frames)
     state = torch.cat([qp, qv], -1)
     spec = StateSpec(StateSpecCfg(num_joints=27, explicit_integration=False), "cpu")

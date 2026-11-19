@@ -70,6 +70,24 @@ class RefBodies:
     ang_vel_w: torch.Tensor  # (N,B,3)
 
 
+_REF_FIELDS = (
+    "root_pos_w",
+    "root_quat_w",
+    "joint_pos",
+    "root_lin_vel_w",
+    "root_ang_vel_w",
+    "joint_vel",
+)
+
+
+def _ref_from(parts: tuple[torch.Tensor, ...]) -> RefState:
+    return RefState(*parts)
+
+
+def _parts(state: RefState) -> tuple[torch.Tensor, ...]:
+    return tuple(getattr(state, name) for name in _REF_FIELDS)
+
+
 def goal_features(
     anchor: RefState, future: RefState, default_joint_pos: torch.Tensor
 ) -> torch.Tensor:
@@ -225,6 +243,8 @@ class MotionLibrary:
             from supermimic.kinematics.g1_fk import G1Kinematics
 
             self._fk = G1Kinematics(get_robot(robot_name).model(), device=self.device, dtype=dtype)
+            self._fk_fn = self._fk
+            self._fk_compiled_mode = None
             self._tracked_idx = self._fk.body_indices(self.body_names)
 
         self.clip_start = torch.tensor(
@@ -282,15 +302,7 @@ class MotionLibrary:
                 self.body_ang_vel_w[frame],
             )
         qpos, qvel = self.ref_qpos_qvel(frame)
-        with torch.no_grad():
-            out = self._fk(qpos, qvel)
-        i = self._tracked_idx
-        return RefBodies(
-            out["pos"][..., i, :],
-            out["quat"][..., i, :],
-            out["lin_vel"][..., i, :],
-            out["ang_vel"][..., i, :],
-        )
+        return self.bodies_from_qpos_qvel(qpos, qvel)
 
     # Convenience columns live on the storage device. Prefer ref(frame): it
     # returns only requested rows on the compute device for either backend.
@@ -343,11 +355,63 @@ class MotionLibrary:
 
     def ref_qpos_qvel(self, frame: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """MuJoCo-layout reference state: qpos (N,36) and qvel (N,35; root ang vel in body frame)."""
-        r = self.ref(frame)
-        qpos = torch.cat([r.root_pos_w, r.root_quat_w, r.joint_pos], dim=-1)
-        ang_b = quat_apply_inverse(r.root_quat_w, r.root_ang_vel_w)
-        qvel = torch.cat([r.root_lin_vel_w, ang_b, r.joint_vel], dim=-1)
+        return self.qpos_qvel_from_ref(self.ref(frame))
+
+    def qpos_qvel_from_ref(self, state: RefState) -> tuple[torch.Tensor, torch.Tensor]:
+        qpos = torch.cat([state.root_pos_w, state.root_quat_w, state.joint_pos], dim=-1)
+        ang_b = quat_apply_inverse(state.root_quat_w, state.root_ang_vel_w)
+        qvel = torch.cat([state.root_lin_vel_w, ang_b, state.joint_vel], dim=-1)
         return qpos, qvel
+
+    def bodies_from_qpos_qvel(self, qpos: torch.Tensor, qvel: torch.Tensor) -> RefBodies:
+        if not self.compact:
+            raise RuntimeError("Body states are stored explicitly when compact_library is off")
+        with torch.no_grad():
+            out = self._fk_fn(qpos, qvel)
+        i = self._tracked_idx
+        return RefBodies(
+            out["pos"][..., i, :],
+            out["quat"][..., i, :],
+            out["lin_vel"][..., i, :],
+            out["ang_vel"][..., i, :],
+        )
+
+    def bodies_from_ref(self, state: RefState) -> RefBodies:
+        """FK tracked bodies from an already gathered reference, without another library read."""
+        return self.bodies_from_qpos_qvel(*self.qpos_qvel_from_ref(state))
+
+    def compile_reference_fk(self, mode: str | None) -> None:
+        """Compile the reference FK used by compact libraries. Eager when mode is unset."""
+        if not self.compact or not mode or self._fk_compiled_mode == mode:
+            return
+        compiled_mode = None if mode == "default" else mode
+        self._fk_fn = torch.compile(self._fk.forward, mode=compiled_mode, dynamic=False)
+        self._fk_compiled_mode = mode
+
+    def reference_span(self, frame: torch.Tensor, length: int) -> RefState:
+        """States at ``frame + 0 .. length-1``, clamped per clip. Shape ``(length, N)``."""
+        if length < 1:
+            raise ValueError("reference span must contain at least one frame")
+        last = self.last_frame_of(frame)
+        offsets = torch.arange(length, device=frame.device)
+        index = torch.minimum(frame.unsqueeze(0) + offsets[:, None], last.unsqueeze(0))
+        state = self.ref(index.reshape(-1))
+        n = frame.shape[0]
+        return _ref_from(tuple(part.reshape(length, n, *part.shape[1:]) for part in _parts(state)))
+
+    def goals_from_span(self, span: RefState, horizon: int, future_frames: int) -> torch.Tensor:
+        """Goal rows for each step of a ``reference_span`` of length ``horizon + future_frames``."""
+        if future_frames < 1:
+            raise ValueError("Goal window must contain at least one frame")
+        n = span.root_pos_w.shape[1]
+        rows = []
+        for t in range(horizon + 1):
+            anchor = _ref_from(tuple(part[t] for part in _parts(span)))
+            future = _ref_from(
+                tuple(part[t : t + future_frames].movedim(0, 1) for part in _parts(span))
+            )
+            rows.append(goal_features(anchor, future, self.default_joint_pos).reshape(n, -1))
+        return torch.stack(rows)
 
     def summary(self) -> str:
         hours = self.num_frames / 50.0 / 3600.0

@@ -3,6 +3,7 @@
 import torch
 from torch import nn
 
+from supermimic.kinematics.rotations import cached_constant
 from supermimic.robots.layout import reference_pelvis_ori_enabled
 from supermimic.world_model.dynamics import MLP
 
@@ -52,7 +53,7 @@ def velocity_history(history, cfg):
     if not reference_pelvis_ori_enabled(cfg.obs_term_scale):
         return history
     proprio = cfg.history * (3 * cfg.num_joints + 6)
-    identity = history.new_tensor([1.0, 0.0, 0.0, 1.0, 0.0, 0.0]).repeat(cfg.history)
+    identity = cached_constant((1.0, 0.0, 0.0, 1.0, 0.0, 0.0), history).repeat(cfg.history)
     return torch.cat([history[..., :proprio], identity.expand(*history.shape[:-1], -1)], -1)
 
 
